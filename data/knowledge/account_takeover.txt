@@ -1,0 +1,33 @@
+PLAYBOOK: Account Takeover (ATO)
+
+SIGNALS
+- Velocity spike: multiple transactions in a short window from the same account.
+- Sudden change in transaction geography or device fingerprint.
+- Model risk score elevated with reason "Model flagged" or "Suspicious IP".
+- New merchant combined with high amount immediately after account login.
+
+RISK FACTORS
+- Transactions from an IP flagged in threat intelligence feeds.
+- Rapid succession of transactions across multiple merchants in different regions.
+- Password reset or account change event immediately preceding the transaction.
+- Transaction pattern is entirely inconsistent with user's historical behaviour.
+
+MITIGATING FACTORS
+- Single transaction with no velocity pattern.
+- Merchant and amount are consistent with user's prior behaviour.
+- No geographic anomaly.
+
+INVESTIGATION STEPS
+1. Pull all transactions in the 24 hours preceding the flagged transaction.
+2. Check IP address reputation and geographic location.
+3. Review account login events for the same period (if accessible).
+4. Assess whether multiple merchants or geographies appear in the velocity window.
+
+RECOMMENDATION CRITERIA
+- CONFIRM_FRAUD if: velocity spike + suspicious IP + new merchant + high amount.
+- ESCALATE if: velocity pattern is present but context is ambiguous.
+- FALSE_POSITIVE if: merchant and amount are consistent and IP is clean.
+
+POLICY REFERENCES
+- Fraud Policy FP-004: Immediate block required when velocity threshold exceeded and IP flagged.
+- SOP-ATO-01: ATO cases must be escalated to the Fraud Operations team within 1 hour.

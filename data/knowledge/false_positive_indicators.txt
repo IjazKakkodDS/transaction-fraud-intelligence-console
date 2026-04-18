@@ -1,0 +1,42 @@
+PLAYBOOK: False Positive Identification
+
+PURPOSE
+This playbook guides analysts in identifying cases that the fraud system has flagged
+in error. Minimising false positives is critical to customer experience and operational
+efficiency.
+
+COMMON FALSE POSITIVE PATTERNS
+
+1. High-value legitimate purchase
+   - Customer bought a large-ticket item (electronics, travel, jewellery).
+   - Amount is above the threshold but the merchant is known and the user has prior
+     high-value purchases.
+   - Risk score is elevated by amount alone; model confidence is moderate.
+
+2. Legitimate late-night transaction
+   - Night transaction from a shift worker, frequent traveller, or international user.
+   - User's transaction history shows consistent late-night activity.
+   - No other anomalous signals present.
+
+3. First-time merchant, legitimate use
+   - User is shopping at a new retailer — merchant is new to them but is a known,
+     reputable business.
+   - No geographic mismatch, no velocity pattern, no suspicious IP.
+
+4. Travel scenario
+   - User is abroad; transactions appear cross-border or from an unusual location.
+   - Amount and merchant type are consistent with travel spending.
+
+INVESTIGATION STEPS
+1. Review user's 30-day transaction history for behavioural baselines.
+2. Check merchant reputation and whether other users transact there without fraud.
+3. Confirm there are no co-occurring high-risk signals (velocity, suspicious IP, ATO indicators).
+4. Contact the cardholder if the case remains ambiguous after tool-based review.
+
+RECOMMENDATION CRITERIA
+- FALSE_POSITIVE if: single signal fired, user history is consistent, no co-occurring indicators.
+- ESCALATE if: context is insufficient to make a confident determination.
+
+POLICY REFERENCES
+- Fraud Policy FP-009: False positive rate must be reviewed monthly; target < 5% of REVIEW cases.
+- SOP-FP-01: Before marking FALSE_POSITIVE, at least one user-history data point must be verified.

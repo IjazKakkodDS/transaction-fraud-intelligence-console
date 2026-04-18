@@ -1,0 +1,32 @@
+PLAYBOOK: High-Amount Transaction Fraud
+
+SIGNALS
+- Transaction amount exceeds the high-value threshold (default $1,000).
+- Rule engine fires rule_flag=1 with reason "High amount".
+- Often co-occurs with night_transaction or new_merchant signals.
+
+RISK FACTORS
+- Single large transaction with no prior history of similar amounts.
+- Amount significantly above the user's 30-day average.
+- Amount near common money-mule round-number targets ($5,000, $10,000).
+- Cross-border transaction combined with high amount.
+
+MITIGATING FACTORS
+- User has a historical pattern of large purchases (e.g., business account).
+- Merchant is well-known and previously used by this user.
+- Low model risk score despite high amount.
+
+INVESTIGATION STEPS
+1. Compare transaction amount against user's 30-day amount percentile.
+2. Check whether the merchant has been seen before in user history.
+3. Review IP geolocation against user's registered country.
+4. Check for companion transactions (card-testing pattern: small tx followed by large tx).
+
+RECOMMENDATION CRITERIA
+- CONFIRM_FRAUD if: high amount + night transaction + new merchant + no prior history.
+- ESCALATE if: high amount alone, user profile unavailable, or ambiguous context.
+- FALSE_POSITIVE if: amount fits user's historical pattern and merchant is familiar.
+
+POLICY REFERENCES
+- Fraud Policy FP-001: Mandatory review for all transactions above $1,000.
+- Fraud Policy FP-007: Escalation required when user history is unavailable.

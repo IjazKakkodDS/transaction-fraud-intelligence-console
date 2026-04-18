@@ -120,6 +120,7 @@ services:
         rpk topic create transactions.raw      --brokers redpanda:29092 --partitions 3 --replicas 1 || true &&
         rpk topic create transactions.scored   --brokers redpanda:29092 --partitions 3 --replicas 1 || true &&
         rpk topic create cases.created         --brokers redpanda:29092 --partitions 1 --replicas 1 || true &&
+        rpk topic create cases.investigate     --brokers redpanda:29092 --partitions 1 --replicas 1 || true &&
         echo "Topic bootstrap complete."
     restart: "no"
 
@@ -136,6 +137,34 @@ services:
     command: ["python", "-m", "src.events.consumer_scoring"]
     env_file:
       - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+      redpanda-init:
+        condition: service_completed_successfully
+    restart: on-failure
+
+  # ---------------------------------------------------------------------------
+  # Investigation consumer — reads cases.investigate, runs the agentic
+  # investigation pipeline (tools + RAG + LLM reasoning), and writes
+  # InvestigationReport rows to Postgres.
+  # Requires a running Ollama instance accessible at OLLAMA_BASE_URL.
+  # ---------------------------------------------------------------------------
+  investigation-consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "src.investigation.consumer"]
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL
+      - KAFKA_BOOTSTRAP_SERVERS
+      - OLLAMA_BASE_URL
+      - OLLAMA_MODEL
+      - OLLAMA_TIMEOUT
     depends_on:
       postgres:
         condition: service_healthy

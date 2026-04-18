@@ -1,0 +1,33 @@
+PLAYBOOK: Velocity / Card-Testing Fraud
+
+SIGNALS
+- Multiple transactions submitted in a short time window from the same card or account.
+- Pattern: one or more small test transactions immediately followed by a large transaction.
+- Rule engine fires with reason "Velocity spike".
+- Model flags the pattern after observing the burst in the feature window.
+
+RISK FACTORS
+- Three or more transactions within 10 minutes across different merchants.
+- Small authorisation attempts ($0.01–$5.00) preceding a large transaction — classic card-testing.
+- Transactions spread across merchants in multiple geographic regions within minutes.
+- Multiple declined transactions followed by a successful one.
+
+MITIGATING FACTORS
+- Transactions occur at the same merchant (e.g., retried payment).
+- User has a documented pattern of rapid sequential purchases (e.g., grocery and fuel on the same trip).
+- All transactions are small and no large follow-on transaction is present.
+
+INVESTIGATION STEPS
+1. Pull all transactions in the 60-minute window surrounding the flagged transaction.
+2. Identify whether small test transactions precede a large transaction.
+3. Check merchant diversity: are multiple unrelated merchants involved?
+4. Assess geographic spread of transaction origin IPs.
+
+RECOMMENDATION CRITERIA
+- CONFIRM_FRAUD if: velocity spike + card-testing pattern + large follow-on transaction + new merchants.
+- ESCALATE if: velocity spike is present but card-testing pattern is ambiguous.
+- FALSE_POSITIVE if: burst is explained by a single merchant or known user behaviour.
+
+POLICY REFERENCES
+- Fraud Policy FP-003: Accounts with velocity spike + decline pattern must be temporarily suspended pending review.
+- SOP-VEL-01: Card-testing investigations require correlation with declined transaction logs.

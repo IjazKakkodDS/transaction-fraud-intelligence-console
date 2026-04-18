@@ -2,17 +2,22 @@
 FastAPI application entry point for the Real-Time Fraud Triage System.
 """
 
+import json
 import logging
+import uuid
 from datetime import datetime, timezone
 from typing import Literal
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
+from kafka import KafkaProducer
+from kafka.errors import KafkaError
 from pydantic import ValidationError
 
 from src.api.schemas import ReviewCaseRequest
 from src.db.postgres_logger import (
+    get_latest_investigation,
     get_prediction_by_id,
     get_prediction_by_transaction_id,
     get_review_queue_filtered,
@@ -29,6 +34,51 @@ from src.rules.fraud_rules import apply_fraud_rules
 from src.triage.investigator import triage_decision
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Investigation producer — singleton for cases.investigate topic.
+# Initialised lazily on first POST /cases/{id}/investigate call.
+# ---------------------------------------------------------------------------
+
+_INVESTIGATE_TOPIC = "cases.investigate"
+_investigate_producer: KafkaProducer | None = None
+_investigate_producer_disabled: bool = False
+
+
+def _get_investigate_producer() -> KafkaProducer | None:
+    global _investigate_producer, _investigate_producer_disabled
+
+    if _investigate_producer_disabled:
+        return None
+    if _investigate_producer is not None:
+        return _investigate_producer
+
+    import os
+    bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "")
+    if not bootstrap_servers:
+        logger.warning(
+            "KAFKA_BOOTSTRAP_SERVERS not set — investigation publishing disabled."
+        )
+        _investigate_producer_disabled = True
+        return None
+
+    try:
+        _investigate_producer = KafkaProducer(
+            bootstrap_servers=bootstrap_servers,
+            key_serializer=lambda k: k.encode("utf-8"),
+            value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+            acks=1,
+            request_timeout_ms=3000,
+        )
+        logger.info("Investigation KafkaProducer initialised | brokers=%s", bootstrap_servers)
+    except KafkaError as exc:
+        logger.error(
+            "Investigation KafkaProducer init failed — publishing disabled | error=%s", exc
+        )
+        _investigate_producer_disabled = True
+
+    return _investigate_producer
+
 
 app = FastAPI(
     title="Real-Time Fraud Triage System",
@@ -151,6 +201,42 @@ def get_prediction(transaction_id: str):
     return prediction
 
 
+@app.get("/cases/{case_id}/investigation")
+def get_investigation(case_id: int):
+    """
+    Retrieve the latest investigation report for a case.
+
+    Responses:
+      200 COMPLETE    — full investigation row
+      200 FAILED      — {"status": "FAILED", "error_message": "..."}
+      202 IN_PROGRESS — {"status": "IN_PROGRESS"}
+      404             — no investigation has been triggered for this case_id
+    """
+    investigation = get_latest_investigation(case_id)
+
+    if investigation is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No investigation found for case_id={case_id}.",
+        )
+
+    status = investigation.get("status")
+
+    if status == "IN_PROGRESS":
+        return JSONResponse(
+            status_code=202,
+            content={"status": "IN_PROGRESS"},
+        )
+
+    if status == "FAILED":
+        return {
+            "status": "FAILED",
+            "error_message": investigation.get("error_message"),
+        }
+
+    return investigation
+
+
 @app.get("/case/{case_id}")
 def get_case(case_id: int):
     case = get_prediction_by_id(case_id)
@@ -174,3 +260,71 @@ def review_case(case_id: int, body: ReviewCaseRequest):
         "analyst_status": body.analyst_status,
         "reviewed_at": reviewed_at,
     }
+
+
+@app.post("/cases/{case_id}/investigate", status_code=202)
+def trigger_investigation(case_id: int):
+    """
+    Trigger an agentic investigation for a scored case.
+
+    Validates that the case exists, assigns a new investigation_id, and
+    publishes an InvestigationRequest to the cases.investigate Kafka topic.
+    The investigation-consumer picks up the message and runs the pipeline
+    asynchronously. Poll GET /cases/{case_id}/investigation for the result.
+
+    Responses:
+      202 — investigation accepted and queued
+      404 — case_id not found in predictions table
+      503 — Kafka unavailable; investigation could not be queued
+    """
+    case = get_prediction_by_id(case_id)
+    if case is None:
+        raise HTTPException(status_code=404, detail=f"Case {case_id} not found.")
+
+    investigation_id = str(uuid.uuid4())
+
+    payload = {
+        "investigation_id": investigation_id,
+        "case_id": case_id,
+    }
+
+    producer = _get_investigate_producer()
+    if producer is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Investigation queue unavailable — Kafka is not configured or unreachable.",
+        )
+
+    try:
+        producer.send(
+            _INVESTIGATE_TOPIC,
+            key=str(case_id),
+            value=payload,
+        ).get(timeout=5)
+    except KafkaError as exc:
+        logger.error(
+            "Failed to publish to %s | case_id=%d investigation_id=%s error=%s",
+            _INVESTIGATE_TOPIC,
+            case_id,
+            investigation_id,
+            exc,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail="Failed to queue investigation — broker error.",
+        )
+
+    logger.info(
+        "Investigation queued | case_id=%d investigation_id=%s",
+        case_id,
+        investigation_id,
+    )
+
+    return JSONResponse(
+        status_code=202,
+        content={
+            "status": "accepted",
+            "investigation_id": investigation_id,
+            "case_id": case_id,
+        },
+    )

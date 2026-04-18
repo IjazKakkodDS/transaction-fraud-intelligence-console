@@ -1,0 +1,33 @@
+PLAYBOOK: Night-Time Transaction Fraud
+
+SIGNALS
+- Transaction timestamp between 00:00 and 05:59 UTC.
+- Rule engine fires rule_flag=1 with reason "Night transaction".
+- Elevated fraud base-rate during this window across all fraud typologies.
+
+RISK FACTORS
+- Transaction during hours when cardholders are typically asleep.
+- Night transaction combined with high amount or new merchant.
+- Geographic mismatch: transaction originates from a timezone where it is daytime
+  while user's registered timezone indicates nighttime.
+- Velocity spike during the same overnight window.
+
+MITIGATING FACTORS
+- User has a documented history of late-night transactions (shift worker, frequent traveller).
+- Transaction amount is low and merchant is familiar.
+- User's registered country operates in a timezone where the transaction falls within business hours.
+
+INVESTIGATION STEPS
+1. Review timestamp against user's historical transaction hour distribution.
+2. Check whether night transactions are normal for this user segment.
+3. Inspect IP geolocation to identify timezone mismatch.
+4. Assess whether other fraud signals co-occur (amount, merchant, velocity).
+
+RECOMMENDATION CRITERIA
+- CONFIRM_FRAUD if: night transaction + high amount + new merchant + high risk score.
+- ESCALATE if: night transaction is the only signal and user profile is unavailable.
+- FALSE_POSITIVE if: user has consistent late-night spending pattern.
+
+POLICY REFERENCES
+- Fraud Policy FP-002: Automatic REVIEW flag for all out-of-hours transactions above $500.
+- SOP-NIGHT-01: Night transaction investigations must complete within 4 business hours.

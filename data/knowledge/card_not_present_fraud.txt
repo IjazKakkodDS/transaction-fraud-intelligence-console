@@ -1,0 +1,32 @@
+PLAYBOOK: Card-Not-Present (CNP) Fraud
+
+SIGNALS
+- Transaction submitted without physical card presence (e-commerce, MOTO).
+- Rule engine fires with reason "Card not present".
+- High model risk score on CNP transactions with new merchants.
+
+RISK FACTORS
+- CNP transaction to a new or unverified merchant.
+- Billing address does not match registered address (AVS mismatch).
+- IP address originates from a country different from the billing address.
+- Transaction amount close to the card limit or above historical average.
+
+MITIGATING FACTORS
+- Merchant is known and has been used previously in CNP mode.
+- Transaction amount is consistent with user's CNP spending history.
+- AVS check passed; IP matches registered country.
+
+INVESTIGATION STEPS
+1. Verify whether the merchant has been used in prior CNP transactions.
+2. Check AVS and CVV verification results if available.
+3. Inspect IP geolocation against billing/shipping address.
+4. Review whether the transaction amount exceeds the user's typical CNP spend.
+
+RECOMMENDATION CRITERIA
+- CONFIRM_FRAUD if: CNP + new merchant + foreign IP + AVS mismatch + high amount.
+- ESCALATE if: CNP + new merchant with insufficient contextual data.
+- FALSE_POSITIVE if: CNP to a known merchant with clean IP and AVS pass.
+
+POLICY REFERENCES
+- Fraud Policy FP-005: All CNP transactions above $500 to new merchants require manual review.
+- SOP-CNP-01: CNP fraud evidence must be documented before initiating a chargeback.

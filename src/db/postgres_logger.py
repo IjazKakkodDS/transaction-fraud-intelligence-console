@@ -12,6 +12,7 @@ DATABASE_URL is read from the environment.
 Defaults to the local SQLite file so the system works without Docker.
 """
 
+import json
 import os
 
 from dotenv import load_dotenv
@@ -28,6 +29,7 @@ from sqlalchemy import (
     create_engine,
     func,
     select,
+    text,
     update,
 )
 from sqlalchemy.exc import IntegrityError
@@ -96,7 +98,7 @@ metadata.create_all(engine)
 
 
 # ---------------------------------------------------------------------------
-# Public interface
+# Public interface — predictions
 # ---------------------------------------------------------------------------
 
 def log_prediction(record: dict) -> int | None:
@@ -244,3 +246,118 @@ def get_stats() -> dict:
         "total_review":           _count(predictions.c.decision == "REVIEW"),
         "total_approved":         _count(predictions.c.decision == "APPROVE"),
     }
+
+
+# ---------------------------------------------------------------------------
+# Public interface — investigations
+#
+# The investigations table schema is managed via Alembic migration.
+# This function uses raw SQL so no SQLAlchemy Table definition is required
+# here — the migration is the authoritative schema source.
+# Lists and dicts are serialised to JSON strings before storage.
+# ---------------------------------------------------------------------------
+
+def get_latest_investigation(case_id: int) -> dict | None:
+    """
+    Fetch the most recent investigation row for a given case_id.
+    Returns the latest row by primary key, or None if no investigation exists.
+
+    Used by GET /cases/{case_id}/investigation to let analysts poll for the
+    investigation result after triggering via POST /cases/{case_id}/investigate.
+    """
+    with engine.connect() as conn:
+        row = conn.execute(
+            text(
+                "SELECT * FROM investigations "
+                "WHERE case_id = :case_id "
+                "ORDER BY id DESC "
+                "LIMIT 1"
+            ),
+            {"case_id": case_id},
+        ).mappings().first()
+
+    return dict(row) if row else None
+
+
+def log_investigation(report) -> int:
+    """
+    Insert an InvestigationReport into the investigations table and return
+    the generated primary key.
+
+    Accepts an InvestigationReport instance. Lists and dicts are JSON-encoded
+    before storage. Enum fields are stored as their string values.
+
+    Uses RETURNING id — Postgres only (Phase 3 runs exclusively on Postgres).
+    """
+    with engine.begin() as conn:
+        row = conn.execute(
+            text("""
+                INSERT INTO investigations (
+                    investigation_id,
+                    case_id,
+                    agent_version,
+                    investigated_at,
+                    status,
+                    transaction_count_30d,
+                    amount_percentile,
+                    merchant_seen_before,
+                    rules_triggered,
+                    feature_breakdown,
+                    summary,
+                    risk_factors,
+                    mitigating_factors,
+                    recommendation,
+                    recommendation_rationale,
+                    confidence,
+                    confidence_rationale,
+                    playbooks_referenced,
+                    policies_referenced,
+                    error_message
+                ) VALUES (
+                    :investigation_id,
+                    :case_id,
+                    :agent_version,
+                    :investigated_at,
+                    :status,
+                    :transaction_count_30d,
+                    :amount_percentile,
+                    :merchant_seen_before,
+                    :rules_triggered,
+                    :feature_breakdown,
+                    :summary,
+                    :risk_factors,
+                    :mitigating_factors,
+                    :recommendation,
+                    :recommendation_rationale,
+                    :confidence,
+                    :confidence_rationale,
+                    :playbooks_referenced,
+                    :policies_referenced,
+                    :error_message
+                ) RETURNING id
+            """),
+            {
+                "investigation_id":        report.investigation_id,
+                "case_id":                 report.case_id,
+                "agent_version":           report.agent_version,
+                "investigated_at":         report.investigated_at.isoformat(),
+                "status":                  report.status.value,
+                "transaction_count_30d":   report.transaction_count_30d,
+                "amount_percentile":       report.amount_percentile,
+                "merchant_seen_before":    report.merchant_seen_before,
+                "rules_triggered":         json.dumps(report.rules_triggered),
+                "feature_breakdown":       json.dumps(report.feature_breakdown),
+                "summary":                 report.summary,
+                "risk_factors":            json.dumps(report.risk_factors),
+                "mitigating_factors":      json.dumps(report.mitigating_factors),
+                "recommendation":          report.recommendation.value if report.recommendation else None,
+                "recommendation_rationale": report.recommendation_rationale,
+                "confidence":              report.confidence.value if report.confidence else None,
+                "confidence_rationale":    report.confidence_rationale,
+                "playbooks_referenced":    json.dumps(report.playbooks_referenced),
+                "policies_referenced":     json.dumps(report.policies_referenced),
+                "error_message":           report.error_message,
+            },
+        ).fetchone()
+
+    return row[0]

@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install deps in an isolated layer so code changes don't bust the cache.
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --default-timeout=1000 --retries=10 -r requirements.txt
 
 
 # Runtime stage: copy application code
@@ -22,6 +22,9 @@ COPY src/ ./src/
 
 # Copy the trained model artifact — required at runtime by src/models/predict.py.
 COPY saved_models/ ./saved_models/
+
+# Copy fraud playbook knowledge base — required at runtime by the RAG retriever.
+COPY data/knowledge/ ./data/knowledge/
 
 # Copy remaining project files needed at runtime.
 # alembic/ and alembic.ini are included so migrations can be run inside the container.

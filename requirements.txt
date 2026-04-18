@@ -3,10 +3,11 @@ uvicorn
 pandas
 numpy
 scikit-learn
-xgboost
+xgboost==1.7.6
 sqlalchemy
 psycopg2-binary
 alembic
 python-dotenv
 joblib
 kafka-python
+anthropic==0.96.0

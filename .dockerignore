@@ -24,6 +24,8 @@ database/
 
 # Development and research files — not needed at runtime
 data/
+!data/knowledge/
+!data/knowledge/**
 logs/
 notebooks/
 reports/
