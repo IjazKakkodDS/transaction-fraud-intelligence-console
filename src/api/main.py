@@ -4,6 +4,9 @@ FastAPI application entry point for the Real-Time Fraud Triage System.
 
 import json
 import logging
+import os
+import urllib.error
+import urllib.request
 import uuid
 from datetime import datetime, timezone
 from typing import Literal
@@ -36,6 +39,12 @@ from src.triage.investigator import triage_decision
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
+# n8n webhook — Phase 4 workflow integration.
+# ---------------------------------------------------------------------------
+
+N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL", "")
+
+# ---------------------------------------------------------------------------
 # Investigation producer — singleton for cases.investigate topic.
 # Initialised lazily on first POST /cases/{id}/investigate call.
 # ---------------------------------------------------------------------------
@@ -53,7 +62,6 @@ def _get_investigate_producer() -> KafkaProducer | None:
     if _investigate_producer is not None:
         return _investigate_producer
 
-    import os
     bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "")
     if not bootstrap_servers:
         logger.warning(
@@ -328,3 +336,95 @@ def trigger_investigation(case_id: int):
             "case_id": case_id,
         },
     )
+
+
+@app.post("/workflow/notify-case/{case_id}")
+def notify_case_workflow(case_id: int):
+    """
+    Send a fraud case notification payload to the configured n8n webhook.
+
+    Fetches the prediction and latest investigation for the case, builds a
+    compact payload, and POSTs it to N8N_WEBHOOK_URL. Intended to be called
+    by an analyst or automated trigger after a case is scored or investigated.
+
+    Responses:
+      200 — payload sent successfully
+      404 — case_id not found in predictions table
+      502 — n8n webhook returned a non-2xx response
+      503 — N8N_WEBHOOK_URL is not configured
+    """
+    case = get_prediction_by_id(case_id)
+    if case is None:
+        raise HTTPException(status_code=404, detail=f"Case {case_id} not found.")
+
+    if not N8N_WEBHOOK_URL:
+        raise HTTPException(
+            status_code=503,
+            detail="N8N_WEBHOOK_URL is not configured. Set it in the environment to enable workflow notifications.",
+        )
+
+    investigation = get_latest_investigation(case_id) or {}
+
+    def _str(val) -> str:
+        return str(val) if val is not None else ""
+
+    payload = {
+        "case_id":              case_id,
+        "transaction_id":       _str(case.get("transaction_id")),
+        "amount":               _str(case.get("amount")),
+        "timestamp":            _str(case.get("timestamp")),
+        "risk_score":           _str(case.get("risk_score")),
+        "decision":             _str(case.get("decision")),
+        "reasons":              _str(case.get("reasons")),
+        "analyst_status":       _str(case.get("analyst_status")),
+        "investigation_status": _str(investigation.get("status")),
+        "recommendation":       _str(investigation.get("recommendation")),
+        "confidence":           _str(investigation.get("confidence")),
+        "summary":              _str(investigation.get("summary")),
+    }
+
+    body = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        N8N_WEBHOOK_URL,
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            status_code = resp.status
+    except urllib.error.HTTPError as exc:
+        logger.error(
+            "n8n webhook returned error | case_id=%d status=%d url=%s",
+            case_id,
+            exc.code,
+            N8N_WEBHOOK_URL,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail=f"n8n webhook returned HTTP {exc.code}.",
+        )
+    except (urllib.error.URLError, OSError) as exc:
+        logger.error(
+            "n8n webhook unreachable | case_id=%d error=%s url=%s",
+            case_id,
+            exc,
+            N8N_WEBHOOK_URL,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to reach n8n webhook: {exc}",
+        )
+
+    logger.info(
+        "Workflow notification sent | case_id=%d http_status=%d",
+        case_id,
+        status_code,
+    )
+
+    return {
+        "status": "sent",
+        "case_id": case_id,
+        "workflow_url": "configured",
+    }

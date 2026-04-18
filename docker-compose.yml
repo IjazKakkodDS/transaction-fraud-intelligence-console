@@ -175,6 +175,27 @@ services:
     restart: on-failure
 
   # ---------------------------------------------------------------------------
+  # n8n — workflow automation platform (Phase 4).
+  # Connects to the fraud triage API to trigger investigations and receive
+  # webhook callbacks. UI available at http://localhost:5678
+  # ---------------------------------------------------------------------------
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Asia/Kolkata
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      - api
+    restart: on-failure
+
+  # ---------------------------------------------------------------------------
   # Redpanda Console — browser UI for topic/message inspection.
   # Development only — gated behind the 'dev' profile so it never starts
   # automatically. Start with: docker compose --profile dev up
@@ -198,3 +219,4 @@ services:
 volumes:
   pgdata:
   redpanda_data:
+  n8n_data:

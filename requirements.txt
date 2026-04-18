@@ -10,4 +10,3 @@ alembic
 python-dotenv
 joblib
 kafka-python
-anthropic==0.96.0

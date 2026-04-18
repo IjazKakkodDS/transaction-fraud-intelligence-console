@@ -1,0 +1,149 @@
+{
+  "name": "Fraud Case Escalation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fraud-case",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "a1e3c5b7-d9f2-4e8a-bc34-f6780912de45",
+      "name": "Receive Fraud Case",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "e5a7c9d1-b4f6-8c0e-0123-456789abcdef"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.recommendation }}",
+              "operation": "equal",
+              "value2": "ESCALATE"
+            }
+          ]
+        }
+      },
+      "id": "b2d4f6a8-e1c3-5f7b-de56-012389abef67",
+      "name": "Check Escalation Recommendation",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "aa11bb22-cc33-dd44-ee55-ff6677889900",
+              "name": "escalation_title",
+              "value": "=Fraud Escalation Required - Case {{ $json.body.case_id }}",
+              "type": "string"
+            },
+            {
+              "id": "bb22cc33-dd44-ee55-ff66-778899001122",
+              "name": "escalation_message",
+              "value": "=Case {{ $json.body.case_id }} requires escalation. Decision: {{ $json.body.decision }}. Recommendation: {{ $json.body.recommendation }}. Confidence: {{ $json.body.confidence }}. Summary: {{ $json.body.summary }}",
+              "type": "string"
+            },
+            {
+              "id": "cc33dd44-ee55-ff66-7788-990011223344",
+              "name": "escalation_priority",
+              "value": "HIGH",
+              "type": "string"
+            },
+            {
+              "id": "dd44ee55-ff66-7788-9900-112233445566",
+              "name": "workflow_action",
+              "value": "ESCALATE_TO_FRAUD_OPS",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c3e5a7b9-f2d4-6a8c-ef78-1234abcd5678",
+      "name": "Build Escalation Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [760, 180]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ee55ff66-7788-9900-1122-334455667788",
+              "name": "workflow_action",
+              "value": "NO_ESCALATION_REQUIRED",
+              "type": "string"
+            },
+            {
+              "id": "ff667788-9900-1122-3344-556677889900",
+              "name": "case_id",
+              "value": "={{ $json.body.case_id }}",
+              "type": "string"
+            },
+            {
+              "id": "00778899-0011-2233-4455-667788990011",
+              "name": "recommendation",
+              "value": "={{ $json.body.recommendation }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d4f6b8c0-a3e5-7b9d-f012-3456efab7890",
+      "name": "Build No Escalation Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [760, 420]
+    }
+  ],
+  "connections": {
+    "Receive Fraud Case": {
+      "main": [
+        [
+          {
+            "node": "Check Escalation Recommendation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Escalation Recommendation": {
+      "main": [
+        [
+          {
+            "node": "Build Escalation Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build No Escalation Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f6b8d0e2-c5a7-9d1f-1234-56789abcdef0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "local"
+  },
+  "id": "c8f4a2b1-3d7e-4f9a-8c12-e5d6b3a7f201",
+  "tags": []
+}
