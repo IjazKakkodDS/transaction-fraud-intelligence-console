@@ -60,6 +60,36 @@
               "name": "workflow_action",
               "value": "ESCALATE_TO_FRAUD_OPS",
               "type": "string"
+            },
+            {
+              "id": "ee11ff22-aa33-bb44-cc55-dd6677889900",
+              "name": "case_id",
+              "value": "={{ $json.body.case_id }}",
+              "type": "number"
+            },
+            {
+              "id": "ff22aa33-bb44-cc55-dd66-ee7788990011",
+              "name": "decision",
+              "value": "={{ $json.body.decision }}",
+              "type": "string"
+            },
+            {
+              "id": "aa33bb44-cc55-dd66-ee77-ff8899001122",
+              "name": "recommendation",
+              "value": "={{ $json.body.recommendation }}",
+              "type": "string"
+            },
+            {
+              "id": "bb44cc55-dd66-ee77-ff88-aa9900112233",
+              "name": "confidence",
+              "value": "={{ $json.body.confidence }}",
+              "type": "string"
+            },
+            {
+              "id": "cc55dd66-ee77-ff88-aa99-bb0011223344",
+              "name": "summary",
+              "value": "={{ $json.body.summary }}",
+              "type": "string"
             }
           ]
         },
@@ -102,6 +132,61 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [760, 420]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://api:8000/workflow/audit-event",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "case_id",
+              "value": "={{ $json.case_id }}"
+            },
+            {
+              "name": "workflow_name",
+              "value": "Fraud Case Escalation Workflow"
+            },
+            {
+              "name": "workflow_action",
+              "value": "={{ $json.workflow_action }}"
+            },
+            {
+              "name": "status",
+              "value": "SUCCESS"
+            },
+            {
+              "name": "escalation_priority",
+              "value": "={{ $json.escalation_priority }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.escalation_message }}"
+            },
+            {
+              "name": "payload",
+              "value": "={\"escalation_title\": \"{{ $json.escalation_title }}\", \"escalation_message\": \"{{ $json.escalation_message }}\", \"decision\": \"{{ $json.decision }}\", \"recommendation\": \"{{ $json.recommendation }}\", \"confidence\": \"{{ $json.confidence }}\"}"
+            },
+            {
+              "name": "source",
+              "value": "n8n"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "e6a8c0d2-f3b5-7d9e-0124-578901bcde23",
+      "name": "Audit Escalation Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1020, 180]
     }
   ],
   "connections": {
@@ -133,13 +218,24 @@
           }
         ]
       ]
+    },
+    "Build Escalation Payload": {
+      "main": [
+        [
+          {
+            "node": "Audit Escalation Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "f6b8d0e2-c5a7-9d1f-1234-56789abcdef0",
+  "versionId": "a2c4e6f8-b1d3-5e7a-9c0b-d2f4a6b8c0d2",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "local"

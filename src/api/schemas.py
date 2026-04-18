@@ -24,3 +24,14 @@ transaction_example = {
 class ReviewCaseRequest(BaseModel):
     analyst_status: Literal["CONFIRMED_FRAUD", "FALSE_POSITIVE", "APPROVED"]
     analyst_notes: str | None = None
+
+
+class WorkflowAuditEventRequest(BaseModel):
+    case_id: int
+    workflow_name: str
+    workflow_action: str
+    status: str = "SUCCESS"
+    escalation_priority: str | None = None
+    message: str | None = None
+    payload: dict | str | None = None
+    source: str = "n8n"

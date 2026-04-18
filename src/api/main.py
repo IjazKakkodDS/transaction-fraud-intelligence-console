@@ -18,14 +18,16 @@ from kafka import KafkaProducer
 from kafka.errors import KafkaError
 from pydantic import ValidationError
 
-from src.api.schemas import ReviewCaseRequest
+from src.api.schemas import ReviewCaseRequest, WorkflowAuditEventRequest
 from src.db.postgres_logger import (
     get_latest_investigation,
     get_prediction_by_id,
     get_prediction_by_transaction_id,
     get_review_queue_filtered,
     get_stats,
+    get_workflow_events,
     log_prediction,
+    log_workflow_event,
     update_review,
 )
 from src.config.config import HIGH_AMOUNT_THRESHOLD, SYNC_SCORING_ENABLED
@@ -336,6 +338,68 @@ def trigger_investigation(case_id: int):
             "case_id": case_id,
         },
     )
+
+
+@app.post("/workflow/audit-event")
+def create_workflow_audit_event(body: WorkflowAuditEventRequest):
+    """
+    Persist a workflow automation event into the workflow_events audit table.
+
+    Called by n8n (or any automation layer) after performing an action so that
+    every automated decision is traceable in Postgres. Validates that the
+    referenced case exists before writing.
+
+    Responses:
+      200 — event logged successfully
+      404 — case_id not found in predictions table
+    """
+    case = get_prediction_by_id(body.case_id)
+    if case is None:
+        raise HTTPException(status_code=404, detail=f"Case {body.case_id} not found.")
+
+    payload = body.payload
+    if isinstance(payload, str):
+        try:
+            parsed = json.loads(payload)
+            payload = parsed if isinstance(parsed, dict) else {"raw": payload}
+        except (json.JSONDecodeError, ValueError):
+            payload = {"raw": payload}
+
+    record = log_workflow_event({
+        "case_id":             body.case_id,
+        "workflow_name":       body.workflow_name,
+        "workflow_action":     body.workflow_action,
+        "status":              body.status,
+        "escalation_priority": body.escalation_priority,
+        "message":             body.message,
+        "payload":             payload,
+        "source":              body.source,
+    })
+
+    logger.info(
+        "Workflow audit event logged | case_id=%d action=%s event_id=%s",
+        body.case_id,
+        body.workflow_action,
+        record.get("id"),
+    )
+
+    return {
+        "status": "logged",
+        "case_id": body.case_id,
+        "workflow_action": body.workflow_action,
+        "event_id": record.get("id"),
+    }
+
+
+@app.get("/workflow/events")
+def list_workflow_events(case_id: int | None = None):
+    """
+    Return workflow audit events, newest first.
+
+    If case_id is provided, returns only events for that case.
+    Otherwise returns the 100 most recent events across all cases.
+    """
+    return get_workflow_events(case_id)
 
 
 @app.post("/workflow/notify-case/{case_id}")

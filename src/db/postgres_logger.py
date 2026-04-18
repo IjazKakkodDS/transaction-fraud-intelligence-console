@@ -361,3 +361,100 @@ def log_investigation(report) -> int:
         ).fetchone()
 
     return row[0]
+
+
+# ---------------------------------------------------------------------------
+# Public interface — workflow events
+#
+# The workflow_events table schema is managed via Alembic migration 0004.
+# Raw SQL is used here so no additional SQLAlchemy Table definition is needed.
+# ---------------------------------------------------------------------------
+
+def log_workflow_event(event: dict) -> dict:
+    """
+    Insert a workflow audit event and return the inserted row as a dict.
+
+    Expected keys: case_id, workflow_name, workflow_action, status,
+                   escalation_priority, message, payload, source.
+    The payload value (if provided) must be a JSON-serialisable dict;
+    it is stored as a TEXT column containing the JSON string.
+    """
+    with engine.begin() as conn:
+        row = conn.execute(
+            text("""
+                INSERT INTO workflow_events (
+                    case_id,
+                    workflow_name,
+                    workflow_action,
+                    status,
+                    escalation_priority,
+                    message,
+                    payload,
+                    source
+                ) VALUES (
+                    :case_id,
+                    :workflow_name,
+                    :workflow_action,
+                    :status,
+                    :escalation_priority,
+                    :message,
+                    :payload,
+                    :source
+                ) RETURNING id, case_id, workflow_name, workflow_action,
+                            status, escalation_priority, message, payload,
+                            source, created_at
+            """),
+            {
+                "case_id":             event.get("case_id"),
+                "workflow_name":       event.get("workflow_name"),
+                "workflow_action":     event.get("workflow_action"),
+                "status":              event.get("status", "SUCCESS"),
+                "escalation_priority": event.get("escalation_priority"),
+                "message":             event.get("message"),
+                "payload":             json.dumps(event["payload"]) if event.get("payload") else None,
+                "source":              event.get("source", "n8n"),
+            },
+        ).fetchone()
+
+    result = dict(row._mapping)
+    if result.get("created_at") is not None:
+        result["created_at"] = result["created_at"].isoformat()
+    return result
+
+
+def get_workflow_events(case_id: int | None = None) -> list[dict]:
+    """
+    Return workflow audit events, ordered newest first.
+
+    If case_id is provided, filters to events for that case only.
+    Otherwise returns the 100 most recent events across all cases.
+    """
+    if case_id is not None:
+        sql = text(
+            "SELECT id, case_id, workflow_name, workflow_action, status, "
+            "escalation_priority, message, payload, source, created_at "
+            "FROM workflow_events "
+            "WHERE case_id = :case_id "
+            "ORDER BY id DESC"
+        )
+        params: dict = {"case_id": case_id}
+    else:
+        sql = text(
+            "SELECT id, case_id, workflow_name, workflow_action, status, "
+            "escalation_priority, message, payload, source, created_at "
+            "FROM workflow_events "
+            "ORDER BY id DESC "
+            "LIMIT 100"
+        )
+        params = {}
+
+    with engine.connect() as conn:
+        rows = conn.execute(sql, params).mappings().all()
+
+    result = []
+    for row in rows:
+        record = dict(row)
+        if record.get("created_at") is not None:
+            record["created_at"] = record["created_at"].isoformat()
+        result.append(record)
+    return result
