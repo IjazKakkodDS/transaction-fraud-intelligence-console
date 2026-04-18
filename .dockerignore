@@ -1,0 +1,54 @@
+# Version control
+.git/
+.gitignore
+
+# Python bytecache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment secrets — never bake into an image
+.env
+# .env.example is intentionally NOT excluded (it contains no secrets)
+
+# SQLite database — Postgres is used inside Docker
+database/
+
+# Development and research files — not needed at runtime
+data/
+logs/
+notebooks/
+reports/
+
+# Test artefacts
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation
+docs/
+README.md
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ML experiment tracking
+mlruns/
+
+# Node (not present yet, added for future frontend work)
+node_modules/

@@ -1,0 +1,146 @@
+# =============================================================================
+# Python
+# =============================================================================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.so
+*.spec
+
+# =============================================================================
+# Virtual environments
+# =============================================================================
+venv/
+.venv/
+env/
+ENV/
+.env.bak
+
+# =============================================================================
+# Environment variables
+# Never commit secrets or environment-specific configuration.
+# .env.example is explicitly allowed — it contains no real credentials.
+# =============================================================================
+.env
+.env.*
+!.env.example
+
+# =============================================================================
+# Logs
+# =============================================================================
+logs/
+*.log
+*.log.*
+
+# =============================================================================
+# Data directories
+# Raw, processed, and synthetic data files are excluded — often large and
+# environment-specific. Directory structure is preserved via .gitkeep files.
+# =============================================================================
+data/raw/*
+data/processed/*
+data/synthetic/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/synthetic/.gitkeep
+
+# =============================================================================
+# Database files
+# SQLite files used for local development without Docker.
+# =============================================================================
+database/
+*.db
+*.sqlite3
+
+# =============================================================================
+# Saved models
+# Trained model artifacts are excluded by default — serialised model files
+# (e.g. .pkl, .joblib, .pt, .h5) can be hundreds of MB and belong in a model
+# registry (MLflow, S3, DVC) rather than version control.
+# To track small reference models (< 5 MB), comment out the lines below and
+# commit them explicitly.
+# =============================================================================
+saved_models/*
+!saved_models/.gitkeep
+
+# =============================================================================
+# Reports and figures
+# Generated outputs — recreatable from source data and notebooks.
+# =============================================================================
+reports/figures/*
+!reports/figures/.gitkeep
+
+# =============================================================================
+# Jupyter notebooks
+# Notebook outputs and checkpoints contain embedded data and are excluded.
+# The notebook files themselves (.ipynb) are also excluded — use scripts/
+# for reproducible analysis. Adjust if notebooks are part of the project.
+# =============================================================================
+notebooks/
+.ipynb_checkpoints/
+
+# =============================================================================
+# Testing and coverage
+# =============================================================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.coveragerc
+
+# =============================================================================
+# Alembic
+# Migration scripts in alembic/versions/ are tracked — they are source code.
+# Only the compiled bytecode cache is excluded.
+# =============================================================================
+alembic/__pycache__/
+alembic/versions/__pycache__/
+
+# =============================================================================
+# Docker
+# Named volume data is written to the host filesystem when using bind mounts
+# or explicit volume paths. Exclude any local volume directories if present.
+# Docker Compose override files with local overrides are also excluded.
+# =============================================================================
+docker-compose.override.yml
+.docker/
+
+# =============================================================================
+# Kafka / Redpanda
+# Local broker data directories if Redpanda is run outside Docker with a
+# local data path (e.g. --data-dir ./redpanda-data).
+# =============================================================================
+redpanda-data/
+kafka-data/
+
+# =============================================================================
+# IDE and OS
+# =============================================================================
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =============================================================================
+# ML experiment tracking
+# =============================================================================
+mlruns/
+.mlflow/
+
+# =============================================================================
+# Miscellaneous
+# =============================================================================
+*.bak
+*.swp
+*.swo
+*.tmp
+.cache/

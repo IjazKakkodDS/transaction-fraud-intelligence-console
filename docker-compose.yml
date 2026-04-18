@@ -1,0 +1,171 @@
+# AI Fraud Intelligence Console — local development stack
+#
+# Prerequisites:
+#   cp .env.example .env
+#   Update DATABASE_URL in .env to use the postgres service name:
+#     DATABASE_URL=postgresql://fraud_user:fraud_pass@postgres:5432/fraud_db
+#
+# Usage:
+#   docker compose up --build                      # start full stack (api, scoring-consumer, postgres, redis, redpanda)
+#   docker compose --profile dev up --build        # also start redpanda-console (browser UI)
+#   docker compose down                            # stop and remove containers
+#   docker compose down -v                         # also remove all named volumes
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # API — FastAPI fraud triage application
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    # Mount alembic for running migrations inside the container without rebuild:
+    #   docker compose run --rm api alembic upgrade head
+    volumes:
+      - ./alembic:/app/alembic:ro
+      - ./alembic.ini:/app/alembic.ini:ro
+
+  # ---------------------------------------------------------------------------
+  # Postgres — primary data store
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: fraud_db
+      POSTGRES_USER: fraud_user
+      POSTGRES_PASSWORD: fraud_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persist data across container restarts.
+      - pgdata:/var/lib/postgresql/data
+      # Bootstrap script — creates the predictions table on first start.
+      # Only runs when the data volume is empty (fresh Postgres instance).
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    healthcheck:
+      # $$VAR resolves the env var inside the container, not in the compose file.
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Redis — cache layer (used from Phase 2 onward)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: on-failure
+
+  # ---------------------------------------------------------------------------
+  # Redpanda — Kafka-compatible event broker (single-node, local dev)
+  # Phase 2: event backbone for async transaction ingestion and scoring.
+  # Internal broker address (redpanda:29092) is used by services inside the
+  # Compose network. External address (localhost:9092) is for host-machine
+  # tools (rpk, kcat, integration tests run outside Docker).
+  # ---------------------------------------------------------------------------
+  redpanda:
+    image: redpandadata/redpanda:v24.1.1
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --memory=512M
+      - --reserve-memory=0M
+      - --overprovisioned
+      - --node-id=0
+      - --kafka-addr=PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+      - --pandaproxy-addr=0.0.0.0:8082
+      - --advertise-pandaproxy-addr=localhost:8082
+    ports:
+      - "9092:9092"    # external Kafka API (host tools)
+      - "8082:8082"    # Pandaproxy HTTP API (optional, useful for debugging)
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: on-failure
+
+  # ---------------------------------------------------------------------------
+  # Redpanda topic bootstrap — runs once to create required Phase 2 topics.
+  # Exits after topic creation; does not stay running.
+  # Uses "|| true" on each create so re-running the stack after topics already
+  # exist returns exit code 0 — required for "service_completed_successfully"
+  # dependency used by scoring-consumer.
+  # ---------------------------------------------------------------------------
+  redpanda-init:
+    image: redpandadata/redpanda:v24.1.1
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        rpk topic create transactions.raw      --brokers redpanda:29092 --partitions 3 --replicas 1 || true &&
+        rpk topic create transactions.scored   --brokers redpanda:29092 --partitions 3 --replicas 1 || true &&
+        rpk topic create cases.created         --brokers redpanda:29092 --partitions 1 --replicas 1 || true &&
+        echo "Topic bootstrap complete."
+    restart: "no"
+
+  # ---------------------------------------------------------------------------
+  # Scoring consumer — reads transactions.raw, runs fraud scoring pipeline,
+  # writes to Postgres, publishes to transactions.scored and cases.created.
+  # Reuses the same image as the API — no separate Dockerfile needed.
+  # Starts only after Redpanda is healthy and topics have been created.
+  # ---------------------------------------------------------------------------
+  scoring-consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "src.events.consumer_scoring"]
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+      redpanda-init:
+        condition: service_completed_successfully
+    restart: on-failure
+
+  # ---------------------------------------------------------------------------
+  # Redpanda Console — browser UI for topic/message inspection.
+  # Development only — gated behind the 'dev' profile so it never starts
+  # automatically. Start with: docker compose --profile dev up
+  # ---------------------------------------------------------------------------
+  redpanda-console:
+    image: redpandadata/console:v2.4.3
+    profiles:
+      - dev
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_BROKERS: redpanda:29092
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    restart: on-failure
+
+# ---------------------------------------------------------------------------
+# Named volumes
+# ---------------------------------------------------------------------------
+volumes:
+  pgdata:
+  redpanda_data:
