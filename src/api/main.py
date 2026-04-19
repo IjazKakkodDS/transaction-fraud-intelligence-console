@@ -93,6 +93,42 @@ def _get_investigate_producer() -> KafkaProducer | None:
     return _investigate_producer
 
 
+# ---------------------------------------------------------------------------
+# Workflow dispatch failure helper — Phase 4.9A.
+# Writes a WORKFLOW_DISPATCH_FAILED audit row whenever POST /workflow/notify-case
+# cannot reach n8n. Never raises; failures are logged and swallowed so the
+# caller can still return its intended HTTP error to the client.
+# ---------------------------------------------------------------------------
+
+def _log_workflow_dispatch_failure(
+    case_id: int,
+    reason: str,
+    error_message: str,
+    payload: dict | None = None,
+) -> None:
+    try:
+        log_workflow_event({
+            "case_id":             case_id,
+            "workflow_name":       "Fraud Case Escalation Workflow",
+            "workflow_action":     "WORKFLOW_DISPATCH_FAILED",
+            "status":              "FAILED",
+            "escalation_priority": "HIGH",
+            "message":             reason,
+            "payload": {
+                "error_message":    error_message,
+                "dispatch_payload": payload,
+            },
+            "source": "fastapi",
+        })
+    except Exception as exc:
+        logger.error(
+            "Failed to log workflow dispatch failure | case_id=%d reason=%s error=%s",
+            case_id,
+            reason,
+            exc,
+        )
+
+
 app = FastAPI(
     title="Real-Time Fraud Triage System",
     version="0.1.0",
@@ -480,6 +516,11 @@ def notify_case_workflow(case_id: int):
         raise HTTPException(status_code=404, detail=f"Case {case_id} not found.")
 
     if not N8N_WEBHOOK_URL:
+        _log_workflow_dispatch_failure(
+            case_id=case_id,
+            reason="N8N_WEBHOOK_URL is not configured",
+            error_message="N8N_WEBHOOK_URL environment variable is empty or unset.",
+        )
         raise HTTPException(
             status_code=503,
             detail="N8N_WEBHOOK_URL is not configured. Set it in the environment to enable workflow notifications.",
@@ -523,6 +564,12 @@ def notify_case_workflow(case_id: int):
             exc.code,
             N8N_WEBHOOK_URL,
         )
+        _log_workflow_dispatch_failure(
+            case_id=case_id,
+            reason="n8n webhook returned non-2xx response",
+            error_message=f"HTTP {exc.code} from {N8N_WEBHOOK_URL}",
+            payload=payload,
+        )
         raise HTTPException(
             status_code=502,
             detail=f"n8n webhook returned HTTP {exc.code}.",
@@ -533,6 +580,12 @@ def notify_case_workflow(case_id: int):
             case_id,
             exc,
             N8N_WEBHOOK_URL,
+        )
+        _log_workflow_dispatch_failure(
+            case_id=case_id,
+            reason="n8n webhook unreachable",
+            error_message=f"{exc} — url={N8N_WEBHOOK_URL}",
+            payload=payload,
         )
         raise HTTPException(
             status_code=502,
