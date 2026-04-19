@@ -28,6 +28,7 @@ from src.db.postgres_logger import (
     get_stale_cases,
     get_stats,
     get_workflow_events,
+    get_workflow_metrics,
     log_prediction,
     log_workflow_event,
     update_review,
@@ -406,6 +407,18 @@ def list_workflow_events(case_id: int | None = None):
     Otherwise returns the 100 most recent events across all cases.
     """
     return get_workflow_events(case_id)
+
+
+@app.get("/workflow/metrics")
+def workflow_metrics():
+    """
+    Return observability metrics for the workflow automation layer.
+
+    Covers total event counts broken down by status, source, and action,
+    plus named counters for each known workflow action type. Intended for
+    frontend monitoring dashboards and health checks.
+    """
+    return get_workflow_metrics()
 
 
 @app.get("/workflow/daily-summary")

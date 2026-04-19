@@ -515,6 +515,81 @@ def get_daily_fraud_summary() -> dict:
     }
 
 
+def get_workflow_metrics() -> dict:
+    """
+    Return observability metrics for the workflow automation layer.
+
+    Queries workflow_events only. Top-level scalars use COALESCE so they
+    return 0 rather than NULL on an empty table. Breakdown queries each
+    return a list of {key, count} rows for flexible frontend rendering.
+    """
+    from datetime import datetime, timezone
+
+    with engine.connect() as conn:
+        scalars = conn.execute(text("""
+            SELECT
+                COALESCE(COUNT(*), 0)                                                              AS total_workflow_events,
+                COALESCE(SUM(CASE WHEN status = 'SUCCESS'               THEN 1 ELSE 0 END), 0)    AS total_success_events,
+                COALESCE(SUM(CASE WHEN status = 'FAILED'                THEN 1 ELSE 0 END), 0)    AS total_failed_events,
+                COALESCE(SUM(CASE WHEN source = 'n8n'                   THEN 1 ELSE 0 END), 0)    AS total_n8n_events,
+                COALESCE(SUM(CASE WHEN source = 'manual'                THEN 1 ELSE 0 END), 0)    AS total_manual_events,
+                COALESCE(SUM(CASE WHEN case_id IS NOT NULL              THEN 1 ELSE 0 END), 0)    AS total_case_specific_events,
+                COALESCE(SUM(CASE WHEN case_id IS NULL                  THEN 1 ELSE 0 END), 0)    AS total_global_events,
+                COALESCE(SUM(CASE WHEN workflow_action = 'ESCALATE_TO_FRAUD_OPS'
+                                                                        THEN 1 ELSE 0 END), 0)    AS total_escalation_events,
+                COALESCE(SUM(CASE WHEN workflow_action = 'STALE_CASE_REMINDER'
+                                                                        THEN 1 ELSE 0 END), 0)    AS total_stale_reminders,
+                COALESCE(SUM(CASE WHEN workflow_action = 'DAILY_FRAUD_OPS_SUMMARY'
+                                                                        THEN 1 ELSE 0 END), 0)    AS total_daily_summaries,
+                COALESCE(SUM(CASE WHEN workflow_action = 'WORKFLOW_DISPATCH_FAILED'
+                                                                        THEN 1 ELSE 0 END), 0)    AS total_dispatch_failures,
+                MAX(created_at)                                                                    AS latest_workflow_event_at
+            FROM workflow_events
+        """)).mappings().first()
+
+        by_action = conn.execute(text("""
+            SELECT workflow_action, COUNT(*) AS count
+            FROM workflow_events
+            GROUP BY workflow_action
+            ORDER BY count DESC
+        """)).mappings().all()
+
+        by_source = conn.execute(text("""
+            SELECT source, COUNT(*) AS count
+            FROM workflow_events
+            GROUP BY source
+            ORDER BY count DESC
+        """)).mappings().all()
+
+        by_status = conn.execute(text("""
+            SELECT status, COUNT(*) AS count
+            FROM workflow_events
+            GROUP BY status
+            ORDER BY count DESC
+        """)).mappings().all()
+
+    latest_at = scalars["latest_workflow_event_at"]
+
+    return {
+        "generated_at":                 datetime.now(timezone.utc).isoformat(),
+        "total_workflow_events":        int(scalars["total_workflow_events"]),
+        "total_success_events":         int(scalars["total_success_events"]),
+        "total_failed_events":          int(scalars["total_failed_events"]),
+        "total_n8n_events":             int(scalars["total_n8n_events"]),
+        "total_manual_events":          int(scalars["total_manual_events"]),
+        "total_case_specific_events":   int(scalars["total_case_specific_events"]),
+        "total_global_events":          int(scalars["total_global_events"]),
+        "total_escalation_events":      int(scalars["total_escalation_events"]),
+        "total_stale_reminders":        int(scalars["total_stale_reminders"]),
+        "total_daily_summaries":        int(scalars["total_daily_summaries"]),
+        "total_dispatch_failures":      int(scalars["total_dispatch_failures"]),
+        "latest_workflow_event_at":     latest_at.isoformat() if latest_at is not None else None,
+        "events_by_workflow_action":    [{"workflow_action": r["workflow_action"], "count": int(r["count"])} for r in by_action],
+        "events_by_source":             [{"source": r["source"], "count": int(r["count"])} for r in by_source],
+        "events_by_status":             [{"status": r["status"], "count": int(r["count"])} for r in by_status],
+    }
+
+
 def get_workflow_events(case_id: int | None = None) -> list[dict]:
     """
     Return workflow audit events, ordered newest first.
