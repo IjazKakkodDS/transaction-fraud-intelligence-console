@@ -1,0 +1,188 @@
+{
+  "name": "Daily Fraud Ops Summary Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "aa112233-4455-6677-8899-aabbccddeeff",
+      "name": "Manual Daily Summary Run",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://api:8000/workflow/daily-summary",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "bb223344-5566-7788-99aa-bbccddeeff00",
+      "name": "Fetch Daily Fraud Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cc001122-3344-5566-7788-99aabbccddee",
+              "name": "workflow_name",
+              "value": "Daily Fraud Ops Summary Workflow",
+              "type": "string"
+            },
+            {
+              "id": "dd112233-4455-6677-8899-aabbccddeeff",
+              "name": "workflow_action",
+              "value": "DAILY_FRAUD_OPS_SUMMARY",
+              "type": "string"
+            },
+            {
+              "id": "ee223344-5566-7788-99aa-bbccddeeff00",
+              "name": "status",
+              "value": "SUCCESS",
+              "type": "string"
+            },
+            {
+              "id": "ff334455-6677-8899-aabb-ccddeeff0011",
+              "name": "escalation_priority",
+              "value": "LOW",
+              "type": "string"
+            },
+            {
+              "id": "aa445566-7788-99aa-bbcc-ddeeff001122",
+              "name": "case_id",
+              "value": null,
+              "type": "null"
+            },
+            {
+              "id": "bb556677-8899-aabb-ccdd-eeff00112233",
+              "name": "message",
+              "value": "=Daily fraud ops summary generated. Total cases: {{ $json.total_cases }}, BLOCK: {{ $json.total_block }}, REVIEW: {{ $json.total_review }}, APPROVE: {{ $json.total_approve }}, unreviewed: {{ $json.unreviewed_cases }}, workflow events: {{ $json.total_workflow_events }}.",
+              "type": "string"
+            },
+            {
+              "id": "cc667788-99aa-bbcc-ddee-ff0011223344",
+              "name": "summary",
+              "value": "={{ $json }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "dd778899-aabb-ccdd-eeff-001122334455",
+      "name": "Build Daily Summary Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://api:8000/workflow/audit-event",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "case_id",
+              "value": "={{ $json.case_id }}"
+            },
+            {
+              "name": "workflow_name",
+              "value": "={{ $json.workflow_name }}"
+            },
+            {
+              "name": "workflow_action",
+              "value": "={{ $json.workflow_action }}"
+            },
+            {
+              "name": "status",
+              "value": "={{ $json.status }}"
+            },
+            {
+              "name": "escalation_priority",
+              "value": "={{ $json.escalation_priority }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "payload",
+              "value": "={{ JSON.stringify($json.summary) }}"
+            },
+            {
+              "name": "source",
+              "value": "n8n"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "ee889900-bbcc-ddee-ff00-112233445566",
+      "name": "Audit Daily Summary Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Manual Daily Summary Run": {
+      "main": [
+        [
+          {
+            "node": "Fetch Daily Fraud Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Daily Fraud Summary": {
+      "main": [
+        [
+          {
+            "node": "Build Daily Summary Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Daily Summary Payload": {
+      "main": [
+        [
+          {
+            "node": "Audit Daily Summary Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ff990011-ccdd-eeff-0011-223344556677",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "local"
+  },
+  "id": "aabb0011-ccdd-eeff-0011-223344556677",
+  "tags": []
+}

@@ -457,6 +457,64 @@ def get_stale_cases(minutes: int = 120) -> list[dict]:
     return [dict(row) for row in rows]
 
 
+def get_daily_fraud_summary() -> dict:
+    """
+    Return an operational summary covering all-time case volume, decision
+    distribution, analyst review status, and workflow automation events.
+
+    All counts use COALESCE so they return 0 rather than NULL when no rows
+    match. Both tables are queried in a single connection to avoid partial reads.
+    """
+    from datetime import datetime, timezone
+
+    with engine.connect() as conn:
+        pred = conn.execute(text("""
+            SELECT
+                COALESCE(COUNT(*), 0)                                                    AS total_cases,
+                COALESCE(SUM(CASE WHEN decision = 'REVIEW'  THEN 1 ELSE 0 END), 0)      AS total_review,
+                COALESCE(SUM(CASE WHEN decision = 'BLOCK'   THEN 1 ELSE 0 END), 0)      AS total_block,
+                COALESCE(SUM(CASE WHEN decision = 'APPROVE' THEN 1 ELSE 0 END), 0)      AS total_approve,
+                COALESCE(SUM(CASE WHEN analyst_status IS NULL
+                                    OR analyst_status = ''  THEN 1 ELSE 0 END), 0)      AS unreviewed_cases,
+                COALESCE(SUM(CASE WHEN analyst_status = 'CONFIRMED_FRAUD'
+                                                            THEN 1 ELSE 0 END), 0)      AS confirmed_fraud,
+                COALESCE(SUM(CASE WHEN analyst_status = 'FALSE_POSITIVE'
+                                                            THEN 1 ELSE 0 END), 0)      AS false_positive,
+                ROUND(CAST(AVG(risk_score) AS NUMERIC), 4)                               AS average_risk_score
+            FROM predictions
+        """)).mappings().first()
+
+        wf = conn.execute(text("""
+            SELECT
+                COALESCE(COUNT(*), 0)                                                         AS total_workflow_events,
+                COALESCE(SUM(CASE WHEN workflow_action = 'ESCALATE_TO_FRAUD_OPS'
+                                  THEN 1 ELSE 0 END), 0)                                      AS total_escalation_events,
+                COALESCE(SUM(CASE WHEN workflow_action = 'STALE_CASE_REMINDER'
+                                  THEN 1 ELSE 0 END), 0)                                      AS total_stale_reminders,
+                MAX(created_at)                                                                AS latest_workflow_event_at
+            FROM workflow_events
+        """)).mappings().first()
+
+    latest_wf_at = wf["latest_workflow_event_at"]
+
+    return {
+        "window":                    "all_time_local_demo",
+        "generated_at":              datetime.now(timezone.utc).isoformat(),
+        "total_cases":               int(pred["total_cases"]),
+        "total_review":              int(pred["total_review"]),
+        "total_block":               int(pred["total_block"]),
+        "total_approve":             int(pred["total_approve"]),
+        "unreviewed_cases":          int(pred["unreviewed_cases"]),
+        "confirmed_fraud":           int(pred["confirmed_fraud"]),
+        "false_positive":            int(pred["false_positive"]),
+        "average_risk_score":        float(pred["average_risk_score"]) if pred["average_risk_score"] is not None else 0.0,
+        "total_workflow_events":     int(wf["total_workflow_events"]),
+        "total_escalation_events":   int(wf["total_escalation_events"]),
+        "total_stale_reminders":     int(wf["total_stale_reminders"]),
+        "latest_workflow_event_at":  latest_wf_at.isoformat() if latest_wf_at is not None else None,
+    }
+
+
 def get_workflow_events(case_id: int | None = None) -> list[dict]:
     """
     Return workflow audit events, ordered newest first.

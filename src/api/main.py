@@ -20,6 +20,7 @@ from pydantic import ValidationError
 
 from src.api.schemas import ReviewCaseRequest, WorkflowAuditEventRequest
 from src.db.postgres_logger import (
+    get_daily_fraud_summary,
     get_latest_investigation,
     get_prediction_by_id,
     get_prediction_by_transaction_id,
@@ -347,16 +348,20 @@ def create_workflow_audit_event(body: WorkflowAuditEventRequest):
     Persist a workflow automation event into the workflow_events audit table.
 
     Called by n8n (or any automation layer) after performing an action so that
-    every automated decision is traceable in Postgres. Validates that the
-    referenced case exists before writing.
+    every automated decision is traceable in Postgres.
+
+    If case_id is provided, validates that it exists in the predictions table.
+    If case_id is None, the event is treated as a global workflow event (e.g.
+    a daily summary) and no case validation is performed.
 
     Responses:
       200 — event logged successfully
-      404 — case_id not found in predictions table
+      404 — case_id provided but not found in predictions table
     """
-    case = get_prediction_by_id(body.case_id)
-    if case is None:
-        raise HTTPException(status_code=404, detail=f"Case {body.case_id} not found.")
+    if body.case_id is not None:
+        case = get_prediction_by_id(body.case_id)
+        if case is None:
+            raise HTTPException(status_code=404, detail=f"Case {body.case_id} not found.")
 
     payload = body.payload
     if isinstance(payload, str):
@@ -378,7 +383,7 @@ def create_workflow_audit_event(body: WorkflowAuditEventRequest):
     })
 
     logger.info(
-        "Workflow audit event logged | case_id=%d action=%s event_id=%s",
+        "Workflow audit event logged | case_id=%s action=%s event_id=%s",
         body.case_id,
         body.workflow_action,
         record.get("id"),
@@ -401,6 +406,18 @@ def list_workflow_events(case_id: int | None = None):
     Otherwise returns the 100 most recent events across all cases.
     """
     return get_workflow_events(case_id)
+
+
+@app.get("/workflow/daily-summary")
+def daily_fraud_summary():
+    """
+    Return an all-time operational summary for fraud operations managers.
+
+    Covers case volume, decision distribution, analyst review status, and
+    workflow automation event counts. Intended as the data source for scheduled
+    n8n daily summary workflows.
+    """
+    return get_daily_fraud_summary()
 
 
 @app.get("/workflow/stale-cases")

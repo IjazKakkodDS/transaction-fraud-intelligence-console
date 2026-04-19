@@ -27,7 +27,7 @@ class ReviewCaseRequest(BaseModel):
 
 
 class WorkflowAuditEventRequest(BaseModel):
-    case_id: int
+    case_id: int | None = None
     workflow_name: str
     workflow_action: str
     status: str = "SUCCESS"
