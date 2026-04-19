@@ -1,0 +1,256 @@
+{
+  "name": "Stale Case Reminder Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "11223344-5566-7788-99aa-bbccddeeff00",
+      "name": "Manual Stale Case Check",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://api:8000/workflow/stale-cases?minutes=1",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "22334455-6677-8899-aabb-ccddeeff0011",
+      "name": "Fetch Stale Cases",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.count }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "33445566-7788-99aa-bbcc-ddeeff001122",
+      "name": "Any Stale Cases?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "aabb1122-cc33-dd44-ee55-ff6677889900",
+              "name": "workflow_name",
+              "value": "Stale Case Reminder Workflow",
+              "type": "string"
+            },
+            {
+              "id": "bbcc2233-dd44-ee55-ff66-778899001122",
+              "name": "workflow_action",
+              "value": "STALE_CASE_REMINDER",
+              "type": "string"
+            },
+            {
+              "id": "ccdd3344-ee55-ff66-7788-990011223344",
+              "name": "status",
+              "value": "SUCCESS",
+              "type": "string"
+            },
+            {
+              "id": "ddee4455-ff66-7788-9900-112233445566",
+              "name": "escalation_priority",
+              "value": "MEDIUM",
+              "type": "string"
+            },
+            {
+              "id": "eeff5566-7788-9900-aabb-223344556677",
+              "name": "message",
+              "value": "={{ $json.count }} stale fraud case(s) require analyst review.",
+              "type": "string"
+            },
+            {
+              "id": "ff006677-8899-aabb-ccdd-334455667788",
+              "name": "case_count",
+              "value": "={{ $json.count }}",
+              "type": "number"
+            },
+            {
+              "id": "00117788-99aa-bbcc-ddee-445566778899",
+              "name": "cases",
+              "value": "={{ $json.cases }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "44556677-8899-aabb-ccdd-eeff00112233",
+      "name": "Build Stale Case Reminder",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [900, 180]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://api:8000/workflow/audit-event",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "case_id",
+              "value": "={{ $json.cases[0].id }}"
+            },
+            {
+              "name": "workflow_name",
+              "value": "={{ $json.workflow_name }}"
+            },
+            {
+              "name": "workflow_action",
+              "value": "={{ $json.workflow_action }}"
+            },
+            {
+              "name": "status",
+              "value": "={{ $json.status }}"
+            },
+            {
+              "name": "escalation_priority",
+              "value": "={{ $json.escalation_priority }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "payload",
+              "value": "={{ JSON.stringify({ case_count: $json.case_count, cases: $json.cases }) }}"
+            },
+            {
+              "name": "source",
+              "value": "n8n"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "55667788-99aa-bbcc-ddee-ff0011223344",
+      "name": "Audit Stale Case Reminder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 180]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "11228899-aabb-ccdd-eeff-001122334455",
+              "name": "workflow_action",
+              "value": "NO_STALE_CASES",
+              "type": "string"
+            },
+            {
+              "id": "2233aabb-ccdd-eeff-0011-223344556677",
+              "name": "status",
+              "value": "SUCCESS",
+              "type": "string"
+            },
+            {
+              "id": "3344bbcc-ddee-ff00-1122-334455667788",
+              "name": "message",
+              "value": "No stale fraud cases found.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "66778899-aabb-ccdd-eeff-001122334455",
+      "name": "Build No Stale Cases Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [900, 420]
+    }
+  ],
+  "connections": {
+    "Manual Stale Case Check": {
+      "main": [
+        [
+          {
+            "node": "Fetch Stale Cases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Stale Cases": {
+      "main": [
+        [
+          {
+            "node": "Any Stale Cases?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any Stale Cases?": {
+      "main": [
+        [
+          {
+            "node": "Build Stale Case Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build No Stale Cases Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Stale Case Reminder": {
+      "main": [
+        [
+          {
+            "node": "Audit Stale Case Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "88990011-bbcc-ddee-ff00-223344556677",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "local"
+  },
+  "id": "77889900-aabb-ccdd-eeff-112233445566",
+  "tags": []
+}

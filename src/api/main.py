@@ -24,6 +24,7 @@ from src.db.postgres_logger import (
     get_prediction_by_id,
     get_prediction_by_transaction_id,
     get_review_queue_filtered,
+    get_stale_cases,
     get_stats,
     get_workflow_events,
     log_prediction,
@@ -400,6 +401,33 @@ def list_workflow_events(case_id: int | None = None):
     Otherwise returns the 100 most recent events across all cases.
     """
     return get_workflow_events(case_id)
+
+
+@app.get("/workflow/stale-cases")
+def list_stale_cases(minutes: int = 120):
+    """
+    Return unreviewed REVIEW/BLOCK cases older than the given minutes threshold.
+
+    Intended for SLA monitoring and scheduled n8n reminder workflows. Cases are
+    considered stale when their transaction timestamp predates NOW() by at least
+    the specified number of minutes and no analyst verdict has been recorded.
+
+    Responses:
+      200 — list of stale cases (may be empty)
+      400 — minutes must be a positive integer
+    """
+    if minutes <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="minutes must be a positive integer.",
+        )
+
+    cases = get_stale_cases(minutes)
+    return {
+        "minutes": minutes,
+        "count": len(cases),
+        "cases": cases,
+    }
 
 
 @app.post("/workflow/notify-case/{case_id}")

@@ -422,6 +422,41 @@ def log_workflow_event(event: dict) -> dict:
     return result
 
 
+def get_stale_cases(minutes: int = 120) -> list[dict]:
+    """
+    Return unreviewed REVIEW/BLOCK cases whose transaction timestamp is older
+    than the given number of minutes.
+
+    The predictions.timestamp column is stored as an ISO-8601 text string
+    (e.g. "2024-03-15T14:32:07Z"). Postgres can cast this directly to
+    TIMESTAMPTZ, allowing a clean age comparison against NOW().
+
+    Returns up to 100 rows ordered newest-first by primary key.
+    """
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text("""
+                SELECT id,
+                       transaction_id,
+                       amount,
+                       "timestamp",
+                       risk_score,
+                       decision,
+                       reasons,
+                       analyst_status
+                FROM predictions
+                WHERE decision IN ('REVIEW', 'BLOCK')
+                  AND (analyst_status IS NULL OR analyst_status = '')
+                  AND "timestamp"::TIMESTAMPTZ < NOW() - make_interval(mins => :minutes)
+                ORDER BY id DESC
+                LIMIT 100
+            """),
+            {"minutes": minutes},
+        ).mappings().all()
+
+    return [dict(row) for row in rows]
+
+
 def get_workflow_events(case_id: int | None = None) -> list[dict]:
     """
     Return workflow audit events, ordered newest first.
