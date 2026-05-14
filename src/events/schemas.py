@@ -109,8 +109,8 @@ class TransactionRawEvent(BaseEvent):
             "per transaction regardless of consumer parallelism."
         ),
     )
-    user_id: str
-    merchant_id: str
+    user_id: str | None = None
+    merchant_id: str | None = None
 
     # --- Financial ---
     amount: Annotated[float, Field(gt=0, description="Transaction amount. Must be positive.")]

@@ -17,6 +17,15 @@ RULE_WEIGHT = float(os.getenv("RULE_WEIGHT", "0.4"))
 REVIEW_THRESHOLD = float(os.getenv("REVIEW_THRESHOLD", "0.3"))
 BLOCK_THRESHOLD = float(os.getenv("BLOCK_THRESHOLD", "0.7"))
 HIGH_AMOUNT_THRESHOLD = float(os.getenv("HIGH_AMOUNT_THRESHOLD", "1000"))
+HIGH_RISK_PAYMENT_METHODS: set[str] = set(
+    os.getenv("HIGH_RISK_PAYMENT_METHODS", "credit_card,digital_wallet").split(",")
+)
+LOW_RISK_COUNTRIES: set[str] = set(
+    os.getenv("LOW_RISK_COUNTRIES", "US,CA,GB,AU,DE,FR,NL,JP").split(",")
+)
+HIGH_RISK_MERCHANT_CATEGORIES: set[str] = set(
+    os.getenv("HIGH_RISK_MERCHANT_CATEGORIES", "electronics,gaming,travel").split(",")
+)
 
 # Dual-path retirement flag (see docs/dual_path_retirement_plan.md).
 # true  — POST /predict scores synchronously AND publishes to transactions.raw

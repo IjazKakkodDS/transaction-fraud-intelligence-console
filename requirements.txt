@@ -3,7 +3,7 @@ uvicorn
 pandas
 numpy
 scikit-learn
-xgboost==1.7.6
+xgboost>=3.0.0
 sqlalchemy
 psycopg2-binary
 alembic

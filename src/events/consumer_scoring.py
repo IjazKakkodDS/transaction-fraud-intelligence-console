@@ -162,6 +162,12 @@ def _score(raw: TransactionRawEvent) -> TransactionScoredEvent:
         "transaction_id": raw.transaction_id,
         "amount": raw.amount,
         "timestamp": raw.timestamp,
+        "payment_method": raw.payment_method,
+        "country": raw.country,
+        "is_international": raw.is_international,
+        "merchant_category": raw.merchant_category,
+        "device_id": raw.device_id,
+        "device_type": raw.device_type,
     }])
 
     df = generate_basic_features(df)
@@ -178,6 +184,14 @@ def _score(raw: TransactionRawEvent) -> TransactionScoredEvent:
         reasons.append("Unusual transaction time")
     if int(row["model_prediction"]) == 1:
         reasons.append("Model flagged as suspicious")
+    if row.get("is_international", 0) == 1 and row.get("is_high_risk_country", 0) == 1:
+        reasons.append("International transaction from elevated-risk region")
+    if row.get("is_high_risk_payment_method", 0) == 1:
+        reasons.append("High-risk payment method")
+    if row.get("is_high_risk_merchant_category", 0) == 1:
+        reasons.append("High-risk merchant category")
+    if row.get("has_device_id", 1) == 0:
+        reasons.append("No device identifier present")
 
     return TransactionScoredEvent(
         producer=CONSUMER_GROUP,

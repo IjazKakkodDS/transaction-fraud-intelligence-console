@@ -13,6 +13,7 @@ from typing import Literal
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
@@ -134,6 +135,16 @@ app = FastAPI(
     version="0.1.0",
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allow_headers=["Content-Type", "Authorization"],
+)
+
 
 @app.get("/")
 def root():
@@ -166,9 +177,10 @@ def predict_transaction(transaction: dict):
     except ValidationError as exc:
         logger.warning(
             "Skipping transaction.raw publish — payload failed schema validation | "
-            "transaction_id=%s errors=%s",
+            "transaction_id=%s errors=%s detail=%s",
             transaction.get("transaction_id", "<unknown>"),
             exc.error_count(),
+            exc.errors(),
         )
     except Exception as exc:
         logger.error(
@@ -206,6 +218,14 @@ def predict_transaction(transaction: dict):
         reasons.append("Unusual transaction time")
     if row["model_prediction"] == 1:
         reasons.append("Model flagged as suspicious")
+    if row.get("is_international", 0) == 1 and row.get("is_high_risk_country", 0) == 1:
+        reasons.append("International transaction from elevated-risk region")
+    if row.get("is_high_risk_payment_method", 0) == 1:
+        reasons.append("High-risk payment method")
+    if row.get("is_high_risk_merchant_category", 0) == 1:
+        reasons.append("High-risk merchant category")
+    if row.get("has_device_id", 1) == 0:
+        reasons.append("No device identifier present")
 
     response = {
         "decision": row["decision"],

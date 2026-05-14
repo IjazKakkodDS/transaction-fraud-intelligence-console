@@ -144,3 +144,16 @@ mlruns/
 *.swo
 *.tmp
 .cache/
+
+# =============================================================================
+# Node.js
+# Root-level node_modules created by npm install for screenshot automation.
+# =============================================================================
+node_modules/
+
+# =============================================================================
+# Claude Code
+# User-specific Claude Code CLI configuration. Machine-specific and not
+# part of project source.
+# =============================================================================
+.claude/
