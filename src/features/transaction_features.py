@@ -12,6 +12,36 @@ from src.config.config import (
 )
 
 
+def generate_reasons(df: pd.DataFrame) -> pd.Series:
+    """
+    Return a pipe-delimited reasons string for each row in a fully scored DataFrame.
+
+    Expects df to contain the columns produced by generate_basic_features, predict,
+    apply_fraud_rules, and triage_decision before this call. Works on both single-row
+    and multi-row DataFrames. An empty string is returned for rows with no active
+    signals (all conditions false).
+    """
+    def _row_reasons(row) -> str:
+        parts = []
+        if row["amount"] > HIGH_AMOUNT_THRESHOLD:
+            parts.append("High transaction amount")
+        if row["is_night_transaction"] == 1:
+            parts.append("Unusual transaction time")
+        if row["model_prediction"] == 1:
+            parts.append("Model flagged as suspicious")
+        if row.get("is_international", 0) == 1 and row.get("is_high_risk_country", 0) == 1:
+            parts.append("International transaction from elevated-risk region")
+        if row.get("is_high_risk_payment_method", 0) == 1:
+            parts.append("High-risk payment method")
+        if row.get("is_high_risk_merchant_category", 0) == 1:
+            parts.append("High-risk merchant category")
+        if row.get("has_device_id", 1) == 0:
+            parts.append("No device identifier present")
+        return "|".join(parts)
+
+    return df.apply(_row_reasons, axis=1)
+
+
 def generate_basic_features(df: pd.DataFrame) -> pd.DataFrame:
     df["hour_of_day"] = pd.to_datetime(df["timestamp"]).dt.hour
     df["is_night_transaction"] = df["hour_of_day"].apply(lambda h: 1 if h < 6 or h > 22 else 0)

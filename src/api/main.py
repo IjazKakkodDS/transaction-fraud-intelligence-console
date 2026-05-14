@@ -34,10 +34,10 @@ from src.db.postgres_logger import (
     log_workflow_event,
     update_review,
 )
-from src.config.config import HIGH_AMOUNT_THRESHOLD, SYNC_SCORING_ENABLED
+from src.config.config import SYNC_SCORING_ENABLED
 from src.events.producer import send_transaction_raw_event
 from src.events.schemas import TransactionRawEvent
-from src.features.transaction_features import generate_basic_features
+from src.features.transaction_features import generate_basic_features, generate_reasons
 from src.models.predict import predict
 from src.rules.fraud_rules import apply_fraud_rules
 from src.triage.investigator import triage_decision
@@ -210,22 +210,8 @@ def predict_transaction(transaction: dict):
     df = triage_decision(df)
 
     row = df.iloc[0]
-
-    reasons = []
-    if row["amount"] > HIGH_AMOUNT_THRESHOLD:
-        reasons.append("High transaction amount")
-    if row["is_night_transaction"] == 1:
-        reasons.append("Unusual transaction time")
-    if row["model_prediction"] == 1:
-        reasons.append("Model flagged as suspicious")
-    if row.get("is_international", 0) == 1 and row.get("is_high_risk_country", 0) == 1:
-        reasons.append("International transaction from elevated-risk region")
-    if row.get("is_high_risk_payment_method", 0) == 1:
-        reasons.append("High-risk payment method")
-    if row.get("is_high_risk_merchant_category", 0) == 1:
-        reasons.append("High-risk merchant category")
-    if row.get("has_device_id", 1) == 0:
-        reasons.append("No device identifier present")
+    reasons_str = generate_reasons(df).iloc[0]
+    reasons = reasons_str.split("|") if reasons_str else []
 
     response = {
         "decision": row["decision"],
@@ -242,7 +228,7 @@ def predict_transaction(transaction: dict):
         "model_prediction": response["model_prediction"],
         "risk_score": float(row["risk_score"]),
         "decision": response["decision"],
-        "reasons": "|".join(reasons),
+        "reasons": reasons_str,
     })
 
     return response
