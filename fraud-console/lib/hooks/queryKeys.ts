@@ -1,3 +1,5 @@
+import type { RiskScanResultsFilters } from "@/types/riskScan";
+
 /**
  * Centralized TanStack Query key factory.
  *
@@ -28,4 +30,11 @@ export const queryKeys = {
 
   workflowMetrics: () =>
     ["workflowMetrics"] as const,
+
+  // Phase 12 — Portfolio Risk Scan
+  riskScanSummary: (scanId: string) =>
+    ["riskScan", scanId, "summary"] as const,
+
+  riskScanResults: (scanId: string, filters?: RiskScanResultsFilters) =>
+    ["riskScan", scanId, "results", filters] as const,
 } as const;
