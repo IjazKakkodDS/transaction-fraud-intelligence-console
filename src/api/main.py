@@ -2,7 +2,6 @@
 FastAPI application entry point for the Real-Time Fraud Triage System.
 """
 
-import io
 import json
 import logging
 import os
@@ -51,13 +50,17 @@ from src.events.schemas import TransactionRawEvent
 from src.features.transaction_features import generate_basic_features, generate_reasons
 from src.models.predict import predict
 from src.risk_scan.exporter import results_to_csv
+from src.risk_scan.processor import (
+    ASYNC_RISK_SCAN_MAX_ROWS,
+    RISK_SCAN_CHUNK_SIZE,
+    detect_csv_row_count,
+    process_portfolio_scan_job,
+)
 from src.risk_scan.scanner import score_dataframe
 from src.risk_scan.summarizer import compute_summary
 from src.risk_scan.validator import (
-    REQUIRED_COLUMNS,
     RiskScanParseError,
     RiskScanValidationError,
-    validate_dataframe,
     validate_csv,
 )
 from src.rules.fraud_rules import apply_fraud_rules
@@ -638,164 +641,6 @@ def notify_case_workflow(case_id: int):
 # ---------------------------------------------------------------------------
 
 
-ASYNC_RISK_SCAN_MAX_ROWS = 10_000
-RISK_SCAN_CHUNK_SIZE = max(1, int(os.getenv("RISK_SCAN_CHUNK_SIZE", "500")))
-
-
-def _utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-def _detect_csv_row_count(file_bytes: bytes) -> int:
-    """
-    Best-effort row count for queued scan metadata.
-
-    The background validator remains authoritative; this early count is only
-    used so clients can show progress immediately after job creation.
-    """
-    try:
-        return len(pd.read_csv(io.BytesIO(file_bytes), usecols=[0]))
-    except Exception:
-        return 0
-
-
-def _merge_scored_rows(validation_result, scored_rows: list[dict]) -> list[dict]:
-    scored_by_row_number = {r["row_number"]: r for r in scored_rows}
-    merged_rows = []
-    for row in validation_result.all_rows:
-        if row["validation_status"] == "VALID":
-            scored = scored_by_row_number.get(row["row_number"])
-            merged_rows.append(scored if scored is not None else row)
-        else:
-            merged_rows.append(row)
-    return merged_rows
-
-
-def _process_async_risk_scan(scan_id: str, file_bytes: bytes, filename: str) -> None:
-    """
-    Background processor for async portfolio scans.
-
-    Parses the CSV once, then validates, scores, persists, and reports progress
-    in chunks so status polling can observe durable progress.
-    """
-    update_portfolio_scan_status(
-        scan_id,
-        "PROCESSING",
-        started_at=_utc_now_iso(),
-        error_message="",
-    )
-
-    try:
-        try:
-            df = pd.read_csv(io.BytesIO(file_bytes))
-        except Exception as exc:
-            raise RiskScanParseError(f"CSV could not be parsed: {exc}") from exc
-
-        missing_cols = REQUIRED_COLUMNS - set(df.columns)
-        if missing_cols:
-            raise RiskScanValidationError(
-                f"Missing required columns: {', '.join(sorted(missing_cols))}"
-            )
-
-        total_rows = len(df)
-        if total_rows > ASYNC_RISK_SCAN_MAX_ROWS:
-            raise RiskScanValidationError(
-                f"CSV exceeds maximum of {ASYNC_RISK_SCAN_MAX_ROWS} data rows. Got {total_rows}."
-            )
-
-        update_portfolio_scan_progress(
-            scan_id,
-            total_rows=total_rows,
-        )
-
-        seen_transaction_ids: set[str] = set()
-        all_processed_rows: list[dict] = []
-
-        for start in range(0, total_rows, RISK_SCAN_CHUNK_SIZE):
-            chunk_df = df.iloc[start:start + RISK_SCAN_CHUNK_SIZE].copy().reset_index(drop=True)
-            validation_result = validate_dataframe(
-                chunk_df,
-                seen_transaction_ids=seen_transaction_ids,
-                row_offset=start,
-            )
-            scored_rows = score_dataframe(validation_result.valid_df)
-            merged_rows = _merge_scored_rows(validation_result, scored_rows)
-
-            bulk_insert_scan_results(scan_id, merged_rows)
-            all_processed_rows.extend(merged_rows)
-
-            summary = compute_summary(all_processed_rows)
-            update_portfolio_scan_progress(
-                scan_id,
-                processed_rows=summary["total_rows"],
-                valid_rows=summary["valid_rows"],
-                invalid_rows=summary["invalid_rows"],
-                skipped_rows=summary["skipped_rows"],
-                low_count=summary["low_count"],
-                medium_count=summary["medium_count"],
-                high_count=summary["high_count"],
-                critical_count=summary["critical_count"],
-                p0_count=summary["p0_count"],
-                p1_count=summary["p1_count"],
-                p2_count=summary["p2_count"],
-                p3_count=summary["p3_count"],
-                total_amount=summary["total_amount"],
-                critical_amount=summary["critical_amount"],
-                high_amount=summary["high_amount"],
-                risk_summary=summary["risk_summary"],
-            )
-
-        if total_rows == 0:
-            update_portfolio_scan_progress(
-                scan_id,
-                processed_rows=0,
-                valid_rows=0,
-                invalid_rows=0,
-                skipped_rows=0,
-                low_count=0,
-                medium_count=0,
-                high_count=0,
-                critical_count=0,
-                p0_count=0,
-                p1_count=0,
-                p2_count=0,
-                p3_count=0,
-                total_amount=0,
-                critical_amount=0,
-                high_amount=0,
-                risk_summary=compute_summary([])["risk_summary"],
-            )
-
-        update_portfolio_scan_status(
-            scan_id,
-            "COMPLETE",
-            completed_at=_utc_now_iso(),
-            error_message="",
-        )
-        logger.info(
-            "Async risk scan completed | scan_id=%s filename=%s rows=%d",
-            scan_id,
-            filename,
-            total_rows,
-        )
-    except (RiskScanValidationError, RiskScanParseError) as exc:
-        logger.warning("Async risk scan failed validation | scan_id=%s error=%s", scan_id, exc)
-        update_portfolio_scan_status(
-            scan_id,
-            "FAILED",
-            completed_at=_utc_now_iso(),
-            error_message=str(exc)[:500],
-        )
-    except Exception as exc:
-        logger.error("Async risk scan failed | scan_id=%s error=%s", scan_id, exc)
-        update_portfolio_scan_status(
-            scan_id,
-            "FAILED",
-            completed_at=_utc_now_iso(),
-            error_message=str(exc)[:500],
-        )
-
-
 @app.post("/risk-scan", status_code=202)
 async def create_async_risk_scan(
     background_tasks: BackgroundTasks,
@@ -820,7 +665,7 @@ async def create_async_risk_scan(
         raise HTTPException(status_code=400, detail="CSV file is empty.")
 
     scan_id = str(uuid.uuid4())
-    total_rows = _detect_csv_row_count(file_bytes)
+    total_rows = detect_csv_row_count(file_bytes)
 
     create_portfolio_scan({
         "scan_id":        scan_id,
@@ -833,7 +678,7 @@ async def create_async_risk_scan(
         "error_message":  None,
     })
 
-    background_tasks.add_task(_process_async_risk_scan, scan_id, file_bytes, filename)
+    background_tasks.add_task(process_portfolio_scan_job, scan_id, file_bytes, filename)
 
     return {
         "scan_id":    scan_id,
