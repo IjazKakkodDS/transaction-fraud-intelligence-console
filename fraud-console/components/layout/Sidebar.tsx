@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Gauge,
   ClipboardList,
+  FileSearch,
   Activity,
   BarChart2,
   Send,
@@ -21,6 +22,7 @@ const navGroups = [
       { label: "Risk Command",    href: "/dashboard", icon: Gauge           },
       { label: "Review Queue",    href: "/queue",     icon: ClipboardList   },
       { label: "Transaction Intake", href: "/intake", icon: Send            },
+      { label: "Risk Scan",       href: "/risk-scan", icon: FileSearch      },
     ],
   },
   {
