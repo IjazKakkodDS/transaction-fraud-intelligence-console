@@ -4,9 +4,9 @@ import {
   Cell,
   Pie,
   PieChart,
-  ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import { MeasuredChartFrame } from "@/components/charts/MeasuredChartFrame";
 import { type SourceBreakdownItem } from "@/types/workflow";
 import { formatLabel } from "@/lib/utils";
 
@@ -47,9 +47,10 @@ export function SourceBreakdownChart({ data }: { data: SourceBreakdownItem[] }) 
         <p className="text-[13px]" style={{ color: "#94A3B8" }}>No source data recorded yet.</p>
       ) : (
         <div className="grid grid-cols-1 gap-3">
-          <div className="relative" style={{ height: 178, minWidth: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+          <MeasuredChartFrame height={178} className="relative">
+            {({ width, height }) => (
+              <>
+              <PieChart width={width} height={height}>
                 <Pie
                   data={aggregated}
                   dataKey="count"
@@ -82,16 +83,17 @@ export function SourceBreakdownChart({ data }: { data: SourceBreakdownItem[] }) 
                   }}
                 />
               </PieChart>
-            </ResponsiveContainer>
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-[24px] font-semibold tabular-nums" style={{ color: "#C9D1D9" }}>
-                {automationCoverage}%
-              </span>
-              <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#94A3B8" }}>
-                Automation
-              </span>
-            </div>
-          </div>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-[24px] font-semibold tabular-nums" style={{ color: "#C9D1D9" }}>
+                  {automationCoverage}%
+                </span>
+                <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#94A3B8" }}>
+                  Automation
+                </span>
+              </div>
+              </>
+            )}
+          </MeasuredChartFrame>
           <div className="grid grid-cols-3 gap-2">
             {["Automation", "API", "Manual"].map((source) => {
               const count = aggregated.find((item) => item.source === source)?.count ?? 0;

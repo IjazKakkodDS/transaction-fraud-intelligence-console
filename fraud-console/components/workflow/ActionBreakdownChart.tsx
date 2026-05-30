@@ -7,8 +7,8 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer,
 } from "recharts";
+import { MeasuredChartFrame } from "@/components/charts/MeasuredChartFrame";
 import { type ActionBreakdownItem } from "@/types/workflow";
 import { formatLabel } from "@/lib/utils";
 
@@ -32,6 +32,7 @@ export function ActionBreakdownChart({ data }: ActionBreakdownChartProps) {
   const sorted = [...data].sort((a, b) => b.count - a.count);
   const getBarColor = (action: string) =>
     action.toUpperCase().includes("FAILED") ? "#FF4D4D" : "#22D3EE";
+  const chartHeight = Math.max(180, sorted.length * 38);
 
   return (
     <div className="card p-5">
@@ -42,8 +43,11 @@ export function ActionBreakdownChart({ data }: ActionBreakdownChartProps) {
       {sorted.length === 0 ? (
         <p className="text-[13px]" style={{ color: "#94A3B8" }}>No action data recorded yet.</p>
       ) : (
-        <ResponsiveContainer width="100%" height={Math.max(180, sorted.length * 38)}>
+        <MeasuredChartFrame height={chartHeight}>
+          {({ width, height }) => (
           <BarChart
+            width={width}
+            height={height}
             data={sorted}
             layout="vertical"
             margin={{ left: 8, right: 16, top: 4, bottom: 4 }}
@@ -84,7 +88,8 @@ export function ActionBreakdownChart({ data }: ActionBreakdownChartProps) {
               ))}
             </Bar>
           </BarChart>
-        </ResponsiveContainer>
+          )}
+        </MeasuredChartFrame>
       )}
     </div>
   );

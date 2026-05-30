@@ -4,9 +4,9 @@ import {
   Cell,
   Pie,
   PieChart,
-  ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import { MeasuredChartFrame } from "@/components/charts/MeasuredChartFrame";
 import { type DailySummary } from "@/types/workflow";
 
 const DECISION_COLORS: Record<string, string> = {
@@ -58,9 +58,10 @@ export function DecisionDistributionChart({ summary }: DecisionDistributionChart
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_200px]">
-          <div className="relative min-w-0" style={{ height: 190, minWidth: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+          <MeasuredChartFrame height={190} className="relative min-w-0">
+            {({ width, height }) => (
+              <>
+              <PieChart width={width} height={height}>
                 <Pie
                   data={data}
                   dataKey="count"
@@ -98,16 +99,17 @@ export function DecisionDistributionChart({ summary }: DecisionDistributionChart
                   labelStyle={{ color: "#CBD5E1" }}
                 />
               </PieChart>
-            </ResponsiveContainer>
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-[22px] font-semibold tabular-nums" style={{ color: "#F8FAFC" }}>
-                {total.toLocaleString()}
-              </span>
-              <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: "#94A3B8" }}>
-                Total Decisions
-              </span>
-            </div>
-          </div>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-[22px] font-semibold tabular-nums" style={{ color: "#F8FAFC" }}>
+                  {total.toLocaleString()}
+                </span>
+                <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: "#94A3B8" }}>
+                  Total Decisions
+                </span>
+              </div>
+              </>
+            )}
+          </MeasuredChartFrame>
 
           <div className="flex flex-col justify-center gap-2">
             {data.map(({ decision, count }) => (
