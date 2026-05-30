@@ -25,6 +25,11 @@ def score_dataframe(valid_df: pd.DataFrame) -> list[dict]:
         return []
 
     df = valid_df.copy()
+    # Normalise amount to float — pandas may infer object dtype when the
+    # source CSV contains any non-numeric value in that column (even on
+    # rows that were rejected as INVALID), causing threshold comparisons
+    # in generate_basic_features to raise TypeError.
+    df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
     df = generate_basic_features(df)
     df["model_prediction"] = predict(df)
     df = apply_fraud_rules(df)

@@ -18,6 +18,21 @@ REQUIRED_COLUMNS: set[str] = {
 MAX_ROWS = 500
 
 
+def _parse_float(value) -> float | None:
+    """Return value as float, or None if missing or unparseable."""
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return None
+
+
 class RiskScanParseError(Exception):
     """Raised when the uploaded file cannot be parsed as CSV."""
 
@@ -136,7 +151,7 @@ def validate_csv(file_bytes: bytes) -> ValidationResult:
         all_rows.append({
             "row_number": row_number,
             "transaction_id": None if pd.isna(transaction_id) else transaction_id,
-            "amount": None if pd.isna(amount_raw) else amount_raw,
+            "amount": _parse_float(amount_raw),
             "timestamp": None if pd.isna(timestamp) else str(timestamp),
             "country": None if pd.isna(country) else str(country),
             "payment_method": None if pd.isna(payment_method) else str(payment_method),
