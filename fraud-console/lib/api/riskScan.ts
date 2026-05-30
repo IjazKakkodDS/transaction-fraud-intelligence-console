@@ -2,14 +2,13 @@ import { apiFetch } from "@/lib/api/client";
 import { ApiError } from "@/types/api";
 import {
   type RiskScanPromoteResponse,
-  type RiskScanResult,
-  type RiskScanResults,
+  type RiskScanPaginatedResults,
   type RiskScanResultsFilters,
   type RiskScanStatus,
   type RiskScanSummary,
   type RiskScanUploadResponse,
   RiskScanPromoteResponseSchema,
-  RiskScanResultsSchema,
+  RiskScanPaginatedResultsSchema,
   RiskScanStatusSchema,
   RiskScanSummarySchema,
   RiskScanUploadResponseSchema,
@@ -22,7 +21,7 @@ const BASE_URL = (
 ).replace(/\/$/, "");
 
 // ---------------------------------------------------------------------------
-// POST /risk-scan/upload
+// POST /risk-scan
 // Sends the CSV as multipart/form-data. Content-Type must NOT be set manually
 // — the browser adds the boundary parameter automatically.
 // ---------------------------------------------------------------------------
@@ -33,7 +32,7 @@ export async function uploadRiskScan(
   const form = new FormData();
   form.append("file", file);
 
-  const response = await fetch(`${BASE_URL}/risk-scan/upload`, {
+  const response = await fetch(`${BASE_URL}/risk-scan`, {
     method: "POST",
     body: form,
   });
@@ -86,7 +85,9 @@ export async function fetchRiskScanSummary(
 export async function fetchRiskScanResults(
   scanId: string,
   filters?: RiskScanResultsFilters,
-): Promise<RiskScanResult[]> {
+  page?: number,
+  pageSize?: number,
+): Promise<RiskScanPaginatedResults> {
   const params = new URLSearchParams();
 
   if (filters?.tier !== undefined) {
@@ -101,11 +102,15 @@ export async function fetchRiskScanResults(
   if (filters?.promoted !== undefined) {
     params.set("promoted", String(filters.promoted));
   }
+  params.set("page", String(page ?? 1));
+  params.set("page_size", String(pageSize ?? 100));
 
   const query = params.toString();
   const path = `/risk-scan/${scanId}/results${query ? `?${query}` : ""}`;
 
-  return apiFetch<RiskScanResults>(path, { schema: RiskScanResultsSchema });
+  return apiFetch<RiskScanPaginatedResults>(path, {
+    schema: RiskScanPaginatedResultsSchema,
+  });
 }
 
 // ---------------------------------------------------------------------------

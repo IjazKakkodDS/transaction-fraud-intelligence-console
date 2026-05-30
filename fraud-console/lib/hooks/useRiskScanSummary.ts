@@ -7,10 +7,10 @@ import { queryKeys } from "@/lib/hooks/queryKeys";
  * Disabled until scanId is available so components can mount before an
  * upload has been submitted.
  */
-export function useRiskScanSummary(scanId?: string) {
+export function useRiskScanSummary(scanId?: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.riskScanSummary(scanId ?? ""),
     queryFn: () => fetchRiskScanSummary(scanId!),
-    enabled: !!scanId,
+    enabled: !!scanId && enabled,
   });
 }

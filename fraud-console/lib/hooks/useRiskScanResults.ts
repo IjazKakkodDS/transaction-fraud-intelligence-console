@@ -15,10 +15,13 @@ import { queryKeys } from "@/lib/hooks/queryKeys";
 export function useRiskScanResults(
   scanId?: string,
   filters?: RiskScanResultsFilters,
+  page = 1,
+  pageSize = 100,
+  enabled = true,
 ) {
   return useQuery({
-    queryKey: queryKeys.riskScanResults(scanId ?? "", filters),
-    queryFn: () => fetchRiskScanResults(scanId!, filters),
-    enabled: !!scanId,
+    queryKey: queryKeys.riskScanResults(scanId ?? "", filters, page, pageSize),
+    queryFn: () => fetchRiskScanResults(scanId!, filters, page, pageSize),
+    enabled: !!scanId && enabled,
   });
 }

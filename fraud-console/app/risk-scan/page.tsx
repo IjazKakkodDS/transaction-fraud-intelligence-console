@@ -3,9 +3,14 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { exportRiskScanResults } from "@/lib/api/riskScan";
-import { type RiskScanResult, type RiskScanSummary } from "@/types/riskScan";
+import {
+  type RiskScanResult,
+  type RiskScanStatus,
+  type RiskScanSummary,
+} from "@/types/riskScan";
 import { ApiError } from "@/types/api";
 import { useRiskScanUpload } from "@/lib/hooks/useRiskScanUpload";
+import { useRiskScanStatus } from "@/lib/hooks/useRiskScanStatus";
 import { useRiskScanSummary } from "@/lib/hooks/useRiskScanSummary";
 import { useRiskScanResults } from "@/lib/hooks/useRiskScanResults";
 import { useRiskScanPromote } from "@/lib/hooks/useRiskScanPromote";
@@ -144,6 +149,111 @@ function ValidationStrip({ data }: { data: UploadCounts }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function statusLabel(status: RiskScanStatus["status"]): string {
+  switch (status) {
+    case "QUEUED":
+      return "Queued";
+    case "PROCESSING":
+      return "Processing";
+    case "COMPLETE":
+      return "Complete";
+    case "FAILED":
+      return "Failed";
+    case "CANCELLED":
+      return "Cancelled";
+  }
+}
+
+function ProgressCard({ status }: { status: RiskScanStatus }) {
+  const pct = Math.max(0, Math.min(100, status.progress_percent ?? 0));
+  const badgeColor =
+    status.status === "FAILED"
+      ? "#FF4D4D"
+      : status.status === "COMPLETE"
+      ? "#10B981"
+      : status.status === "CANCELLED"
+      ? "#8B949E"
+      : "#22D3EE";
+  const cells = [
+    { label: "Processed", value: `${status.processed_rows} / ${status.total_rows}` },
+    { label: "Valid", value: String(status.valid_rows) },
+    { label: "Invalid", value: String(status.invalid_rows) },
+    { label: "Skipped", value: String(status.skipped_rows) },
+    { label: "P0", value: String(status.p0_count) },
+    { label: "P1", value: String(status.p1_count) },
+  ];
+
+  return (
+    <div className="card p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="section-label">Scanning portfolio rows</p>
+          <p className="mt-1 text-[12px]" style={{ color: "#6B7280" }}>
+            Live job progress updates from the async risk scan engine.
+          </p>
+        </div>
+        <span
+          className="rounded px-2.5 py-1 font-mono text-[11px] font-bold"
+          style={{
+            color: badgeColor,
+            background: `${badgeColor}14`,
+            border: `1px solid ${badgeColor}38`,
+          }}
+        >
+          {statusLabel(status.status)}
+        </span>
+      </div>
+
+      <div className="mt-4">
+        <div className="mb-1.5 flex items-center justify-between">
+          <span className="font-mono text-[11px]" style={{ color: "#8B949E" }}>
+            {status.processed_rows} / {status.total_rows} rows
+          </span>
+          <span className="font-mono text-[11px] font-semibold" style={{ color: badgeColor }}>
+            {Math.round(pct)}%
+          </span>
+        </div>
+        <div
+          className="h-2 overflow-hidden rounded-full"
+          style={{ background: "rgba(255,255,255,0.06)" }}
+        >
+          <div
+            className="h-full rounded-full transition-all"
+            style={{
+              width: `${pct}%`,
+              background: badgeColor,
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        {cells.map((cell) => (
+          <div
+            key={cell.label}
+            className="rounded px-3 py-2"
+            style={{
+              background: "rgba(255,255,255,0.025)",
+              border: "1px solid rgba(255,255,255,0.07)",
+            }}
+          >
+            <p className="font-mono text-[13px] font-semibold tabular-nums" style={{ color: "#C9D1D9" }}>
+              {cell.value}
+            </p>
+            <p className="mt-1 metric-label">{cell.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {status.status === "FAILED" && status.error_message && (
+        <div className="mt-3">
+          <ErrorBanner message={status.error_message} />
+        </div>
+      )}
     </div>
   );
 }
@@ -626,23 +736,90 @@ const TIER_TABS: Array<{ label: string; value: TierFilter }> = [
   { label: "P3",  value: "P3" },
 ];
 
+function PaginationControls({
+  page,
+  totalPages,
+  totalItems,
+  pageSize,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalItems === 0) return null;
+  const start = (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, totalItems);
+  const buttonStyle = (disabled: boolean) => ({
+    background: disabled ? "rgba(255,255,255,0.025)" : "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.09)",
+    color: disabled ? "#4B5563" : "#C9D1D9",
+    cursor: disabled ? "not-allowed" : "pointer",
+  });
+
+  return (
+    <div
+      className="flex flex-wrap items-center justify-between gap-3 rounded-lg px-3 py-2"
+      style={{
+        background: "rgba(255,255,255,0.018)",
+        border: "1px solid rgba(255,255,255,0.07)",
+      }}
+    >
+      <p className="text-[12px]" style={{ color: "#8B949E" }}>
+        Showing {start}-{end} of {totalItems} results
+      </p>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+          className="rounded px-3 py-1.5 text-[12px] font-semibold"
+          style={buttonStyle(page <= 1)}
+        >
+          Previous
+        </button>
+        <span className="font-mono text-[12px]" style={{ color: "#6B7280" }}>
+          Page {page} / {Math.max(totalPages, 1)}
+        </span>
+        <button
+          type="button"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+          className="rounded px-3 py-1.5 text-[12px] font-semibold"
+          style={buttonStyle(page >= totalPages)}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function RiskScanPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile]       = useState<File | null>(null);
   const [scanId, setScanId]                   = useState<string | null>(null);
-  const [uploadCounts, setUploadCounts]       = useState<UploadCounts | null>(null);
   const [tierFilter, setTierFilter]           = useState<TierFilter>(undefined);
+  const [resultsPage, setResultsPage]         = useState(1);
   const [pendingPromoteId, setPendingPromoteId] = useState<number | null>(null);
   const [promoteError, setPromoteError]       = useState<string | null>(null);
   const [exportError, setExportError]         = useState<string | null>(null);
 
   const upload  = useRiskScanUpload();
-  const summary = useRiskScanSummary(scanId ?? undefined);
+  const status = useRiskScanStatus(scanId ?? undefined);
+  const statusData = status.data;
+  const isComplete = statusData?.status === "COMPLETE";
+  const summary = useRiskScanSummary(scanId ?? undefined, isComplete);
   const results = useRiskScanResults(
     scanId ?? undefined,
     tierFilter ? { tier: tierFilter } : undefined,
+    resultsPage,
+    100,
+    isComplete,
   );
   const promote = useRiskScanPromote();
 
@@ -657,20 +834,15 @@ export default function RiskScanPage() {
     try {
       const r = await upload.mutateAsync(selectedFile);
       setScanId(r.scan_id);
-      setUploadCounts({
-        total_rows:   r.total_rows,
-        valid_rows:   r.valid_rows,
-        invalid_rows: r.invalid_rows,
-        skipped_rows: r.skipped_rows,
-      });
       setTierFilter(undefined);
+      setResultsPage(1);
     } catch {
       // error surfaced via upload.error below
     }
   }
 
   async function handlePromote(row: RiskScanResult) {
-    if (!scanId) return;
+    if (!scanId || !isComplete) return;
     setPendingPromoteId(row.id);
     setPromoteError(null);
     try {
@@ -688,7 +860,7 @@ export default function RiskScanPage() {
   }
 
   async function handleExport() {
-    if (!scanId) return;
+    if (!scanId || !isComplete) return;
     setExportError(null);
     try {
       const blob = await exportRiskScanResults(scanId);
@@ -718,6 +890,29 @@ export default function RiskScanPage() {
 
   const summaryData  = summary.data;
   const resultsData  = results.data;
+  const resultRows = resultsData?.items ?? [];
+  const uploadStatusSeed = upload.data && scanId === upload.data.scan_id
+    ? {
+        scan_id: upload.data.scan_id,
+        status: upload.data.status,
+        total_rows: upload.data.total_rows,
+        processed_rows: 0,
+        progress_percent: 0,
+        valid_rows: 0,
+        invalid_rows: 0,
+        skipped_rows: 0,
+        p0_count: 0,
+        p1_count: 0,
+        p2_count: 0,
+        p3_count: 0,
+        created_at: null,
+        started_at: null,
+        completed_at: null,
+        cancelled_at: null,
+        error_message: null,
+      } satisfies RiskScanStatus
+    : null;
+  const progressData = statusData ?? uploadStatusSeed;
 
   // Tier counts for filter tab badges (from summary when available)
   const tierCounts: Record<string, number> = summaryData
@@ -771,7 +966,7 @@ export default function RiskScanPage() {
               {selectedFile ? selectedFile.name : "Choose a CSV file…"}
             </label>
             <p className="text-[11px]" style={{ color: "#6B7280" }}>
-              Maximum 500 data rows. Required columns: transaction_id, amount,
+              Maximum 10,000 data rows. Required columns: transaction_id, amount,
               timestamp, country, payment_method.
             </p>
           </div>
@@ -823,10 +1018,13 @@ export default function RiskScanPage() {
       )}
 
       {/* ── Validation strip ────────────────────────────────────── */}
-      {uploadCounts && <ValidationStrip data={uploadCounts} />}
+      {progressData && <ProgressCard status={progressData} />}
+      {status.isError && (
+        <ErrorBanner message="Could not load scan status. Check API connectivity." />
+      )}
 
       {/* ── Summary loading skeleton ─────────────────────────────── */}
-      {scanId && summary.isLoading && (
+      {scanId && isComplete && summary.isLoading && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
@@ -839,7 +1037,7 @@ export default function RiskScanPage() {
       )}
 
       {/* ── Summary error ──────────────────────────────────────── */}
-      {summary.isError && (
+      {isComplete && summary.isError && (
         <ErrorBanner message="Could not load scan summary. Check API connectivity." />
       )}
 
@@ -856,7 +1054,7 @@ export default function RiskScanPage() {
       )}
 
       {/* ── Results section ─────────────────────────────────────── */}
-      {scanId && (
+      {scanId && isComplete && (
         <section className="space-y-3">
           {/* Section header + tier filter tabs */}
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -867,7 +1065,7 @@ export default function RiskScanPage() {
                   className="ml-2 font-normal normal-case tracking-normal"
                   style={{ color: "#6B7280" }}
                 >
-                  {resultsData.length} row{resultsData.length !== 1 ? "s" : ""}
+                  {resultsData.total_items} row{resultsData.total_items !== 1 ? "s" : ""}
                 </span>
               )}
             </p>
@@ -881,7 +1079,10 @@ export default function RiskScanPage() {
                   <button
                     key={label}
                     type="button"
-                    onClick={() => setTierFilter(value)}
+                    onClick={() => {
+                      setTierFilter(value);
+                      setResultsPage(1);
+                    }}
                     className="rounded px-2.5 py-1 text-[11px] font-semibold"
                     style={{
                       background: active
@@ -924,8 +1125,17 @@ export default function RiskScanPage() {
             <ErrorBanner message="Could not load scan results. Check API connectivity." />
           )}
           {resultsData && (
+            <PaginationControls
+              page={resultsData.page}
+              totalPages={resultsData.total_pages}
+              totalItems={resultsData.total_items}
+              pageSize={resultsData.page_size}
+              onPageChange={setResultsPage}
+            />
+          )}
+          {resultsData && (
             <ResultsTable
-              rows={resultsData}
+              rows={resultRows}
               pendingId={pendingPromoteId}
               onPromote={handlePromote}
             />
@@ -934,7 +1144,7 @@ export default function RiskScanPage() {
       )}
 
       {/* ── Export bar ──────────────────────────────────────────── */}
-      {scanId && !summary.isLoading && (
+      {scanId && isComplete && !summary.isLoading && (
         <div
           className="flex flex-wrap items-center justify-between gap-3 rounded-lg px-4 py-3"
           style={{
@@ -948,11 +1158,13 @@ export default function RiskScanPage() {
           <button
             type="button"
             onClick={handleExport}
+            disabled={!isComplete}
             className="rounded-md px-4 py-2 text-[12px] font-semibold"
             style={{
               background: "rgba(167,139,250,0.08)",
               border: "1px solid rgba(167,139,250,0.22)",
               color: "#A78BFA",
+              cursor: isComplete ? "pointer" : "not-allowed",
             }}
           >
             Export CSV

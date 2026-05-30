@@ -32,9 +32,20 @@ export const queryKeys = {
     ["workflowMetrics"] as const,
 
   // Phase 12 — Portfolio Risk Scan
+  riskScanStatus: (scanId: string) =>
+    ["riskScan", scanId, "status"] as const,
+
   riskScanSummary: (scanId: string) =>
     ["riskScan", scanId, "summary"] as const,
 
-  riskScanResults: (scanId: string, filters?: RiskScanResultsFilters) =>
-    ["riskScan", scanId, "results", filters] as const,
+  riskScanResultsRoot: (scanId: string) =>
+    ["riskScan", scanId, "results"] as const,
+
+  riskScanResults: (
+    scanId: string,
+    filters?: RiskScanResultsFilters,
+    page?: number,
+    pageSize?: number,
+  ) =>
+    ["riskScan", scanId, "results", filters, page, pageSize] as const,
 } as const;

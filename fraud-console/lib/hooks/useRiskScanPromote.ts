@@ -23,7 +23,7 @@ export function useRiskScanPromote() {
     onSuccess: (_, { scanId }) => {
       // Prefix-based invalidation clears all filter variants for this scan.
       queryClient.invalidateQueries({
-        queryKey: queryKeys.riskScanResults(scanId),
+        queryKey: queryKeys.riskScanResultsRoot(scanId),
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.riskScanSummary(scanId),

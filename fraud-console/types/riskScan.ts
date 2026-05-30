@@ -1,16 +1,22 @@
 import { z } from "zod";
 
+export const RiskScanJobStatusSchema = z.enum([
+  "QUEUED",
+  "PROCESSING",
+  "COMPLETE",
+  "FAILED",
+  "CANCELLED",
+]);
+export type RiskScanJobStatus = z.infer<typeof RiskScanJobStatusSchema>;
+
 // ---------------------------------------------------------------------------
 // POST /risk-scan/upload — response
 // ---------------------------------------------------------------------------
 
 export const RiskScanUploadResponseSchema = z.object({
   scan_id: z.string(),
-  status: z.string(),
+  status: RiskScanJobStatusSchema,
   total_rows: z.number(),
-  valid_rows: z.number(),
-  invalid_rows: z.number(),
-  skipped_rows: z.number(),
 });
 export type RiskScanUploadResponse = z.infer<typeof RiskScanUploadResponseSchema>;
 
@@ -20,13 +26,22 @@ export type RiskScanUploadResponse = z.infer<typeof RiskScanUploadResponseSchema
 
 export const RiskScanStatusSchema = z.object({
   scan_id: z.string(),
-  status: z.string(),
+  status: RiskScanJobStatusSchema,
   total_rows: z.number(),
+  processed_rows: z.number(),
+  progress_percent: z.number(),
   valid_rows: z.number(),
   invalid_rows: z.number(),
   skipped_rows: z.number(),
-  created_at: z.string().nullable(),
-  completed_at: z.string().nullable(),
+  p0_count: z.number(),
+  p1_count: z.number(),
+  p2_count: z.number(),
+  p3_count: z.number(),
+  created_at: z.string().nullable().optional(),
+  started_at: z.string().nullable().optional(),
+  completed_at: z.string().nullable().optional(),
+  cancelled_at: z.string().nullable().optional(),
+  error_message: z.string().nullable().optional(),
 });
 export type RiskScanStatus = z.infer<typeof RiskScanStatusSchema>;
 
@@ -102,6 +117,17 @@ export type RiskScanResult = z.infer<typeof RiskScanResultSchema>;
 
 export const RiskScanResultsSchema = z.array(RiskScanResultSchema);
 export type RiskScanResults = z.infer<typeof RiskScanResultsSchema>;
+
+export const RiskScanPaginatedResultsSchema = z.object({
+  items: z.array(RiskScanResultSchema),
+  page: z.number(),
+  page_size: z.number(),
+  total_items: z.number(),
+  total_pages: z.number(),
+});
+export type RiskScanPaginatedResults = z.infer<
+  typeof RiskScanPaginatedResultsSchema
+>;
 
 // ---------------------------------------------------------------------------
 // POST /risk-scan/{scan_id}/promote/{result_id} — response
