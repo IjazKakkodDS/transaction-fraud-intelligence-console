@@ -51,7 +51,7 @@ class ValidationResult:
     skipped_rows: int
 
 
-def validate_csv(file_bytes: bytes) -> ValidationResult:
+def validate_csv(file_bytes: bytes, max_rows: int = MAX_ROWS) -> ValidationResult:
     """
     Parse and validate CSV bytes for a portfolio risk scan upload.
 
@@ -75,9 +75,9 @@ def validate_csv(file_bytes: bytes) -> ValidationResult:
         )
 
     total_rows = len(df)
-    if total_rows > MAX_ROWS:
+    if total_rows > max_rows:
         raise RiskScanValidationError(
-            f"CSV exceeds maximum of {MAX_ROWS} data rows. Got {total_rows}."
+            f"CSV exceeds maximum of {max_rows} data rows. Got {total_rows}."
         )
 
     all_rows: list[dict] = []

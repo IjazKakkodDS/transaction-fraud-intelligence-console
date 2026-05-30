@@ -2,6 +2,7 @@
 FastAPI application entry point for the Real-Time Fraud Triage System.
 """
 
+import io
 import json
 import logging
 import os
@@ -12,7 +13,7 @@ from datetime import datetime, timezone
 from typing import Literal
 
 import pandas as pd
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from kafka import KafkaProducer
@@ -26,6 +27,7 @@ from src.db.postgres_logger import (
     get_daily_fraud_summary,
     get_latest_investigation,
     get_portfolio_scan,
+    get_portfolio_scan_status,
     get_prediction_by_id,
     get_prediction_by_transaction_id,
     get_review_queue_filtered,
@@ -38,6 +40,8 @@ from src.db.postgres_logger import (
     log_prediction,
     log_workflow_event,
     mark_result_promoted,
+    update_portfolio_scan_progress,
+    update_portfolio_scan_status,
     update_review,
 )
 from src.config.config import SYNC_SCORING_ENABLED
@@ -631,6 +635,167 @@ def notify_case_workflow(case_id: int):
 # ---------------------------------------------------------------------------
 
 
+ASYNC_RISK_SCAN_MAX_ROWS = 10_000
+RISK_SCAN_CHUNK_SIZE = int(os.getenv("RISK_SCAN_CHUNK_SIZE", "500"))
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _detect_csv_row_count(file_bytes: bytes) -> int:
+    """
+    Best-effort row count for queued scan metadata.
+
+    The background validator remains authoritative; this early count is only
+    used so clients can show progress immediately after job creation.
+    """
+    try:
+        return len(pd.read_csv(io.BytesIO(file_bytes), usecols=[0]))
+    except Exception:
+        return 0
+
+
+def _merge_scored_rows(validation_result, scored_rows: list[dict]) -> list[dict]:
+    scored_by_row_number = {r["row_number"]: r for r in scored_rows}
+    merged_rows = []
+    for row in validation_result.all_rows:
+        if row["validation_status"] == "VALID":
+            scored = scored_by_row_number.get(row["row_number"])
+            merged_rows.append(scored if scored is not None else row)
+        else:
+            merged_rows.append(row)
+    return merged_rows
+
+
+def _process_async_risk_scan(scan_id: str, file_bytes: bytes, filename: str) -> None:
+    """
+    Background processor for Phase 12D-1.
+
+    This slice establishes the durable async job contract. Full chunked
+    processing is intentionally deferred to Phase 12D-2; for now the existing
+    validator/scorer path runs after the API has returned 202.
+    """
+    update_portfolio_scan_status(
+        scan_id,
+        "PROCESSING",
+        started_at=_utc_now_iso(),
+        error_message="",
+    )
+
+    try:
+        validation_result = validate_csv(
+            file_bytes,
+            max_rows=ASYNC_RISK_SCAN_MAX_ROWS,
+        )
+        update_portfolio_scan_progress(
+            scan_id,
+            total_rows=validation_result.total_rows,
+            valid_rows=validation_result.valid_rows,
+            invalid_rows=validation_result.invalid_rows,
+            skipped_rows=validation_result.skipped_rows,
+        )
+
+        scored_rows = score_dataframe(validation_result.valid_df)
+        merged_rows = _merge_scored_rows(validation_result, scored_rows)
+        summary = compute_summary(merged_rows)
+
+        bulk_insert_scan_results(scan_id, merged_rows)
+        update_portfolio_scan_progress(
+            scan_id,
+            processed_rows=summary["total_rows"],
+            valid_rows=summary["valid_rows"],
+            invalid_rows=summary["invalid_rows"],
+            skipped_rows=summary["skipped_rows"],
+            low_count=summary["low_count"],
+            medium_count=summary["medium_count"],
+            high_count=summary["high_count"],
+            critical_count=summary["critical_count"],
+            p0_count=summary["p0_count"],
+            p1_count=summary["p1_count"],
+            p2_count=summary["p2_count"],
+            p3_count=summary["p3_count"],
+            total_amount=summary["total_amount"],
+            critical_amount=summary["critical_amount"],
+            high_amount=summary["high_amount"],
+            risk_summary=summary["risk_summary"],
+        )
+        update_portfolio_scan_status(
+            scan_id,
+            "COMPLETE",
+            completed_at=_utc_now_iso(),
+            error_message="",
+        )
+        logger.info(
+            "Async risk scan completed | scan_id=%s filename=%s rows=%d",
+            scan_id,
+            filename,
+            summary["total_rows"],
+        )
+    except (RiskScanValidationError, RiskScanParseError) as exc:
+        logger.warning("Async risk scan failed validation | scan_id=%s error=%s", scan_id, exc)
+        update_portfolio_scan_status(
+            scan_id,
+            "FAILED",
+            completed_at=_utc_now_iso(),
+            error_message=str(exc)[:500],
+        )
+    except Exception as exc:
+        logger.error("Async risk scan failed | scan_id=%s error=%s", scan_id, exc)
+        update_portfolio_scan_status(
+            scan_id,
+            "FAILED",
+            completed_at=_utc_now_iso(),
+            error_message=str(exc)[:500],
+        )
+
+
+@app.post("/risk-scan", status_code=202)
+async def create_async_risk_scan(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+):
+    """
+    Queue an async Portfolio Risk Scan job and return immediately.
+
+    Phase 12D-1 establishes the durable job contract using Postgres state and
+    FastAPI BackgroundTasks. The current background processor reuses the
+    existing scoring path with a 10k-row cap; chunked processing follows in
+    Phase 12D-2.
+    """
+    filename = file.filename or ""
+    if not filename:
+        raise HTTPException(status_code=400, detail="CSV file is required.")
+    if not filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only CSV uploads are supported.")
+
+    file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(status_code=400, detail="CSV file is empty.")
+
+    scan_id = str(uuid.uuid4())
+    total_rows = _detect_csv_row_count(file_bytes)
+
+    create_portfolio_scan({
+        "scan_id":        scan_id,
+        "filename":       filename,
+        "status":         "QUEUED",
+        "total_rows":     total_rows,
+        "processed_rows": 0,
+        "chunk_size":     RISK_SCAN_CHUNK_SIZE,
+        "completed_at":   None,
+        "error_message":  None,
+    })
+
+    background_tasks.add_task(_process_async_risk_scan, scan_id, file_bytes, filename)
+
+    return {
+        "scan_id":    scan_id,
+        "status":     "QUEUED",
+        "total_rows": total_rows,
+    }
+
+
 @app.post("/risk-scan/upload")
 async def upload_risk_scan(file: UploadFile = File(...)):
     """
@@ -738,22 +903,34 @@ def get_risk_scan_status(scan_id: str):
       200 — scan record found
       404 — scan_id not found
     """
-    scan = get_portfolio_scan(scan_id)
+    scan = get_portfolio_scan_status(scan_id)
     if scan is None:
         raise HTTPException(status_code=404, detail=f"Scan {scan_id} not found.")
 
-    created_at = scan.get("created_at")
+    def _iso(value):
+        return value.isoformat() if hasattr(value, "isoformat") else value
+
+    started_at = scan.get("started_at")
     completed_at = scan.get("completed_at")
+    cancelled_at = scan.get("cancelled_at")
 
     return {
-        "scan_id":      scan["scan_id"],
-        "status":       scan["status"],
-        "total_rows":   scan["total_rows"],
-        "valid_rows":   scan["valid_rows"],
-        "invalid_rows": scan["invalid_rows"],
-        "skipped_rows": scan["skipped_rows"],
-        "created_at":   created_at.isoformat() if hasattr(created_at, "isoformat") else created_at,
-        "completed_at": completed_at.isoformat() if hasattr(completed_at, "isoformat") else completed_at,
+        "scan_id":          scan["scan_id"],
+        "status":           scan["status"],
+        "total_rows":       scan["total_rows"],
+        "processed_rows":   scan.get("processed_rows", 0),
+        "progress_percent": scan.get("progress_percent", 0.0),
+        "valid_rows":       scan["valid_rows"],
+        "invalid_rows":     scan["invalid_rows"],
+        "skipped_rows":     scan["skipped_rows"],
+        "p0_count":         scan["p0_count"],
+        "p1_count":         scan["p1_count"],
+        "p2_count":         scan["p2_count"],
+        "p3_count":         scan["p3_count"],
+        "started_at":       _iso(started_at),
+        "completed_at":     _iso(completed_at),
+        "cancelled_at":     _iso(cancelled_at),
+        "error_message":    scan.get("error_message"),
     }
 
 

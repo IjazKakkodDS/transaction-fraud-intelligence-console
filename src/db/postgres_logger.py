@@ -652,6 +652,7 @@ def create_portfolio_scan(record: dict) -> str:
             text("""
                 INSERT INTO portfolio_scans (
                     scan_id, filename, status,
+                    processed_rows, chunk_size, started_at, cancelled_at,
                     total_rows, valid_rows, invalid_rows, skipped_rows,
                     low_count, medium_count, high_count, critical_count,
                     p0_count, p1_count, p2_count, p3_count,
@@ -659,6 +660,7 @@ def create_portfolio_scan(record: dict) -> str:
                     risk_summary, completed_at, error_message
                 ) VALUES (
                     :scan_id, :filename, :status,
+                    :processed_rows, :chunk_size, :started_at, :cancelled_at,
                     :total_rows, :valid_rows, :invalid_rows, :skipped_rows,
                     :low_count, :medium_count, :high_count, :critical_count,
                     :p0_count, :p1_count, :p2_count, :p3_count,
@@ -670,6 +672,15 @@ def create_portfolio_scan(record: dict) -> str:
                 "scan_id":         record.get("scan_id"),
                 "filename":        record.get("filename"),
                 "status":          record.get("status", "COMPLETE"),
+                "processed_rows":  record.get(
+                    "processed_rows",
+                    record.get("total_rows", 0)
+                    if record.get("status", "COMPLETE") == "COMPLETE"
+                    else 0,
+                ),
+                "chunk_size":      record.get("chunk_size"),
+                "started_at":      record.get("started_at"),
+                "cancelled_at":    record.get("cancelled_at"),
                 "total_rows":      record.get("total_rows", 0),
                 "valid_rows":      record.get("valid_rows", 0),
                 "invalid_rows":    record.get("invalid_rows", 0),
@@ -692,6 +703,137 @@ def create_portfolio_scan(record: dict) -> str:
         )
 
     return record["scan_id"]
+
+
+def update_portfolio_scan_status(
+    scan_id: str,
+    status: str,
+    started_at: str | None = None,
+    completed_at: str | None = None,
+    cancelled_at: str | None = None,
+    error_message: str | None = None,
+) -> None:
+    """
+    Update the durable processing state for one portfolio scan.
+
+    Timestamp fields are optional so callers can update only the transition
+    fields that apply to the current state change.
+    """
+    values: dict = {"status": status}
+    if started_at is not None:
+        values["started_at"] = started_at
+    if completed_at is not None:
+        values["completed_at"] = completed_at
+    if cancelled_at is not None:
+        values["cancelled_at"] = cancelled_at
+    if error_message is not None:
+        values["error_message"] = error_message
+
+    assignments = ", ".join(f"{key} = :{key}" for key in values)
+    params = {"scan_id": scan_id, **values}
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(f"""
+                UPDATE portfolio_scans
+                SET {assignments}
+                WHERE scan_id = :scan_id
+            """),
+            params,
+        )
+
+
+def update_portfolio_scan_progress(
+    scan_id: str,
+    total_rows: int | None = None,
+    processed_rows: int | None = None,
+    valid_rows: int | None = None,
+    invalid_rows: int | None = None,
+    skipped_rows: int | None = None,
+    low_count: int | None = None,
+    medium_count: int | None = None,
+    high_count: int | None = None,
+    critical_count: int | None = None,
+    p0_count: int | None = None,
+    p1_count: int | None = None,
+    p2_count: int | None = None,
+    p3_count: int | None = None,
+    total_amount: float | None = None,
+    critical_amount: float | None = None,
+    high_amount: float | None = None,
+    risk_summary: dict | list | str | None = None,
+) -> None:
+    """
+    Update scan progress counters and summary aggregates.
+
+    Only non-None arguments are written so callers can cheaply update a subset
+    of counters as background processing advances.
+    """
+    values: dict = {}
+    for key, value in {
+        "total_rows": total_rows,
+        "processed_rows": processed_rows,
+        "valid_rows": valid_rows,
+        "invalid_rows": invalid_rows,
+        "skipped_rows": skipped_rows,
+        "low_count": low_count,
+        "medium_count": medium_count,
+        "high_count": high_count,
+        "critical_count": critical_count,
+        "p0_count": p0_count,
+        "p1_count": p1_count,
+        "p2_count": p2_count,
+        "p3_count": p3_count,
+        "total_amount": total_amount,
+        "critical_amount": critical_amount,
+        "high_amount": high_amount,
+    }.items():
+        if value is not None:
+            values[key] = value
+
+    if risk_summary is not None:
+        values["risk_summary"] = (
+            json.dumps(risk_summary)
+            if isinstance(risk_summary, (dict, list))
+            else risk_summary
+        )
+
+    if not values:
+        return
+
+    assignments = ", ".join(f"{key} = :{key}" for key in values)
+    params = {"scan_id": scan_id, **values}
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(f"""
+                UPDATE portfolio_scans
+                SET {assignments}
+                WHERE scan_id = :scan_id
+            """),
+            params,
+        )
+
+
+def get_portfolio_scan_status(scan_id: str) -> dict | None:
+    """
+    Fetch one portfolio scan and add a computed progress_percent field.
+    """
+    scan = get_portfolio_scan(scan_id)
+    if scan is None:
+        return None
+
+    total_rows = int(scan.get("total_rows") or 0)
+    processed_rows = int(scan.get("processed_rows") or 0)
+    if total_rows > 0:
+        progress_percent = min(100.0, round((processed_rows / total_rows) * 100, 2))
+    elif scan.get("status") == "COMPLETE":
+        progress_percent = 100.0
+    else:
+        progress_percent = 0.0
+
+    scan["progress_percent"] = progress_percent
+    return scan
 
 
 def get_portfolio_scan(scan_id: str) -> dict | None:
