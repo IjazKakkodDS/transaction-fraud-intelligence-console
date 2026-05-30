@@ -22,6 +22,7 @@ Invariant
 import io
 import logging
 import os
+from collections import Counter
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -32,7 +33,6 @@ from src.db.postgres_logger import (
     update_portfolio_scan_status,
 )
 from src.risk_scan.scanner import score_dataframe
-from src.risk_scan.summarizer import compute_summary
 from src.risk_scan.validator import (
     REQUIRED_COLUMNS,
     RiskScanParseError,
@@ -65,6 +65,37 @@ def _merge_scored_rows(validation_result, scored_rows: list[dict]) -> list[dict]
         else:
             merged.append(row)
     return merged
+
+
+def _build_risk_summary(
+    reasons: Counter,
+    countries: Counter,
+    payment_methods: Counter,
+    merchant_cats: Counter,
+) -> dict:
+    """
+    Build the risk_summary dict from running counters.
+
+    O(k log k) in the number of unique values per counter — effectively
+    constant in practice because the counters are bounded by the fixed
+    set of reasons/countries/payment-methods/merchant-categories in the data.
+    """
+    return {
+        "top_risk_patterns": [
+            {"reason": r, "count": c} for r, c in reasons.most_common(5)
+        ],
+        "top_countries": [
+            {"country": c, "count": n} for c, n in countries.most_common(5)
+        ],
+        "top_payment_methods": [
+            {"payment_method": m, "count": n}
+            for m, n in payment_methods.most_common(5)
+        ],
+        "top_merchant_categories": [
+            {"merchant_category": mc, "count": n}
+            for mc, n in merchant_cats.most_common(5)
+        ],
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -101,6 +132,10 @@ def process_portfolio_scan_job(
     Reads the uploaded CSV once, then validates, scores, persists, and
     updates progress in chunks so status polling observes durable progress
     after every chunk completes.
+
+    Progress updates use running aggregate counters maintained per chunk
+    rather than re-scanning the full accumulated row list after each chunk.
+    This keeps per-chunk overhead O(chunk_size) regardless of total scan size.
 
     Called from FastAPI BackgroundTasks today; the signature is intentionally
     free of FastAPI types so a dedicated worker can import and call this
@@ -142,10 +177,22 @@ def process_portfolio_scan_job(
         # Publish authoritative total_rows now that the file is parsed.
         update_portfolio_scan_progress(scan_id, total_rows=total_rows)
 
-        # ── Chunked validation, scoring, and persistence ───────────────────────
-        seen_transaction_ids: set[str] = set()
-        all_processed_rows: list[dict] = []
+        # ── Running aggregate state ───────────────────────────────────────────
+        # Scalar counts — incremented per row, never re-scanned.
+        agg_total = agg_valid = agg_invalid = agg_skipped = 0
+        agg_low = agg_medium = agg_high = agg_critical = 0
+        agg_p0 = agg_p1 = agg_p2 = agg_p3 = 0
+        agg_total_amount = agg_critical_amount = agg_high_amount = 0.0
 
+        # Counters for risk_summary top-N fields — also updated per row.
+        agg_reasons: Counter = Counter()
+        agg_countries: Counter = Counter()
+        agg_payment_methods: Counter = Counter()
+        agg_merchant_cats: Counter = Counter()
+
+        seen_transaction_ids: set[str] = set()
+
+        # ── Chunked validation, scoring, and persistence ───────────────────────
         for start in range(0, total_rows, chunk_size):
             chunk_df = df.iloc[start : start + chunk_size].copy().reset_index(drop=True)
             validation_result = validate_dataframe(
@@ -157,32 +204,96 @@ def process_portfolio_scan_job(
             merged_rows = _merge_scored_rows(validation_result, scored_rows)
 
             bulk_insert_scan_results(scan_id, merged_rows)
-            all_processed_rows.extend(merged_rows)
 
-            summary = compute_summary(all_processed_rows)
+            # Update running counters from this chunk only — O(chunk_size).
+            for row in merged_rows:
+                vstatus = row["validation_status"]
+                agg_total += 1
+                if vstatus == "VALID":
+                    agg_valid += 1
+                    tier     = row.get("risk_tier") or "Low"
+                    priority = row.get("operational_priority") or "P3"
+
+                    if tier == "Critical":
+                        agg_critical += 1
+                    elif tier == "High":
+                        agg_high += 1
+                    elif tier == "Medium":
+                        agg_medium += 1
+                    else:
+                        agg_low += 1
+
+                    if priority == "P0":
+                        agg_p0 += 1
+                    elif priority == "P1":
+                        agg_p1 += 1
+                    elif priority == "P2":
+                        agg_p2 += 1
+                    else:
+                        agg_p3 += 1
+
+                    amount = row.get("amount")
+                    if amount is not None:
+                        try:
+                            amt = float(amount)
+                            agg_total_amount += amt
+                            if tier == "Critical":
+                                agg_critical_amount += amt
+                            elif tier == "High":
+                                agg_high_amount += amt
+                        except (ValueError, TypeError):
+                            pass
+
+                    reasons_str = row.get("reasons") or ""
+                    for reason in reasons_str.split("|"):
+                        reason = reason.strip()
+                        if reason:
+                            agg_reasons[reason] += 1
+
+                    country = row.get("country")
+                    if country:
+                        agg_countries[str(country)] += 1
+
+                    pm = row.get("payment_method")
+                    if pm:
+                        agg_payment_methods[str(pm)] += 1
+
+                    mc = row.get("merchant_category")
+                    if mc and str(mc) not in ("None", ""):
+                        agg_merchant_cats[str(mc)] += 1
+
+                elif vstatus == "INVALID":
+                    agg_invalid += 1
+                else:
+                    agg_skipped += 1
+
             update_portfolio_scan_progress(
                 scan_id,
-                processed_rows=summary["total_rows"],
-                valid_rows=summary["valid_rows"],
-                invalid_rows=summary["invalid_rows"],
-                skipped_rows=summary["skipped_rows"],
-                low_count=summary["low_count"],
-                medium_count=summary["medium_count"],
-                high_count=summary["high_count"],
-                critical_count=summary["critical_count"],
-                p0_count=summary["p0_count"],
-                p1_count=summary["p1_count"],
-                p2_count=summary["p2_count"],
-                p3_count=summary["p3_count"],
-                total_amount=summary["total_amount"],
-                critical_amount=summary["critical_amount"],
-                high_amount=summary["high_amount"],
-                risk_summary=summary["risk_summary"],
+                processed_rows=agg_total,
+                valid_rows=agg_valid,
+                invalid_rows=agg_invalid,
+                skipped_rows=agg_skipped,
+                low_count=agg_low,
+                medium_count=agg_medium,
+                high_count=agg_high,
+                critical_count=agg_critical,
+                p0_count=agg_p0,
+                p1_count=agg_p1,
+                p2_count=agg_p2,
+                p3_count=agg_p3,
+                total_amount=round(agg_total_amount, 4),
+                critical_amount=round(agg_critical_amount, 4),
+                high_amount=round(agg_high_amount, 4),
+                risk_summary=_build_risk_summary(
+                    agg_reasons,
+                    agg_countries,
+                    agg_payment_methods,
+                    agg_merchant_cats,
+                ),
             )
 
         # ── Zero-row edge case ────────────────────────────────────────────────
         if total_rows == 0:
-            empty = compute_summary([])
             update_portfolio_scan_progress(
                 scan_id,
                 processed_rows=0,
@@ -200,7 +311,9 @@ def process_portfolio_scan_job(
                 total_amount=0,
                 critical_amount=0,
                 high_amount=0,
-                risk_summary=empty["risk_summary"],
+                risk_summary=_build_risk_summary(
+                    Counter(), Counter(), Counter(), Counter()
+                ),
             )
 
         update_portfolio_scan_status(
