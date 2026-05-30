@@ -626,3 +626,276 @@ def get_workflow_events(case_id: int | None = None) -> list[dict]:
             record["created_at"] = record["created_at"].isoformat()
         result.append(record)
     return result
+
+
+# ---------------------------------------------------------------------------
+# Public interface — portfolio scans
+#
+# portfolio_scans and portfolio_scan_results are managed via Alembic migration
+# 0006. Raw SQL is used here; the migration is the authoritative schema source.
+# Lists and dicts are JSON-serialised before storage and deserialised on read.
+# ---------------------------------------------------------------------------
+
+def create_portfolio_scan(record: dict) -> str:
+    """
+    Insert one row into portfolio_scans and return the scan_id.
+
+    risk_summary is stored as a JSON string when a dict/list is passed.
+    All other fields are written as-is; None values are preserved.
+    """
+    risk_summary = record.get("risk_summary")
+    if isinstance(risk_summary, (dict, list)):
+        risk_summary = json.dumps(risk_summary)
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("""
+                INSERT INTO portfolio_scans (
+                    scan_id, filename, status,
+                    total_rows, valid_rows, invalid_rows, skipped_rows,
+                    low_count, medium_count, high_count, critical_count,
+                    p0_count, p1_count, p2_count, p3_count,
+                    total_amount, critical_amount, high_amount,
+                    risk_summary, completed_at, error_message
+                ) VALUES (
+                    :scan_id, :filename, :status,
+                    :total_rows, :valid_rows, :invalid_rows, :skipped_rows,
+                    :low_count, :medium_count, :high_count, :critical_count,
+                    :p0_count, :p1_count, :p2_count, :p3_count,
+                    :total_amount, :critical_amount, :high_amount,
+                    :risk_summary, :completed_at, :error_message
+                )
+            """),
+            {
+                "scan_id":         record.get("scan_id"),
+                "filename":        record.get("filename"),
+                "status":          record.get("status", "COMPLETE"),
+                "total_rows":      record.get("total_rows", 0),
+                "valid_rows":      record.get("valid_rows", 0),
+                "invalid_rows":    record.get("invalid_rows", 0),
+                "skipped_rows":    record.get("skipped_rows", 0),
+                "low_count":       record.get("low_count", 0),
+                "medium_count":    record.get("medium_count", 0),
+                "high_count":      record.get("high_count", 0),
+                "critical_count":  record.get("critical_count", 0),
+                "p0_count":        record.get("p0_count", 0),
+                "p1_count":        record.get("p1_count", 0),
+                "p2_count":        record.get("p2_count", 0),
+                "p3_count":        record.get("p3_count", 0),
+                "total_amount":    record.get("total_amount", 0),
+                "critical_amount": record.get("critical_amount", 0),
+                "high_amount":     record.get("high_amount", 0),
+                "risk_summary":    risk_summary,
+                "completed_at":    record.get("completed_at"),
+                "error_message":   record.get("error_message"),
+            },
+        )
+
+    return record["scan_id"]
+
+
+def get_portfolio_scan(scan_id: str) -> dict | None:
+    """
+    Fetch one portfolio_scans row by scan_id.
+    Returns a plain dict or None if not found.
+    risk_summary is parsed from JSON string back to dict when possible.
+    """
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT * FROM portfolio_scans WHERE scan_id = :scan_id"),
+            {"scan_id": scan_id},
+        ).mappings().first()
+
+    if row is None:
+        return None
+
+    record = dict(row)
+    if record.get("risk_summary"):
+        try:
+            record["risk_summary"] = json.loads(record["risk_summary"])
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    return record
+
+
+def bulk_insert_scan_results(scan_id: str, rows: list[dict]) -> int:
+    """
+    Insert many portfolio_scan_results rows for one scan.
+
+    validation_errors is stored as a JSON string when a list/dict is passed.
+    Returns the number of rows inserted. Returns 0 without querying if rows
+    is empty.
+    """
+    if not rows:
+        return 0
+
+    params = []
+    for row in rows:
+        validation_errors = row.get("validation_errors")
+        if isinstance(validation_errors, (list, dict)):
+            validation_errors = json.dumps(validation_errors)
+
+        params.append({
+            "scan_id":              scan_id,
+            "row_number":           row.get("row_number"),
+            "transaction_id":       row.get("transaction_id"),
+            "amount":               row.get("amount"),
+            "timestamp":            row.get("timestamp"),
+            "country":              row.get("country"),
+            "payment_method":       row.get("payment_method"),
+            "merchant_category":    row.get("merchant_category"),
+            "device_id":            row.get("device_id"),
+            "rule_flag":            row.get("rule_flag"),
+            "model_prediction":     row.get("model_prediction"),
+            "risk_score":           row.get("risk_score"),
+            "decision":             row.get("decision"),
+            "risk_tier":            row.get("risk_tier"),
+            "operational_priority": row.get("operational_priority"),
+            "reasons":              row.get("reasons"),
+            "validation_status":    row.get("validation_status"),
+            "validation_errors":    validation_errors,
+            "promoted":             row.get("promoted", False),
+            "promoted_case_id":     row.get("promoted_case_id"),
+            "promoted_at":          row.get("promoted_at"),
+        })
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("""
+                INSERT INTO portfolio_scan_results (
+                    scan_id, row_number, transaction_id, amount, timestamp,
+                    country, payment_method, merchant_category, device_id,
+                    rule_flag, model_prediction, risk_score, decision,
+                    risk_tier, operational_priority, reasons,
+                    validation_status, validation_errors,
+                    promoted, promoted_case_id, promoted_at
+                ) VALUES (
+                    :scan_id, :row_number, :transaction_id, :amount, :timestamp,
+                    :country, :payment_method, :merchant_category, :device_id,
+                    :rule_flag, :model_prediction, :risk_score, :decision,
+                    :risk_tier, :operational_priority, :reasons,
+                    :validation_status, :validation_errors,
+                    :promoted, :promoted_case_id, :promoted_at
+                )
+            """),
+            params,
+        )
+
+    return len(rows)
+
+
+def get_scan_results(
+    scan_id: str,
+    tier: str | None = None,
+    decision: str | None = None,
+    validation_status: str | None = None,
+    promoted: bool | None = None,
+) -> list[dict]:
+    """
+    Fetch portfolio_scan_results rows for one scan with optional filters.
+
+    tier filters on operational_priority (P0/P1/P2/P3).
+    decision filters on APPROVE/REVIEW/BLOCK.
+    validation_status filters on VALID/INVALID/SKIPPED.
+    promoted filters on true/false.
+
+    Results are ordered by risk_score DESC NULLS LAST, then row_number ASC
+    so that scored rows surface first and unscored rows follow in upload order.
+
+    validation_errors is parsed from JSON string back to list when possible.
+    """
+    where_parts = ["scan_id = :scan_id"]
+    params: dict = {"scan_id": scan_id}
+
+    if tier is not None:
+        where_parts.append("operational_priority = :tier")
+        params["tier"] = tier
+    if decision is not None:
+        where_parts.append("decision = :decision")
+        params["decision"] = decision
+    if validation_status is not None:
+        where_parts.append("validation_status = :validation_status")
+        params["validation_status"] = validation_status
+    if promoted is not None:
+        where_parts.append("promoted = :promoted")
+        params["promoted"] = promoted
+
+    sql = text(
+        "SELECT * FROM portfolio_scan_results "
+        "WHERE " + " AND ".join(where_parts) + " "
+        "ORDER BY risk_score DESC NULLS LAST, row_number ASC"
+    )
+
+    with engine.connect() as conn:
+        rows = conn.execute(sql, params).mappings().all()
+
+    result = []
+    for row in rows:
+        record = dict(row)
+        if record.get("validation_errors"):
+            try:
+                record["validation_errors"] = json.loads(record["validation_errors"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+        result.append(record)
+
+    return result
+
+
+def get_scan_result_by_id(result_id: int) -> dict | None:
+    """
+    Fetch one portfolio_scan_results row by primary key id.
+    Returns a plain dict or None if not found.
+    validation_errors is parsed from JSON string back to list when possible.
+    """
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT * FROM portfolio_scan_results WHERE id = :result_id"),
+            {"result_id": result_id},
+        ).mappings().first()
+
+    if row is None:
+        return None
+
+    record = dict(row)
+    if record.get("validation_errors"):
+        try:
+            record["validation_errors"] = json.loads(record["validation_errors"])
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    return record
+
+
+def mark_result_promoted(
+    result_id: int,
+    case_id: int,
+    promoted_at: str | None = None,
+) -> None:
+    """
+    Mark a portfolio_scan_results row as promoted after a successful case creation.
+
+    Sets promoted=true, promoted_case_id, and promoted_at.
+    promoted_at defaults to the current UTC timestamp when not provided.
+    """
+    if promoted_at is None:
+        from datetime import datetime, timezone
+        promoted_at = datetime.now(timezone.utc).isoformat()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("""
+                UPDATE portfolio_scan_results
+                SET promoted = :promoted,
+                    promoted_case_id = :case_id,
+                    promoted_at = :promoted_at
+                WHERE id = :result_id
+            """),
+            {
+                "result_id":   result_id,
+                "promoted":    True,
+                "case_id":     case_id,
+                "promoted_at": promoted_at,
+            },
+        )
