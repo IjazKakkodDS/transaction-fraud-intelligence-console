@@ -42,7 +42,7 @@ from src.risk_scan.validator import (
 
 logger = logging.getLogger(__name__)
 
-ASYNC_RISK_SCAN_MAX_ROWS: int = 10_000
+ASYNC_RISK_SCAN_MAX_ROWS: int = int(os.getenv("RISK_SCAN_MAX_ROWS", "50000"))
 RISK_SCAN_CHUNK_SIZE: int = max(1, int(os.getenv("RISK_SCAN_CHUNK_SIZE", "500")))
 
 
