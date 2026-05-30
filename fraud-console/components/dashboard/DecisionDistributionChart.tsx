@@ -58,7 +58,7 @@ export function DecisionDistributionChart({ summary }: DecisionDistributionChart
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_200px]">
-          <div className="relative h-[190px] min-w-0">
+          <div className="relative min-w-0" style={{ height: 190, minWidth: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie

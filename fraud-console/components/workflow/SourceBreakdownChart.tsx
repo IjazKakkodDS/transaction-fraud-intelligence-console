@@ -47,7 +47,7 @@ export function SourceBreakdownChart({ data }: { data: SourceBreakdownItem[] }) 
         <p className="text-[13px]" style={{ color: "#94A3B8" }}>No source data recorded yet.</p>
       ) : (
         <div className="grid grid-cols-1 gap-3">
-          <div className="relative h-[178px]">
+          <div className="relative" style={{ height: 178, minWidth: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
