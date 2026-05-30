@@ -985,6 +985,86 @@ def get_scan_results(
     return result
 
 
+def get_scan_results_paginated(
+    scan_id: str,
+    page: int = 1,
+    page_size: int = 100,
+    tier: str | None = None,
+    decision: str | None = None,
+    validation_status: str | None = None,
+    promoted: bool | None = None,
+) -> dict:
+    """
+    Fetch a paginated page of portfolio_scan_results for one scan.
+
+    Uses the same filters and stable sort order as get_scan_results, but
+    returns a pagination envelope for large async scans.
+    """
+    safe_page = max(1, page)
+    safe_page_size = min(500, max(1, page_size))
+    offset = (safe_page - 1) * safe_page_size
+
+    where_parts = ["scan_id = :scan_id"]
+    params: dict = {
+        "scan_id": scan_id,
+        "limit": safe_page_size,
+        "offset": offset,
+    }
+
+    if tier is not None:
+        where_parts.append("operational_priority = :tier")
+        params["tier"] = tier
+    if decision is not None:
+        where_parts.append("decision = :decision")
+        params["decision"] = decision
+    if validation_status is not None:
+        where_parts.append("validation_status = :validation_status")
+        params["validation_status"] = validation_status
+    if promoted is not None:
+        where_parts.append("promoted = :promoted")
+        params["promoted"] = promoted
+
+    where_sql = " AND ".join(where_parts)
+    count_sql = text(
+        "SELECT COUNT(*) FROM portfolio_scan_results "
+        f"WHERE {where_sql}"
+    )
+    page_sql = text(
+        "SELECT * FROM portfolio_scan_results "
+        f"WHERE {where_sql} "
+        "ORDER BY risk_score DESC NULLS LAST, row_number ASC "
+        "LIMIT :limit OFFSET :offset"
+    )
+
+    with engine.connect() as conn:
+        total_items = int(conn.execute(count_sql, params).scalar() or 0)
+        rows = conn.execute(page_sql, params).mappings().all()
+
+    items = []
+    for row in rows:
+        record = dict(row)
+        if record.get("validation_errors"):
+            try:
+                record["validation_errors"] = json.loads(record["validation_errors"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+        items.append(record)
+
+    total_pages = (
+        (total_items + safe_page_size - 1) // safe_page_size
+        if total_items > 0
+        else 0
+    )
+
+    return {
+        "items": items,
+        "page": safe_page,
+        "page_size": safe_page_size,
+        "total_items": total_items,
+        "total_pages": total_pages,
+    }
+
+
 def get_scan_result_by_id(result_id: int) -> dict | None:
     """
     Fetch one portfolio_scan_results row by primary key id.

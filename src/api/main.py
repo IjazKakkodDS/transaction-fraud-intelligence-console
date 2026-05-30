@@ -33,6 +33,7 @@ from src.db.postgres_logger import (
     get_review_queue_filtered,
     get_scan_result_by_id,
     get_scan_results,
+    get_scan_results_paginated,
     get_stale_cases,
     get_stats,
     get_workflow_events,
@@ -1043,25 +1044,41 @@ def get_risk_scan_results(
     decision: str | None = None,
     validation_status: str | None = None,
     promoted: bool | None = None,
+    page: int | None = None,
+    page_size: int | None = None,
 ):
     """
-    Return persisted scan result rows with optional filters.
+    Return persisted scan result rows with optional filters and pagination.
 
     Query params:
       tier              P0 / P1 / P2 / P3  (filters operational_priority)
       decision          APPROVE / REVIEW / BLOCK
       validation_status VALID / INVALID / SKIPPED
       promoted          true / false
+      page              optional 1-based page number
+      page_size         optional page size, clamped to 1..500
 
     Results are ordered by risk_score DESC NULLS LAST, then row_number ASC.
 
     Responses:
-      200 — result list (may be empty)
+      200 — raw result list when page/page_size are omitted
+      200 — paginated envelope when page or page_size is provided
       404 — scan_id not found
     """
     scan = get_portfolio_scan(scan_id)
     if scan is None:
         raise HTTPException(status_code=404, detail=f"Scan {scan_id} not found.")
+
+    if page is not None or page_size is not None:
+        return get_scan_results_paginated(
+            scan_id,
+            page=page or 1,
+            page_size=page_size or 100,
+            tier=tier,
+            decision=decision,
+            validation_status=validation_status,
+            promoted=promoted,
+        )
 
     return get_scan_results(
         scan_id,
