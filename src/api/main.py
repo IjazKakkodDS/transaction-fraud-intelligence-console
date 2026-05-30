@@ -53,8 +53,10 @@ from src.risk_scan.exporter import results_to_csv
 from src.risk_scan.scanner import score_dataframe
 from src.risk_scan.summarizer import compute_summary
 from src.risk_scan.validator import (
+    REQUIRED_COLUMNS,
     RiskScanParseError,
     RiskScanValidationError,
+    validate_dataframe,
     validate_csv,
 )
 from src.rules.fraud_rules import apply_fraud_rules
@@ -636,7 +638,7 @@ def notify_case_workflow(case_id: int):
 
 
 ASYNC_RISK_SCAN_MAX_ROWS = 10_000
-RISK_SCAN_CHUNK_SIZE = int(os.getenv("RISK_SCAN_CHUNK_SIZE", "500"))
+RISK_SCAN_CHUNK_SIZE = max(1, int(os.getenv("RISK_SCAN_CHUNK_SIZE", "500")))
 
 
 def _utc_now_iso() -> str:
@@ -670,11 +672,10 @@ def _merge_scored_rows(validation_result, scored_rows: list[dict]) -> list[dict]
 
 def _process_async_risk_scan(scan_id: str, file_bytes: bytes, filename: str) -> None:
     """
-    Background processor for Phase 12D-1.
+    Background processor for async portfolio scans.
 
-    This slice establishes the durable async job contract. Full chunked
-    processing is intentionally deferred to Phase 12D-2; for now the existing
-    validator/scorer path runs after the API has returned 202.
+    Parses the CSV once, then validates, scores, persists, and reports progress
+    in chunks so status polling can observe durable progress.
     """
     update_portfolio_scan_status(
         scan_id,
@@ -684,42 +685,86 @@ def _process_async_risk_scan(scan_id: str, file_bytes: bytes, filename: str) -> 
     )
 
     try:
-        validation_result = validate_csv(
-            file_bytes,
-            max_rows=ASYNC_RISK_SCAN_MAX_ROWS,
-        )
+        try:
+            df = pd.read_csv(io.BytesIO(file_bytes))
+        except Exception as exc:
+            raise RiskScanParseError(f"CSV could not be parsed: {exc}") from exc
+
+        missing_cols = REQUIRED_COLUMNS - set(df.columns)
+        if missing_cols:
+            raise RiskScanValidationError(
+                f"Missing required columns: {', '.join(sorted(missing_cols))}"
+            )
+
+        total_rows = len(df)
+        if total_rows > ASYNC_RISK_SCAN_MAX_ROWS:
+            raise RiskScanValidationError(
+                f"CSV exceeds maximum of {ASYNC_RISK_SCAN_MAX_ROWS} data rows. Got {total_rows}."
+            )
+
         update_portfolio_scan_progress(
             scan_id,
-            total_rows=validation_result.total_rows,
-            valid_rows=validation_result.valid_rows,
-            invalid_rows=validation_result.invalid_rows,
-            skipped_rows=validation_result.skipped_rows,
+            total_rows=total_rows,
         )
 
-        scored_rows = score_dataframe(validation_result.valid_df)
-        merged_rows = _merge_scored_rows(validation_result, scored_rows)
-        summary = compute_summary(merged_rows)
+        seen_transaction_ids: set[str] = set()
+        all_processed_rows: list[dict] = []
 
-        bulk_insert_scan_results(scan_id, merged_rows)
-        update_portfolio_scan_progress(
-            scan_id,
-            processed_rows=summary["total_rows"],
-            valid_rows=summary["valid_rows"],
-            invalid_rows=summary["invalid_rows"],
-            skipped_rows=summary["skipped_rows"],
-            low_count=summary["low_count"],
-            medium_count=summary["medium_count"],
-            high_count=summary["high_count"],
-            critical_count=summary["critical_count"],
-            p0_count=summary["p0_count"],
-            p1_count=summary["p1_count"],
-            p2_count=summary["p2_count"],
-            p3_count=summary["p3_count"],
-            total_amount=summary["total_amount"],
-            critical_amount=summary["critical_amount"],
-            high_amount=summary["high_amount"],
-            risk_summary=summary["risk_summary"],
-        )
+        for start in range(0, total_rows, RISK_SCAN_CHUNK_SIZE):
+            chunk_df = df.iloc[start:start + RISK_SCAN_CHUNK_SIZE].copy().reset_index(drop=True)
+            validation_result = validate_dataframe(
+                chunk_df,
+                seen_transaction_ids=seen_transaction_ids,
+                row_offset=start,
+            )
+            scored_rows = score_dataframe(validation_result.valid_df)
+            merged_rows = _merge_scored_rows(validation_result, scored_rows)
+
+            bulk_insert_scan_results(scan_id, merged_rows)
+            all_processed_rows.extend(merged_rows)
+
+            summary = compute_summary(all_processed_rows)
+            update_portfolio_scan_progress(
+                scan_id,
+                processed_rows=summary["total_rows"],
+                valid_rows=summary["valid_rows"],
+                invalid_rows=summary["invalid_rows"],
+                skipped_rows=summary["skipped_rows"],
+                low_count=summary["low_count"],
+                medium_count=summary["medium_count"],
+                high_count=summary["high_count"],
+                critical_count=summary["critical_count"],
+                p0_count=summary["p0_count"],
+                p1_count=summary["p1_count"],
+                p2_count=summary["p2_count"],
+                p3_count=summary["p3_count"],
+                total_amount=summary["total_amount"],
+                critical_amount=summary["critical_amount"],
+                high_amount=summary["high_amount"],
+                risk_summary=summary["risk_summary"],
+            )
+
+        if total_rows == 0:
+            update_portfolio_scan_progress(
+                scan_id,
+                processed_rows=0,
+                valid_rows=0,
+                invalid_rows=0,
+                skipped_rows=0,
+                low_count=0,
+                medium_count=0,
+                high_count=0,
+                critical_count=0,
+                p0_count=0,
+                p1_count=0,
+                p2_count=0,
+                p3_count=0,
+                total_amount=0,
+                critical_amount=0,
+                high_amount=0,
+                risk_summary=compute_summary([])["risk_summary"],
+            )
+
         update_portfolio_scan_status(
             scan_id,
             "COMPLETE",
@@ -730,7 +775,7 @@ def _process_async_risk_scan(scan_id: str, file_bytes: bytes, filename: str) -> 
             "Async risk scan completed | scan_id=%s filename=%s rows=%d",
             scan_id,
             filename,
-            summary["total_rows"],
+            total_rows,
         )
     except (RiskScanValidationError, RiskScanParseError) as exc:
         logger.warning("Async risk scan failed validation | scan_id=%s error=%s", scan_id, exc)

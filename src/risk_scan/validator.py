@@ -3,7 +3,7 @@ CSV validation for portfolio risk scan uploads.
 """
 
 import io
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import pandas as pd
 
@@ -80,16 +80,44 @@ def validate_csv(file_bytes: bytes, max_rows: int = MAX_ROWS) -> ValidationResul
             f"CSV exceeds maximum of {max_rows} data rows. Got {total_rows}."
         )
 
+    return validate_dataframe(df, max_rows=max_rows)
+
+
+def validate_dataframe(
+    df: pd.DataFrame,
+    max_rows: int | None = None,
+    seen_transaction_ids: set[str] | None = None,
+    row_offset: int = 0,
+) -> ValidationResult:
+    """
+    Validate an already-parsed DataFrame.
+
+    This powers chunked async scans while preserving validate_csv() for the
+    synchronous upload path. row_offset is the number of data rows that appear
+    before this DataFrame in the original CSV, so emitted row_number values
+    remain 1-based positions from the source file.
+    """
+    missing_cols = REQUIRED_COLUMNS - set(df.columns)
+    if missing_cols:
+        raise RiskScanValidationError(
+            f"Missing required columns: {', '.join(sorted(missing_cols))}"
+        )
+
+    total_rows = len(df)
+    if max_rows is not None and total_rows > max_rows:
+        raise RiskScanValidationError(
+            f"CSV exceeds maximum of {max_rows} data rows. Got {total_rows}."
+        )
+
     all_rows: list[dict] = []
     valid_record_positions: list[int] = []
-    seen_transaction_ids: set[str] = set()
+    seen = seen_transaction_ids if seen_transaction_ids is not None else set()
     valid_count = invalid_count = skipped_count = 0
-
     has_merchant_category = "merchant_category" in df.columns
     has_device_id = "device_id" in df.columns
 
     for pos, (_, row) in enumerate(df.iterrows()):
-        row_number = pos + 1  # 1-based, header excluded
+        row_number = row_offset + pos + 1  # 1-based, header excluded
 
         transaction_id = row.get("transaction_id")
         amount_raw = row.get("amount")
@@ -137,14 +165,14 @@ def validate_csv(file_bytes: bytes, max_rows: int = MAX_ROWS) -> ValidationResul
             invalid_count += 1
         else:
             tid_str = str(transaction_id)
-            if tid_str in seen_transaction_ids:
+            if tid_str in seen:
                 validation_status = "SKIPPED"
                 validation_errors = ["Duplicate transaction_id in uploaded file"]
                 skipped_count += 1
             else:
                 validation_status = "VALID"
                 validation_errors = None
-                seen_transaction_ids.add(tid_str)
+                seen.add(tid_str)
                 valid_count += 1
                 valid_record_positions.append(pos)
 
