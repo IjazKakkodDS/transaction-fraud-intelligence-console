@@ -12,26 +12,32 @@ from datetime import datetime, timezone
 from typing import Literal
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 from pydantic import ValidationError
 
 from src.api.schemas import ReviewCaseRequest, WorkflowAuditEventRequest
 from src.db.postgres_logger import (
+    bulk_insert_scan_results,
+    create_portfolio_scan,
     get_daily_fraud_summary,
     get_latest_investigation,
+    get_portfolio_scan,
     get_prediction_by_id,
     get_prediction_by_transaction_id,
     get_review_queue_filtered,
+    get_scan_result_by_id,
+    get_scan_results,
     get_stale_cases,
     get_stats,
     get_workflow_events,
     get_workflow_metrics,
     log_prediction,
     log_workflow_event,
+    mark_result_promoted,
     update_review,
 )
 from src.config.config import SYNC_SCORING_ENABLED
@@ -39,6 +45,14 @@ from src.events.producer import send_transaction_raw_event
 from src.events.schemas import TransactionRawEvent
 from src.features.transaction_features import generate_basic_features, generate_reasons
 from src.models.predict import predict
+from src.risk_scan.exporter import results_to_csv
+from src.risk_scan.scanner import score_dataframe
+from src.risk_scan.summarizer import compute_summary
+from src.risk_scan.validator import (
+    RiskScanParseError,
+    RiskScanValidationError,
+    validate_csv,
+)
 from src.rules.fraud_rules import apply_fraud_rules
 from src.triage.investigator import triage_decision
 
@@ -609,3 +623,342 @@ def notify_case_workflow(case_id: int):
         "case_id": case_id,
         "workflow_url": "configured",
     }
+
+
+# ---------------------------------------------------------------------------
+# Portfolio Risk Scan endpoints — Phase 12B-5
+# /risk-scan/*
+# ---------------------------------------------------------------------------
+
+
+@app.post("/risk-scan/upload")
+async def upload_risk_scan(file: UploadFile = File(...)):
+    """
+    Accept a CSV file upload, validate and score each row, persist all results,
+    and return a scan summary with the scan_id for further API calls.
+
+    Responses:
+      200 — scan complete; scan_id and row counts returned
+      400 — CSV structure invalid (missing required columns, row limit exceeded)
+      422 — file bytes cannot be parsed as CSV
+      500 — unexpected scoring or persistence failure
+    """
+    file_bytes = await file.read()
+    filename = file.filename or "upload.csv"
+
+    try:
+        validation_result = validate_csv(file_bytes)
+    except RiskScanValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except RiskScanParseError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+    scan_id = str(uuid.uuid4())
+
+    try:
+        scored_rows = score_dataframe(validation_result.valid_df)
+    except Exception as exc:
+        logger.error("Scoring failed | scan_id=%s error=%s", scan_id, exc)
+        try:
+            create_portfolio_scan({
+                "scan_id":         scan_id,
+                "filename":        filename,
+                "status":          "FAILED",
+                "total_rows":      validation_result.total_rows,
+                "valid_rows":      validation_result.valid_rows,
+                "invalid_rows":    validation_result.invalid_rows,
+                "skipped_rows":    validation_result.skipped_rows,
+                "low_count":       0,
+                "medium_count":    0,
+                "high_count":      0,
+                "critical_count":  0,
+                "p0_count":        0,
+                "p1_count":        0,
+                "p2_count":        0,
+                "p3_count":        0,
+                "total_amount":    0,
+                "critical_amount": 0,
+                "high_amount":     0,
+                "risk_summary":    None,
+                "completed_at":    None,
+                "error_message":   str(exc)[:500],
+            })
+        except Exception as persist_exc:
+            logger.error(
+                "Failed to persist FAILED scan record | scan_id=%s error=%s",
+                scan_id,
+                persist_exc,
+            )
+        raise HTTPException(status_code=500, detail="Scoring pipeline failed unexpectedly.")
+
+    # Merge scored outputs back into all_rows so compute_summary and
+    # bulk_insert_scan_results receive a single unified list covering every row.
+    scored_by_row_number = {r["row_number"]: r for r in scored_rows}
+    merged_rows = []
+    for row in validation_result.all_rows:
+        if row["validation_status"] == "VALID":
+            scored = scored_by_row_number.get(row["row_number"])
+            merged_rows.append(scored if scored is not None else row)
+        else:
+            merged_rows.append(row)
+
+    summary = compute_summary(merged_rows)
+    completed_at = datetime.now(timezone.utc).isoformat()
+
+    try:
+        create_portfolio_scan({
+            "scan_id":       scan_id,
+            "filename":      filename,
+            "status":        "COMPLETE",
+            "completed_at":  completed_at,
+            "error_message": None,
+            **summary,
+        })
+        bulk_insert_scan_results(scan_id, merged_rows)
+    except Exception as exc:
+        logger.error("Persistence failed | scan_id=%s error=%s", scan_id, exc)
+        raise HTTPException(status_code=500, detail="Failed to persist scan results.")
+
+    return {
+        "scan_id":      scan_id,
+        "status":       "COMPLETE",
+        "total_rows":   summary["total_rows"],
+        "valid_rows":   summary["valid_rows"],
+        "invalid_rows": summary["invalid_rows"],
+        "skipped_rows": summary["skipped_rows"],
+    }
+
+
+@app.get("/risk-scan/{scan_id}/status")
+def get_risk_scan_status(scan_id: str):
+    """
+    Return scan processing status and row-count summary.
+
+    Responses:
+      200 — scan record found
+      404 — scan_id not found
+    """
+    scan = get_portfolio_scan(scan_id)
+    if scan is None:
+        raise HTTPException(status_code=404, detail=f"Scan {scan_id} not found.")
+
+    created_at = scan.get("created_at")
+    completed_at = scan.get("completed_at")
+
+    return {
+        "scan_id":      scan["scan_id"],
+        "status":       scan["status"],
+        "total_rows":   scan["total_rows"],
+        "valid_rows":   scan["valid_rows"],
+        "invalid_rows": scan["invalid_rows"],
+        "skipped_rows": scan["skipped_rows"],
+        "created_at":   created_at.isoformat() if hasattr(created_at, "isoformat") else created_at,
+        "completed_at": completed_at.isoformat() if hasattr(completed_at, "isoformat") else completed_at,
+    }
+
+
+@app.get("/risk-scan/{scan_id}/summary")
+def get_risk_scan_summary(scan_id: str):
+    """
+    Return detailed scan summary: tier distribution, priority breakdown,
+    exposure totals, and top risk patterns.
+
+    Responses:
+      200 — scan found and complete
+      400 — scan exists but is not COMPLETE
+      404 — scan_id not found
+    """
+    scan = get_portfolio_scan(scan_id)
+    if scan is None:
+        raise HTTPException(status_code=404, detail=f"Scan {scan_id} not found.")
+    if scan["status"] != "COMPLETE":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Scan {scan_id} status is {scan['status']!r}. Summary is only available for completed scans.",
+        )
+
+    created_at = scan.get("created_at")
+    completed_at = scan.get("completed_at")
+
+    def _float(val) -> float:
+        return float(val) if val is not None else 0.0
+
+    return {
+        "scan_id":      scan["scan_id"],
+        "status":       scan["status"],
+        "filename":     scan.get("filename"),
+        "total_rows":   scan["total_rows"],
+        "valid_rows":   scan["valid_rows"],
+        "invalid_rows": scan["invalid_rows"],
+        "skipped_rows": scan["skipped_rows"],
+        "tier_distribution": {
+            "critical": scan["critical_count"],
+            "high":     scan["high_count"],
+            "medium":   scan["medium_count"],
+            "low":      scan["low_count"],
+        },
+        "priority_distribution": {
+            "p0": scan["p0_count"],
+            "p1": scan["p1_count"],
+            "p2": scan["p2_count"],
+            "p3": scan["p3_count"],
+        },
+        "exposure": {
+            "total_amount":    _float(scan["total_amount"]),
+            "critical_amount": _float(scan["critical_amount"]),
+            "high_amount":     _float(scan["high_amount"]),
+        },
+        "risk_summary":  scan.get("risk_summary"),
+        "created_at":    created_at.isoformat() if hasattr(created_at, "isoformat") else created_at,
+        "completed_at":  completed_at.isoformat() if hasattr(completed_at, "isoformat") else completed_at,
+    }
+
+
+@app.get("/risk-scan/{scan_id}/results")
+def get_risk_scan_results(
+    scan_id: str,
+    tier: str | None = None,
+    decision: str | None = None,
+    validation_status: str | None = None,
+    promoted: bool | None = None,
+):
+    """
+    Return persisted scan result rows with optional filters.
+
+    Query params:
+      tier              P0 / P1 / P2 / P3  (filters operational_priority)
+      decision          APPROVE / REVIEW / BLOCK
+      validation_status VALID / INVALID / SKIPPED
+      promoted          true / false
+
+    Results are ordered by risk_score DESC NULLS LAST, then row_number ASC.
+
+    Responses:
+      200 — result list (may be empty)
+      404 — scan_id not found
+    """
+    scan = get_portfolio_scan(scan_id)
+    if scan is None:
+        raise HTTPException(status_code=404, detail=f"Scan {scan_id} not found.")
+
+    return get_scan_results(
+        scan_id,
+        tier=tier,
+        decision=decision,
+        validation_status=validation_status,
+        promoted=promoted,
+    )
+
+
+@app.post("/risk-scan/{scan_id}/promote/{result_id}")
+def promote_scan_result(scan_id: str, result_id: int):
+    """
+    Promote a stored VALID scan result into the predictions table as a normal case.
+
+    Uses only server-side stored row data; no payload is accepted from the client.
+    Does not trigger AI investigation or workflow dispatch automatically.
+
+    Responses:
+      200 — promoted; case_id and dossier path returned
+      400 — result is not VALID, or result does not belong to this scan
+      404 — scan or result not found
+      409 — already promoted, or transaction already exists in predictions
+    """
+    scan = get_portfolio_scan(scan_id)
+    if scan is None:
+        raise HTTPException(status_code=404, detail=f"Scan {scan_id} not found.")
+
+    result = get_scan_result_by_id(result_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Result {result_id} not found.")
+
+    if result["scan_id"] != scan_id:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Result {result_id} does not belong to scan {scan_id}.",
+        )
+
+    if result["validation_status"] != "VALID":
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Only VALID rows can be promoted. "
+                f"This row has validation_status={result['validation_status']!r}."
+            ),
+        )
+
+    if result["promoted"]:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Result {result_id} has already been promoted "
+                f"to case_id={result['promoted_case_id']}."
+            ),
+        )
+
+    prediction_record = {
+        "transaction_id":   result.get("transaction_id"),
+        "amount":           result.get("amount"),
+        "timestamp":        result.get("timestamp"),
+        "rule_flag":        result.get("rule_flag"),
+        "model_prediction": result.get("model_prediction"),
+        "risk_score":       result.get("risk_score"),
+        "decision":         result.get("decision"),
+        "reasons":          result.get("reasons"),
+        "event_id":         None,
+    }
+
+    case_id = log_prediction(prediction_record)
+    if case_id is None:
+        raise HTTPException(
+            status_code=409,
+            detail="This transaction already exists in the predictions table.",
+        )
+
+    promoted_at = datetime.now(timezone.utc).isoformat()
+    mark_result_promoted(result_id, case_id, promoted_at)
+
+    logger.info(
+        "Scan result promoted | scan_id=%s result_id=%d case_id=%d transaction_id=%s",
+        scan_id,
+        result_id,
+        case_id,
+        result.get("transaction_id"),
+    )
+
+    return {
+        "case_id":           case_id,
+        "transaction_id":    result.get("transaction_id"),
+        "promoted_at":       promoted_at,
+        "case_dossier_path": f"/cases/{case_id}",
+    }
+
+
+@app.get("/risk-scan/{scan_id}/export")
+def export_risk_scan_csv(scan_id: str):
+    """
+    Return all scan result rows as a downloadable CSV file.
+
+    Responses:
+      200 — text/csv attachment
+      400 — scan is not COMPLETE
+      404 — scan_id not found
+    """
+    scan = get_portfolio_scan(scan_id)
+    if scan is None:
+        raise HTTPException(status_code=404, detail=f"Scan {scan_id} not found.")
+    if scan["status"] != "COMPLETE":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Scan {scan_id} status is {scan['status']!r}. Export is only available for completed scans.",
+        )
+
+    results = get_scan_results(scan_id)
+    csv_bytes = results_to_csv(results)
+    filename = f"risk-scan-{scan_id[:8]}-results.csv"
+
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
