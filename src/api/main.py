@@ -5,6 +5,7 @@ FastAPI application entry point for the Real-Time Fraud Triage System.
 import json
 import logging
 import os
+import time
 import urllib.error
 import urllib.request
 import uuid
@@ -33,6 +34,7 @@ from src.db.postgres_logger import (
     get_scan_result_by_id,
     get_scan_results,
     get_scan_results_paginated,
+    stream_scan_results_for_export,
     get_stale_cases,
     get_stats,
     get_workflow_events,
@@ -49,7 +51,7 @@ from src.events.producer import send_transaction_raw_event
 from src.events.schemas import TransactionRawEvent
 from src.features.transaction_features import generate_basic_features, generate_reasons
 from src.models.predict import predict
-from src.risk_scan.exporter import results_to_csv, stream_scan_csv
+from src.risk_scan.exporter import csv_header, results_to_csv, rows_to_csv_chunk
 from src.risk_scan.processor import (
     ASYNC_RISK_SCAN_MAX_ROWS,
     RISK_SCAN_CHUNK_SIZE,
@@ -1038,14 +1040,57 @@ def export_risk_scan_csv(scan_id: str):
         )
 
     filename = f"risk-scan-{scan_id[:8]}-results.csv"
+    batch_size = int(os.getenv("RISK_SCAN_EXPORT_BATCH_SIZE", "10000"))
 
-    def fetch_page(offset: int, limit: int) -> list[dict]:
-        page = (offset // limit) + 1
-        result = get_scan_results_paginated(scan_id, page=page, page_size=limit)
-        return result["items"]
+    def csv_stream():
+        exported_rows = 0
+        started = time.monotonic()
+        first_yield_at = time.monotonic()
+        logger.info(
+            "Risk scan export started | scan_id=%s filename=%s batch_size=%d total_rows=%s",
+            scan_id,
+            filename,
+            batch_size,
+            scan.get("total_rows"),
+        )
+
+        try:
+            yield csv_header()
+            logger.info(
+                "Risk scan export first bytes yielded | scan_id=%s elapsed_ms=%d",
+                scan_id,
+                int((time.monotonic() - first_yield_at) * 1000),
+            )
+
+            for batch in stream_scan_results_for_export(scan_id, batch_size=batch_size):
+                if not batch:
+                    continue
+                exported_rows += len(batch)
+                yield rows_to_csv_chunk(batch)
+                if exported_rows % 100_000 == 0:
+                    logger.info(
+                        "Risk scan export progress | scan_id=%s exported_rows=%d",
+                        scan_id,
+                        exported_rows,
+                    )
+
+            logger.info(
+                "Risk scan export completed | scan_id=%s exported_rows=%d elapsed_s=%.2f",
+                scan_id,
+                exported_rows,
+                time.monotonic() - started,
+            )
+        except Exception:
+            logger.exception(
+                "Risk scan export failed | scan_id=%s exported_rows=%d elapsed_s=%.2f",
+                scan_id,
+                exported_rows,
+                time.monotonic() - started,
+            )
+            raise
 
     return StreamingResponse(
-        stream_scan_csv(fetch_page),
+        csv_stream(),
         media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

@@ -14,6 +14,7 @@ Defaults to the local SQLite file so the system works without Docker.
 
 import json
 import os
+import uuid
 
 from dotenv import load_dotenv
 from sqlalchemy import (
@@ -1063,6 +1064,89 @@ def get_scan_results_paginated(
         "total_items": total_items,
         "total_pages": total_pages,
     }
+
+
+def stream_scan_results_for_export(
+    scan_id: str,
+    batch_size: int = 10_000,
+):
+    """
+    Stream scan result rows for CSV export using a Postgres server-side cursor.
+
+    This avoids the UI pagination helper's COUNT/OFFSET work and keeps memory
+    bounded to one fetch batch. Results preserve the existing export order.
+    """
+    if DATABASE_URL.startswith("sqlite"):
+        rows = get_scan_results(scan_id)
+        for idx in range(0, len(rows), batch_size):
+            yield rows[idx:idx + batch_size]
+        return
+
+    raw_conn = engine.raw_connection()
+    cursor_name = f"scan_export_{uuid.uuid4().hex}"
+    cursor = None
+
+    try:
+        cursor = raw_conn.cursor(name=cursor_name)
+        cursor.itersize = batch_size
+        columns = [
+            "row_number",
+            "transaction_id",
+            "amount",
+            "timestamp",
+            "country",
+            "payment_method",
+            "merchant_category",
+            "device_id",
+            "rule_flag",
+            "model_prediction",
+            "risk_score",
+            "decision",
+            "risk_tier",
+            "operational_priority",
+            "reasons",
+            "validation_status",
+            "validation_errors",
+            "promoted",
+        ]
+        cursor.execute(
+            """
+            SELECT
+                row_number,
+                transaction_id,
+                amount,
+                "timestamp",
+                country,
+                payment_method,
+                merchant_category,
+                device_id,
+                rule_flag,
+                model_prediction,
+                risk_score,
+                decision,
+                risk_tier,
+                operational_priority,
+                reasons,
+                validation_status,
+                validation_errors,
+                promoted
+            FROM portfolio_scan_results
+            WHERE scan_id = %s
+            ORDER BY risk_score DESC NULLS LAST, row_number ASC
+            """,
+            (scan_id,),
+        )
+
+        while True:
+            rows = cursor.fetchmany(batch_size)
+            if not rows:
+                break
+            yield [dict(zip(columns, row)) for row in rows]
+    finally:
+        if cursor is not None:
+            cursor.close()
+        raw_conn.rollback()
+        raw_conn.close()
 
 
 def get_scan_result_by_id(result_id: int) -> dict | None:

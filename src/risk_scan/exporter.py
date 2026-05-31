@@ -4,6 +4,7 @@ CSV export for portfolio risk scan results.
 
 import csv
 import io
+import json
 from collections.abc import Generator, Iterator
 
 EXPORT_FIELDS = [
@@ -36,6 +37,16 @@ def _clean_row(row: dict) -> dict:
         val = row.get(field)
         if val is None:
             clean[field] = ""
+        elif field == "validation_errors" and isinstance(val, str):
+            try:
+                parsed = json.loads(val)
+            except (json.JSONDecodeError, TypeError):
+                clean[field] = val
+            else:
+                if isinstance(parsed, list):
+                    clean[field] = "|".join(str(v) for v in parsed)
+                else:
+                    clean[field] = val
         elif isinstance(val, list):
             clean[field] = "|".join(str(v) for v in val)
         else:
@@ -61,6 +72,33 @@ def results_to_csv(results: list[dict]) -> bytes:
     )
     writer.writeheader()
     for row in results:
+        writer.writerow(_clean_row(row))
+    return buf.getvalue().encode("utf-8")
+
+
+def csv_header() -> bytes:
+    """Return the CSV header row as bytes."""
+    buf = io.StringIO()
+    writer = csv.DictWriter(
+        buf,
+        fieldnames=EXPORT_FIELDS,
+        extrasaction="ignore",
+        lineterminator="\n",
+    )
+    writer.writeheader()
+    return buf.getvalue().encode("utf-8")
+
+
+def rows_to_csv_chunk(rows: list[dict]) -> bytes:
+    """Serialize one batch of scan result rows without writing a header."""
+    buf = io.StringIO()
+    writer = csv.DictWriter(
+        buf,
+        fieldnames=EXPORT_FIELDS,
+        extrasaction="ignore",
+        lineterminator="\n",
+    )
+    for row in rows:
         writer.writerow(_clean_row(row))
     return buf.getvalue().encode("utf-8")
 
