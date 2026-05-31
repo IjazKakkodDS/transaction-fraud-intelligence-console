@@ -32,6 +32,7 @@ from src.db.postgres_logger import (
     get_prediction_by_transaction_id,
     get_review_queue_filtered,
     get_scan_result_by_id,
+    get_recent_portfolio_scans,
     get_scan_results,
     get_scan_results_paginated,
     stream_scan_results_for_export,
@@ -785,6 +786,23 @@ async def upload_risk_scan(file: UploadFile = File(...)):
         "invalid_rows": summary["invalid_rows"],
         "skipped_rows": summary["skipped_rows"],
     }
+
+
+@app.get("/risk-scan/recent")
+def list_recent_risk_scans(limit: int = 10):
+    """
+    Return the most recent portfolio scans ordered newest-first.
+
+    Does not return full result rows. Use /risk-scan/{scan_id}/results
+    for paginated row access.
+
+    Query params:
+      limit   1–50, default 10
+
+    Responses:
+      200 — list of scan headers (may be empty)
+    """
+    return get_recent_portfolio_scans(limit=limit)
 
 
 @app.get("/risk-scan/{scan_id}/status")

@@ -1,12 +1,14 @@
 import { apiFetch } from "@/lib/api/client";
 import { ApiError } from "@/types/api";
 import {
+  type RecentScan,
   type RiskScanPromoteResponse,
   type RiskScanPaginatedResults,
   type RiskScanResultsFilters,
   type RiskScanStatus,
   type RiskScanSummary,
   type RiskScanUploadResponse,
+  RecentScanListSchema,
   RiskScanPromoteResponseSchema,
   RiskScanPaginatedResultsSchema,
   RiskScanStatusSchema,
@@ -139,4 +141,16 @@ export async function promoteRiskScanResult(
 
 export function getRiskScanExportUrl(scanId: string): string {
   return `${BASE_URL}/risk-scan/${encodeURIComponent(scanId)}/export`;
+}
+
+// ---------------------------------------------------------------------------
+// GET /risk-scan/recent
+// Returns recent scan headers ordered newest-first. Does not fetch result rows.
+// ---------------------------------------------------------------------------
+
+export async function getRecentRiskScans(limit = 10): Promise<RecentScan[]> {
+  const safeLimit = Math.min(50, Math.max(1, limit));
+  return apiFetch<RecentScan[]>(`/risk-scan/recent?limit=${safeLimit}`, {
+    schema: RecentScanListSchema,
+  });
 }

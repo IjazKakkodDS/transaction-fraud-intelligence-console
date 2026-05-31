@@ -152,3 +152,31 @@ export interface RiskScanResultsFilters {
   validation_status?: "VALID" | "INVALID" | "SKIPPED";
   promoted?: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// GET /risk-scan/recent — scan header list (no result rows)
+// ---------------------------------------------------------------------------
+
+export const RecentScanSchema = z.object({
+  scan_id: z.string(),
+  filename: z.string().nullable(),
+  status: RiskScanJobStatusSchema,
+  created_at: z.string().nullable().optional(),
+  started_at: z.string().nullable().optional(),
+  completed_at: z.string().nullable().optional(),
+  processed_rows: z.number(),
+  total_rows: z.number(),
+  valid_rows: z.number(),
+  invalid_rows: z.number(),
+  skipped_rows: z.number(),
+  p0_count: z.number(),
+  p1_count: z.number(),
+  p2_count: z.number(),
+  p3_count: z.number(),
+  total_amount: z.number(),
+  critical_amount: z.number(),
+  high_amount: z.number(),
+  error_message: z.string().nullable().optional(),
+});
+export type RecentScan = z.infer<typeof RecentScanSchema>;
+export const RecentScanListSchema = z.array(RecentScanSchema);

@@ -1174,6 +1174,48 @@ def get_scan_result_by_id(result_id: int) -> dict | None:
     return record
 
 
+def get_recent_portfolio_scans(limit: int = 10) -> list[dict]:
+    """
+    Return the most recent portfolio scan headers ordered by creation time
+    descending. Never returns full result rows — callers use the paginated
+    /results endpoint for those.
+
+    limit is clamped to 1–50.
+    """
+    safe_limit = min(50, max(1, limit))
+
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text("""
+                SELECT scan_id, filename, status,
+                       created_at, started_at, completed_at,
+                       processed_rows, total_rows,
+                       valid_rows, invalid_rows, skipped_rows,
+                       p0_count, p1_count, p2_count, p3_count,
+                       total_amount, critical_amount, high_amount,
+                       error_message
+                FROM portfolio_scans
+                ORDER BY created_at DESC NULLS LAST
+                LIMIT :limit
+            """),
+            {"limit": safe_limit},
+        ).mappings().all()
+
+    result = []
+    for row in rows:
+        record = dict(row)
+        for ts_key in ("created_at", "started_at", "completed_at"):
+            val = record.get(ts_key)
+            if val is not None and hasattr(val, "isoformat"):
+                record[ts_key] = val.isoformat()
+        for amt_key in ("total_amount", "critical_amount", "high_amount"):
+            val = record.get(amt_key)
+            if val is not None:
+                record[amt_key] = float(val)
+        result.append(record)
+    return result
+
+
 def mark_result_promoted(
     result_id: int,
     case_id: int,

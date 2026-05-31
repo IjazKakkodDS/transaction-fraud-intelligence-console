@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { getRiskScanExportUrl } from "@/lib/api/riskScan";
+import { getRecentRiskScans, getRiskScanExportUrl } from "@/lib/api/riskScan";
 import {
+  type RecentScan,
   type RiskScanResult,
   type RiskScanStatus,
   type RiskScanSummary,
@@ -800,6 +801,155 @@ function PaginationControls({
   );
 }
 
+// ─── Recent scans panel ──────────────────────────────────────────────────────
+
+function RecentScansPanel({
+  scans,
+  activeScanId,
+  onLoad,
+}: {
+  scans: RecentScan[];
+  activeScanId: string | null;
+  onLoad: (scanId: string) => void;
+}) {
+  const [copied, setCopied] = useState<string | null>(null);
+
+  function handleCopy(scanId: string) {
+    navigator.clipboard.writeText(scanId).catch(() => {});
+    setCopied(scanId);
+    setTimeout(() => setCopied(null), 1500);
+  }
+
+  if (scans.length === 0) {
+    return (
+      <div className="card p-5">
+        <p className="section-label mb-2">Recent Portfolio Scans</p>
+        <p className="text-[12px]" style={{ color: "#6B7280" }}>
+          No scans found. Upload a CSV to start your first portfolio risk scan.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card overflow-hidden">
+      <div
+        className="px-4 py-3"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}
+      >
+        <p className="section-label">Recent Portfolio Scans</p>
+      </div>
+      <div>
+        {scans.map((scan, idx) => {
+          const isActive = scan.scan_id === activeScanId;
+          const statusColor =
+            scan.status === "COMPLETE"    ? "#10B981" :
+            scan.status === "PROCESSING"  ? "#22D3EE" :
+            scan.status === "FAILED"      ? "#FF4D4D" :
+            scan.status === "QUEUED"      ? "#F59E0B" : "#8B949E";
+          const statusLabel =
+            scan.status === "COMPLETE"    ? "Completed" :
+            scan.status === "PROCESSING"  ? "Processing" :
+            scan.status === "QUEUED"      ? "Queued" :
+            scan.status === "FAILED"      ? "Failed" :
+            scan.status === "CANCELLED"   ? "Cancelled" : scan.status;
+          const displayTime = scan.completed_at ?? scan.created_at ?? null;
+
+          return (
+            <div
+              key={scan.scan_id}
+              className="flex flex-wrap items-center gap-3 px-4 py-3"
+              style={{
+                borderBottom: idx < scans.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                background: isActive ? "rgba(34,211,238,0.04)" : "transparent",
+              }}
+            >
+              {/* Status + filename + metrics */}
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className="shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px] font-bold"
+                    style={{
+                      color: statusColor,
+                      background: `${statusColor}14`,
+                      border: `1px solid ${statusColor}38`,
+                    }}
+                  >
+                    {statusLabel}
+                  </span>
+                  <span
+                    className="truncate font-mono text-[11px]"
+                    style={{ color: "#C9D1D9", maxWidth: "320px" }}
+                    title={scan.filename ?? scan.scan_id}
+                  >
+                    {scan.filename ?? "—"}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                  <span className="text-[11px] tabular-nums" style={{ color: "#6B7280" }}>
+                    {scan.total_rows.toLocaleString()} rows
+                  </span>
+                  {scan.p0_count > 0 && (
+                    <span className="text-[11px] tabular-nums" style={{ color: "#FF4D4D" }}>
+                      P0: {scan.p0_count.toLocaleString()}
+                    </span>
+                  )}
+                  {scan.p1_count > 0 && (
+                    <span className="text-[11px] tabular-nums" style={{ color: "#F59E0B" }}>
+                      P1: {scan.p1_count.toLocaleString()}
+                    </span>
+                  )}
+                  {scan.critical_amount > 0 && (
+                    <span className="text-[11px] tabular-nums" style={{ color: "#FF8080" }}>
+                      Critical exposure: {fmtCurrency(scan.critical_amount)}
+                    </span>
+                  )}
+                  {displayTime && (
+                    <span className="text-[11px]" style={{ color: "#4B5563" }}>
+                      {new Date(displayTime).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleCopy(scan.scan_id)}
+                  className="rounded px-2 py-1 text-[11px]"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.09)",
+                    color: copied === scan.scan_id ? "#10B981" : "#6B7280",
+                    cursor: "pointer",
+                  }}
+                >
+                  {copied === scan.scan_id ? "Copied" : "Copy scan ID"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onLoad(scan.scan_id)}
+                  disabled={isActive}
+                  className="rounded px-2.5 py-1 text-[11px] font-semibold"
+                  style={{
+                    background: isActive ? "rgba(34,211,238,0.04)" : "rgba(34,211,238,0.10)",
+                    border: "1px solid rgba(34,211,238,0.22)",
+                    color: isActive ? "#4B5563" : "#22D3EE",
+                    cursor: isActive ? "default" : "pointer",
+                  }}
+                >
+                  {isActive ? "Active" : "Load scan"}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function RiskScanPage() {
@@ -814,6 +964,11 @@ export default function RiskScanPage() {
   const [pendingPromoteId, setPendingPromoteId] = useState<number | null>(null);
   const [promoteError, setPromoteError]       = useState<string | null>(null);
   const [exportError, setExportError]         = useState<string | null>(null);
+
+  // Recent scans panel
+  const [recentScans, setRecentScans]             = useState<RecentScan[]>([]);
+  const [recentScansLoading, setRecentScansLoading] = useState(true);
+  const [recentScansError, setRecentScansError]   = useState<string | null>(null);
 
   const upload  = useRiskScanUpload();
   const status = useRiskScanStatus(scanId ?? undefined);
@@ -868,6 +1023,27 @@ export default function RiskScanPage() {
     } catch {
       // Ignore storage failures; manual resume still works.
     }
+  }, []);
+
+  // Fetch recent scans once on mount
+  useEffect(() => {
+    let cancelled = false;
+    getRecentRiskScans(10)
+      .then((data) => {
+        if (!cancelled) {
+          setRecentScans(data);
+          setRecentScansLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setRecentScansError("Could not load recent scans.");
+          setRecentScansLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -1099,6 +1275,33 @@ export default function RiskScanPage() {
 
       {/* ── Upload error ────────────────────────────────────────── */}
       {uploadError && <ErrorBanner message={uploadError} />}
+
+      {/* ── Recent Portfolio Scans ──────────────────────────────── */}
+      {recentScansLoading ? (
+        <div className="card p-5">
+          <p className="section-label mb-3">Recent Portfolio Scans</p>
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-12 animate-pulse rounded"
+                style={{ background: "rgba(255,255,255,0.04)" }}
+              />
+            ))}
+          </div>
+        </div>
+      ) : recentScansError ? (
+        <div className="card p-5">
+          <p className="section-label mb-2">Recent Portfolio Scans</p>
+          <ErrorBanner message={recentScansError} />
+        </div>
+      ) : (
+        <RecentScansPanel
+          scans={recentScans}
+          activeScanId={scanId}
+          onLoad={(id) => activateScan(id, "manual")}
+        />
+      )}
 
       {/* ── Guided empty state ──────────────────────────────────── */}
       {!scanId && !upload.isPending && (
