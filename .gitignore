@@ -157,3 +157,20 @@ node_modules/
 # part of project source.
 # =============================================================================
 .claude/
+
+# =============================================================================
+# Phase benchmark artifacts
+# Generated test input CSVs (scripts/generate_*_csv.py) and export verification
+# files produced during async risk scan scale testing. These are recreatable
+# from source generators and can exceed 1 GB — never commit them.
+# =============================================================================
+scripts/test_*scan.csv
+scripts/*_export.csv
+
+# =============================================================================
+# Phase evidence directories
+# Local portfolio evidence collected per phase (docs/evidence/, scripts/evidence/).
+# Useful for local reference but not part of the reproducible source tree.
+# =============================================================================
+docs/evidence/
+scripts/evidence/
