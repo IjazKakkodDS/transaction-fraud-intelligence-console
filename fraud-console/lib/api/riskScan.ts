@@ -14,7 +14,7 @@ import {
   RiskScanUploadResponseSchema,
 } from "@/types/riskScan";
 
-// Upload and export bypass apiFetch because they do not send or receive JSON.
+// Upload bypasses apiFetch because it does not send JSON.
 // Derive BASE_URL from the same env var that client.ts uses.
 const BASE_URL = (
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000"
@@ -133,22 +133,10 @@ export async function promoteRiskScanResult(
 
 // ---------------------------------------------------------------------------
 // GET /risk-scan/{scan_id}/export
-// Returns CSV bytes as a Blob — bypasses apiFetch (JSON-only client).
+// Return a direct download URL so large streamed CSV exports stay out of
+// JavaScript memory and use the browser download manager instead.
 // ---------------------------------------------------------------------------
 
-export async function exportRiskScanResults(scanId: string): Promise<Blob> {
-  const response = await fetch(`${BASE_URL}/risk-scan/${scanId}/export`);
-
-  if (!response.ok) {
-    let detail = `HTTP ${response.status} — ${response.statusText}`;
-    try {
-      const json = await response.json();
-      if (typeof json?.detail === "string") detail = json.detail;
-    } catch {
-      // Response body was not JSON.
-    }
-    throw new ApiError(response.status, detail);
-  }
-
-  return response.blob();
+export function getRiskScanExportUrl(scanId: string): string {
+  return `${BASE_URL}/risk-scan/${encodeURIComponent(scanId)}/export`;
 }

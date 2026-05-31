@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { exportRiskScanResults } from "@/lib/api/riskScan";
+import { getRiskScanExportUrl } from "@/lib/api/riskScan";
 import {
   type RiskScanResult,
   type RiskScanStatus,
@@ -736,6 +736,9 @@ const TIER_TABS: Array<{ label: string; value: TierFilter }> = [
   { label: "P3",  value: "P3" },
 ];
 
+const LAST_SCAN_ID_KEY = "fraud-console:last-risk-scan-id";
+const LARGE_EXPORT_ROW_THRESHOLD = 100_000;
+
 function PaginationControls({
   page,
   totalPages,
@@ -803,6 +806,9 @@ export default function RiskScanPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile]       = useState<File | null>(null);
   const [scanId, setScanId]                   = useState<string | null>(null);
+  const [resumeInput, setResumeInput]         = useState("");
+  const [resumeError, setResumeError]         = useState<string | null>(null);
+  const [restoredScanId, setRestoredScanId]   = useState<string | null>(null);
   const [tierFilter, setTierFilter]           = useState<TierFilter>(undefined);
   const [resultsPage, setResultsPage]         = useState(1);
   const [pendingPromoteId, setPendingPromoteId] = useState<number | null>(null);
@@ -823,6 +829,47 @@ export default function RiskScanPage() {
   );
   const promote = useRiskScanPromote();
 
+  function activateScan(nextScanId: string, source: "upload" | "manual" | "query" | "storage") {
+    const trimmed = nextScanId.trim();
+    if (!trimmed) return false;
+
+    setScanId(trimmed);
+    setResumeInput(trimmed);
+    setTierFilter(undefined);
+    setResultsPage(1);
+    setPromoteError(null);
+    setExportError(null);
+    setResumeError(null);
+    setRestoredScanId(source === "storage" ? trimmed : null);
+
+    try {
+      window.localStorage.setItem(LAST_SCAN_ID_KEY, trimmed);
+    } catch {
+      // localStorage may be unavailable in private or locked-down contexts.
+    }
+
+    return true;
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const queryScanId = params.get("scan_id")?.trim();
+
+    if (queryScanId) {
+      activateScan(queryScanId, "query");
+      return;
+    }
+
+    try {
+      const savedScanId = window.localStorage.getItem(LAST_SCAN_ID_KEY)?.trim();
+      if (savedScanId) {
+        activateScan(savedScanId, "storage");
+      }
+    } catch {
+      // Ignore storage failures; manual resume still works.
+    }
+  }, []);
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setSelectedFile(e.target.files?.[0] ?? null);
   }
@@ -833,12 +880,20 @@ export default function RiskScanPage() {
     setExportError(null);
     try {
       const r = await upload.mutateAsync(selectedFile);
-      setScanId(r.scan_id);
-      setTierFilter(undefined);
-      setResultsPage(1);
+      activateScan(r.scan_id, "upload");
     } catch {
       // error surfaced via upload.error below
     }
+  }
+
+  function handleResumeSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const trimmed = resumeInput.trim();
+    if (!trimmed) {
+      setResumeError("Enter a public scan UUID to resume a completed scan.");
+      return;
+    }
+    activateScan(trimmed, "manual");
   }
 
   async function handlePromote(row: RiskScanResult) {
@@ -862,23 +917,16 @@ export default function RiskScanPage() {
   async function handleExport() {
     if (!scanId || !isComplete) return;
     setExportError(null);
-    try {
-      const blob = await exportRiskScanResults(scanId);
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement("a");
-      a.href     = url;
-      a.download = `risk-scan-${scanId.slice(0, 8)}-results.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setExportError(
-        err instanceof ApiError
-          ? err.detail
-          : "Export failed. Please try again.",
+
+    const totalRows = summaryData?.total_rows ?? statusData?.total_rows ?? 0;
+    if (totalRows >= LARGE_EXPORT_ROW_THRESHOLD) {
+      const confirmed = window.confirm(
+        `This export contains ${totalRows.toLocaleString()} rows and may be a very large CSV. Continue with the download?`,
       );
+      if (!confirmed) return;
     }
+
+    window.location.assign(getRiskScanExportUrl(scanId));
   }
 
   const uploadError =
@@ -966,7 +1014,8 @@ export default function RiskScanPage() {
               {selectedFile ? selectedFile.name : "Choose a CSV file…"}
             </label>
             <p className="text-[11px]" style={{ color: "#6B7280" }}>
-              Maximum 10,000 data rows. Required columns: transaction_id, amount,
+              Large scans are processed asynchronously. Row limits depend on
+              backend configuration. Required columns: transaction_id, amount,
               timestamp, country, payment_method.
             </p>
           </div>
@@ -994,6 +1043,59 @@ export default function RiskScanPage() {
           </button>
         </div>
       </div>
+
+      {/* Resume existing scan */}
+      <form className="card p-5" onSubmit={handleResumeSubmit}>
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="min-w-0 flex-1 space-y-2">
+            <p className="section-label">Resume Existing Scan</p>
+            <input
+              type="text"
+              value={resumeInput}
+              onChange={(e) => {
+                setResumeInput(e.target.value);
+                setResumeError(null);
+              }}
+              placeholder="Paste public scan UUID"
+              className="block w-full rounded-md px-3 py-2.5 font-mono text-[13px] outline-none"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                color: "#C9D1D9",
+              }}
+            />
+            <p className="text-[11px]" style={{ color: "#6B7280" }}>
+              Use the public scan_id UUID from a previous async scan. Results
+              remain paginated at 100 rows per page.
+            </p>
+          </div>
+          <button
+            type="submit"
+            className="rounded-md px-5 py-2.5 text-[13px] font-semibold"
+            style={{
+              background: "rgba(34,211,238,0.10)",
+              border: "1px solid rgba(34,211,238,0.22)",
+              color: "#22D3EE",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Load Scan
+          </button>
+        </div>
+        {resumeError && (
+          <div className="mt-3">
+            <ErrorBanner message={resumeError} />
+          </div>
+        )}
+        {restoredScanId && scanId === restoredScanId && (
+          <p className="mt-3 text-[12px]" style={{ color: "#8B949E" }}>
+            Restored last scan from this browser:{" "}
+            <span className="font-mono" style={{ color: "#C9D1D9" }}>
+              {restoredScanId}
+            </span>
+          </p>
+        )}
+      </form>
 
       {/* ── Upload error ────────────────────────────────────────── */}
       {uploadError && <ErrorBanner message={uploadError} />}
