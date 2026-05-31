@@ -9,14 +9,23 @@ Public surface
 --------------
   ASYNC_RISK_SCAN_MAX_ROWS  : int       maximum rows accepted by the async endpoint
   RISK_SCAN_CHUNK_SIZE      : int       rows per processing chunk (env-configurable)
-  detect_csv_row_count(file_bytes) -> int
-  process_portfolio_scan_job(scan_id, file_bytes, filename, chunk_size) -> None
+  count_csv_rows(path) -> int           lightweight row counter (no DataFrame)
+  detect_csv_row_count(file_bytes) -> int  legacy helper kept for compatibility
+  process_portfolio_scan_job(scan_id, tmp_path, filename, chunk_size) -> None
 
 Invariant
 ---------
   The scan record for scan_id must already exist in QUEUED state before
   process_portfolio_scan_job() is called.  The function owns the
   PROCESSING -> COMPLETE / FAILED status transition.
+
+Memory model
+------------
+  The API layer spools the uploaded CSV to a temp file on disk so that
+  file_bytes are never held in the Python heap during the background run.
+  The processor reads the temp file with pd.read_csv(chunksize=N), keeping
+  only one chunk_size-row DataFrame in memory at a time.  The temp file is
+  deleted in a finally block after completion or failure.
 """
 
 import io
@@ -102,13 +111,27 @@ def _build_risk_summary(
 # Public helpers
 # ---------------------------------------------------------------------------
 
+def count_csv_rows(path: str) -> int:
+    """
+    Return the number of data rows (header excluded) in a CSV file by
+    counting newlines without parsing the CSV.
+
+    This is O(file-size) in bytes but avoids building any DataFrame, making
+    it safe to call on multi-GB files without significant memory use.
+    Returns 0 on any read error.
+    """
+    try:
+        with open(path, "rb") as f:
+            n = sum(1 for _ in f)
+        return max(0, n - 1)  # subtract the header row
+    except Exception:
+        return 0
+
+
 def detect_csv_row_count(file_bytes: bytes) -> int:
     """
-    Best-effort row count for queued scan metadata.
-
-    The background processor is authoritative; this early count is used only
-    so clients can show progress immediately after job creation before the
-    background task has started.
+    Best-effort row count from raw CSV bytes — kept for backward compatibility.
+    Prefer count_csv_rows(path) when a spooled temp file is available.
     """
     try:
         return len(pd.read_csv(io.BytesIO(file_bytes), usecols=[0]))
@@ -122,31 +145,26 @@ def detect_csv_row_count(file_bytes: bytes) -> int:
 
 def process_portfolio_scan_job(
     scan_id: str,
-    file_bytes: bytes,
+    tmp_path: str,
     filename: str,
     chunk_size: int = RISK_SCAN_CHUNK_SIZE,
 ) -> None:
     """
-    Process an async portfolio scan job end-to-end.
+    Process an async portfolio scan job end-to-end from a spooled temp file.
 
-    Reads the uploaded CSV once, then validates, scores, persists, and
-    updates progress in chunks so status polling observes durable progress
-    after every chunk completes.
+    Reads the CSV from tmp_path in streaming chunks so the full dataset is
+    never loaded into memory at once.  Each chunk is validated, scored,
+    inserted into Postgres, and reflected in a progress update.
 
-    Progress updates use running aggregate counters maintained per chunk
-    rather than re-scanning the full accumulated row list after each chunk.
-    This keeps per-chunk overhead O(chunk_size) regardless of total scan size.
-
-    Called from FastAPI BackgroundTasks today; the signature is intentionally
-    free of FastAPI types so a dedicated worker can import and call this
-    function without modification.
+    The temp file is deleted in the finally block regardless of outcome so
+    disk space is always reclaimed after the job completes or fails.
 
     Parameters
     ----------
-    scan_id    : UUID string identifying the scan record in QUEUED state.
-    file_bytes : raw bytes of the uploaded CSV file.
-    filename   : original filename, used only for logging.
-    chunk_size : rows per processing chunk; defaults to RISK_SCAN_CHUNK_SIZE.
+    scan_id   : UUID string identifying the scan record in QUEUED state.
+    tmp_path  : Path to the spooled temp file written by the API upload handler.
+    filename  : Original filename, used only for logging.
+    chunk_size: Rows per processing chunk; defaults to RISK_SCAN_CHUNK_SIZE.
     """
     update_portfolio_scan_status(
         scan_id,
@@ -155,57 +173,60 @@ def process_portfolio_scan_job(
         error_message="",
     )
 
+    total_rows = 0
     try:
-        # ── Parse and validate structure ──────────────────────────────────────
+        # ── Validate CSV structure (header only — no full parse) ──────────────
         try:
-            df = pd.read_csv(io.BytesIO(file_bytes))
+            header_df = pd.read_csv(tmp_path, nrows=0)
         except Exception as exc:
             raise RiskScanParseError(f"CSV could not be parsed: {exc}") from exc
 
-        missing_cols = REQUIRED_COLUMNS - set(df.columns)
+        missing_cols = REQUIRED_COLUMNS - set(header_df.columns)
         if missing_cols:
             raise RiskScanValidationError(
                 f"Missing required columns: {', '.join(sorted(missing_cols))}"
             )
 
-        total_rows = len(df)
+        # ── Count rows without loading a full DataFrame ───────────────────────
+        total_rows = count_csv_rows(tmp_path)
         if total_rows > ASYNC_RISK_SCAN_MAX_ROWS:
             raise RiskScanValidationError(
                 f"CSV exceeds maximum of {ASYNC_RISK_SCAN_MAX_ROWS} data rows. Got {total_rows}."
             )
 
-        # Publish authoritative total_rows now that the file is parsed.
+        # Publish authoritative total_rows so progress polling starts immediately.
         update_portfolio_scan_progress(scan_id, total_rows=total_rows)
 
         # ── Running aggregate state ───────────────────────────────────────────
-        # Scalar counts — incremented per row, never re-scanned.
         agg_total = agg_valid = agg_invalid = agg_skipped = 0
         agg_low = agg_medium = agg_high = agg_critical = 0
         agg_p0 = agg_p1 = agg_p2 = agg_p3 = 0
         agg_total_amount = agg_critical_amount = agg_high_amount = 0.0
 
-        # Counters for risk_summary top-N fields — also updated per row.
         agg_reasons: Counter = Counter()
         agg_countries: Counter = Counter()
         agg_payment_methods: Counter = Counter()
         agg_merchant_cats: Counter = Counter()
 
         seen_transaction_ids: set[str] = set()
+        row_offset = 0
 
-        # ── Chunked validation, scoring, and persistence ───────────────────────
-        for start in range(0, total_rows, chunk_size):
-            chunk_df = df.iloc[start : start + chunk_size].copy().reset_index(drop=True)
+        # ── Chunked validation, scoring, and persistence ──────────────────────
+        # pd.read_csv with chunksize returns a TextFileReader that yields one
+        # DataFrame of at most chunk_size rows per iteration.  Only the current
+        # chunk is in memory; the full CSV stays on disk.
+        for chunk_df in pd.read_csv(tmp_path, chunksize=chunk_size):
+            chunk_df = chunk_df.reset_index(drop=True)
             validation_result = validate_dataframe(
                 chunk_df,
                 seen_transaction_ids=seen_transaction_ids,
-                row_offset=start,
+                row_offset=row_offset,
             )
             scored_rows = score_dataframe(validation_result.valid_df)
             merged_rows = _merge_scored_rows(validation_result, scored_rows)
 
             bulk_insert_scan_results(scan_id, merged_rows)
 
-            # Update running counters from this chunk only — O(chunk_size).
             for row in merged_rows:
                 vstatus = row["validation_status"]
                 agg_total += 1
@@ -266,6 +287,8 @@ def process_portfolio_scan_job(
                     agg_invalid += 1
                 else:
                     agg_skipped += 1
+
+            row_offset += len(chunk_df)
 
             update_portfolio_scan_progress(
                 scan_id,
@@ -349,3 +372,10 @@ def process_portfolio_scan_job(
             completed_at=_utc_now_iso(),
             error_message=str(exc)[:500],
         )
+    finally:
+        # Always delete the temp file — success, validation failure, or crash.
+        try:
+            os.unlink(tmp_path)
+            logger.debug("Temp file removed | path=%s", tmp_path)
+        except OSError as exc:
+            logger.warning("Could not remove temp file | path=%s error=%s", tmp_path, exc)

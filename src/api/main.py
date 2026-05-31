@@ -5,6 +5,7 @@ FastAPI application entry point for the Real-Time Fraud Triage System.
 import json
 import logging
 import os
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -56,7 +57,7 @@ from src.risk_scan.exporter import csv_header, results_to_csv, rows_to_csv_chunk
 from src.risk_scan.processor import (
     ASYNC_RISK_SCAN_MAX_ROWS,
     RISK_SCAN_CHUNK_SIZE,
-    detect_csv_row_count,
+    count_csv_rows,
     process_portfolio_scan_job,
 )
 from src.risk_scan.scanner import score_dataframe
@@ -652,10 +653,10 @@ async def create_async_risk_scan(
     """
     Queue an async Portfolio Risk Scan job and return immediately.
 
-    Phase 12D-1 establishes the durable job contract using Postgres state and
-    FastAPI BackgroundTasks. The current background processor reuses the
-    existing scoring path with a 10k-row cap; chunked processing follows in
-    Phase 12D-2.
+    The uploaded CSV is spooled to a temp file on disk in 1 MiB chunks so
+    the full file bytes are never held in the Python heap.  The background
+    processor reads the temp file in streaming chunks and deletes it on
+    completion or failure.
     """
     filename = file.filename or ""
     if not filename:
@@ -663,12 +664,28 @@ async def create_async_risk_scan(
     if not filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV uploads are supported.")
 
-    file_bytes = await file.read()
-    if not file_bytes:
+    # Spool uploaded bytes to a temp file — avoids holding multi-GB files in RAM.
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix=".csv", prefix="riskscan_")
+    try:
+        with os.fdopen(tmp_fd, "wb") as tmp_file:
+            while True:
+                chunk = await file.read(1 << 20)  # 1 MiB per read
+                if not chunk:
+                    break
+                tmp_file.write(chunk)
+    except Exception as exc:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise HTTPException(status_code=500, detail="Failed to spool uploaded file.") from exc
+
+    if os.path.getsize(tmp_path) == 0:
+        os.unlink(tmp_path)
         raise HTTPException(status_code=400, detail="CSV file is empty.")
 
     scan_id = str(uuid.uuid4())
-    total_rows = detect_csv_row_count(file_bytes)
+    total_rows = count_csv_rows(tmp_path)
 
     create_portfolio_scan({
         "scan_id":        scan_id,
@@ -681,7 +698,7 @@ async def create_async_risk_scan(
         "error_message":  None,
     })
 
-    background_tasks.add_task(process_portfolio_scan_job, scan_id, file_bytes, filename)
+    background_tasks.add_task(process_portfolio_scan_job, scan_id, tmp_path, filename)
 
     return {
         "scan_id":    scan_id,
