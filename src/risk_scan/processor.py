@@ -26,6 +26,18 @@ Memory model
   The processor reads the temp file with pd.read_csv(chunksize=N), keeping
   only one chunk_size-row DataFrame in memory at a time.  The temp file is
   deleted in a finally block after completion or failure.
+
+Deduplication model
+-------------------
+  When RISK_SCAN_ENABLE_IN_MEMORY_DEDUP=true (default), a single
+  seen_transaction_ids set is shared across all chunks to detect duplicate
+  transaction_id values anywhere in the upload.  This is O(N) heap —
+  at 7.5M rows the set consumes roughly 480 MB.
+
+  When RISK_SCAN_ENABLE_IN_MEMORY_DEDUP=false, a fresh empty set is
+  created per chunk instead.  Intra-chunk duplicates (within one chunk_size
+  window) are still caught; cross-chunk duplicates are not.  Use this only
+  for benchmark workloads where the generator guarantees unique IDs.
 """
 
 import io
@@ -52,7 +64,13 @@ from src.risk_scan.validator import (
 logger = logging.getLogger(__name__)
 
 ASYNC_RISK_SCAN_MAX_ROWS: int = int(os.getenv("RISK_SCAN_MAX_ROWS", "50000"))
-RISK_SCAN_CHUNK_SIZE: int = max(1, int(os.getenv("RISK_SCAN_CHUNK_SIZE", "500")))
+# Default raised to 2,000 (from 500) to reduce the number of DB insert transactions.
+# Increase to 5,000 for aggressive benchmark environments; lower to 500 for caution.
+RISK_SCAN_CHUNK_SIZE: int = max(1, int(os.getenv("RISK_SCAN_CHUNK_SIZE", "2000")))
+# When false, only intra-chunk duplicate detection runs (no cross-chunk set growth).
+# Keep true (default) for correctness; set false for ultra-scale benchmarks with
+# guaranteed-unique synthetic transaction IDs.
+RISK_SCAN_ENABLE_DEDUP: bool = os.getenv("RISK_SCAN_ENABLE_IN_MEMORY_DEDUP", "true").lower() not in ("false", "0", "no")
 
 
 # ---------------------------------------------------------------------------
@@ -208,7 +226,19 @@ def process_portfolio_scan_job(
         agg_payment_methods: Counter = Counter()
         agg_merchant_cats: Counter = Counter()
 
-        seen_transaction_ids: set[str] = set()
+        # When dedup is enabled, one set is shared across all chunks so that
+        # duplicate transaction_ids spanning chunk boundaries are detected.
+        # When disabled, None is passed and validate_dataframe creates a fresh
+        # empty set per chunk — intra-chunk duplicates are still caught but
+        # cross-chunk duplicates are not.  This trades correctness for a flat
+        # O(1) per-chunk memory footprint; only use for benchmark workloads
+        # with guaranteed-unique IDs.
+        seen_transaction_ids: set[str] | None = set() if RISK_SCAN_ENABLE_DEDUP else None
+        if not RISK_SCAN_ENABLE_DEDUP:
+            logger.info(
+                "In-memory dedup disabled | scan_id=%s cross-chunk duplicates will not be detected",
+                scan_id,
+            )
         row_offset = 0
 
         # ── Chunked validation, scoring, and persistence ──────────────────────

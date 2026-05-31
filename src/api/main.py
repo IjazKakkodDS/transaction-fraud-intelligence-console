@@ -710,8 +710,13 @@ async def create_async_risk_scan(
 @app.post("/risk-scan/upload")
 async def upload_risk_scan(file: UploadFile = File(...)):
     """
-    Accept a CSV file upload, validate and score each row, persist all results,
-    and return a scan summary with the scan_id for further API calls.
+    LEGACY synchronous upload endpoint — hard-capped at 500 rows by validator.MAX_ROWS.
+
+    This endpoint reads the full file into memory, validates, scores, and returns a
+    complete summary in one synchronous response.  It is safe at its row cap but is
+    NOT the recommended path for large scans.
+
+    Use POST /risk-scan (HTTP 202) for async chunked processing of larger datasets.
 
     Responses:
       200 — scan complete; scan_id and row counts returned
