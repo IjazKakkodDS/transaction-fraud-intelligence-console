@@ -78,6 +78,12 @@ logger = logging.getLogger(__name__)
 
 N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL", "")
 
+# Legacy synchronous risk-scan upload guard. The async /risk-scan endpoint is
+# the supported path for large files; this prevents accidental huge heap reads.
+LEGACY_RISK_SCAN_UPLOAD_MAX_BYTES = int(
+    os.getenv("RISK_SCAN_LEGACY_UPLOAD_MAX_BYTES", str(5 * 1024 * 1024))
+)
+
 # ---------------------------------------------------------------------------
 # Investigation producer — singleton for cases.investigate topic.
 # Initialised lazily on first POST /cases/{id}/investigate call.
@@ -710,22 +716,33 @@ async def create_async_risk_scan(
 @app.post("/risk-scan/upload")
 async def upload_risk_scan(file: UploadFile = File(...)):
     """
-    LEGACY synchronous upload endpoint — hard-capped at 500 rows by validator.MAX_ROWS.
+    LEGACY synchronous upload endpoint — hard-capped by bytes and at 500 rows
+    by validator.MAX_ROWS.
 
-    This endpoint reads the full file into memory, validates, scores, and returns a
-    complete summary in one synchronous response.  It is safe at its row cap but is
-    NOT the recommended path for large scans.
+    This endpoint reads a small file into memory, validates, scores, and returns
+    a complete summary in one synchronous response.  It is safe at its caps but
+    is NOT the recommended path for large scans.
 
     Use POST /risk-scan (HTTP 202) for async chunked processing of larger datasets.
 
     Responses:
       200 — scan complete; scan_id and row counts returned
       400 — CSV structure invalid (missing required columns, row limit exceeded)
+      413 — legacy endpoint byte cap exceeded
       422 — file bytes cannot be parsed as CSV
       500 — unexpected scoring or persistence failure
     """
-    file_bytes = await file.read()
     filename = file.filename or "upload.csv"
+    file_bytes = await file.read(LEGACY_RISK_SCAN_UPLOAD_MAX_BYTES + 1)
+    if len(file_bytes) > LEGACY_RISK_SCAN_UPLOAD_MAX_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                "Legacy /risk-scan/upload is capped at "
+                f"{LEGACY_RISK_SCAN_UPLOAD_MAX_BYTES} bytes and 500 data rows. "
+                "Use POST /risk-scan for larger async scans."
+            ),
+        )
 
     try:
         validation_result = validate_csv(file_bytes)
