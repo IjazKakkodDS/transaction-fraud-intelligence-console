@@ -14,7 +14,7 @@ from typing import Literal
 import pandas as pd
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 from pydantic import ValidationError
@@ -49,7 +49,7 @@ from src.events.producer import send_transaction_raw_event
 from src.events.schemas import TransactionRawEvent
 from src.features.transaction_features import generate_basic_features, generate_reasons
 from src.models.predict import predict
-from src.risk_scan.exporter import results_to_csv
+from src.risk_scan.exporter import results_to_csv, stream_scan_csv
 from src.risk_scan.processor import (
     ASYNC_RISK_SCAN_MAX_ROWS,
     RISK_SCAN_CHUNK_SIZE,
@@ -1021,10 +1021,10 @@ def promote_scan_result(scan_id: str, result_id: int):
 @app.get("/risk-scan/{scan_id}/export")
 def export_risk_scan_csv(scan_id: str):
     """
-    Return all scan result rows as a downloadable CSV file.
+    Return all scan result rows as a streaming CSV download.
 
     Responses:
-      200 — text/csv attachment
+      200 — text/csv attachment (streamed in batches)
       400 — scan is not COMPLETE
       404 — scan_id not found
     """
@@ -1037,12 +1037,15 @@ def export_risk_scan_csv(scan_id: str):
             detail=f"Scan {scan_id} status is {scan['status']!r}. Export is only available for completed scans.",
         )
 
-    results = get_scan_results(scan_id)
-    csv_bytes = results_to_csv(results)
     filename = f"risk-scan-{scan_id[:8]}-results.csv"
 
-    return Response(
-        content=csv_bytes,
+    def fetch_page(offset: int, limit: int) -> list[dict]:
+        page = (offset // limit) + 1
+        result = get_scan_results_paginated(scan_id, page=page, page_size=limit)
+        return result["items"]
+
+    return StreamingResponse(
+        stream_scan_csv(fetch_page),
         media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
