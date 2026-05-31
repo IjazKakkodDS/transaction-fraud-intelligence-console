@@ -54,6 +54,35 @@ function fmtScore(n: number | null): string {
   return n.toFixed(3);
 }
 
+function fmtCompactCurrency(n: number | null): string {
+  if (n === null) return "—";
+  if (Math.abs(n) >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
+  if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
+  if (Math.abs(n) >= 1e3) return `$${Math.round(n / 1e3)}K`;
+  return fmtCurrency(n);
+}
+
+function fmtTs(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString();
+}
+
+function fmtRuntime(
+  startIso: string | null | undefined,
+  endIso: string | null | undefined,
+): string {
+  if (!startIso || !endIso) return "—";
+  const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
+  if (ms < 0) return "—";
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
 // Safely extracts top_risk_patterns from the flexible risk_summary field.
 function extractPatterns(
   rs: Record<string, unknown> | null | undefined,
@@ -801,6 +830,214 @@ function PaginationControls({
   );
 }
 
+// ─── Scan detail header ──────────────────────────────────────────────────────
+
+const STATUS_COLOR: Record<string, string> = {
+  COMPLETE:   "#10B981",
+  PROCESSING: "#22D3EE",
+  QUEUED:     "#F59E0B",
+  FAILED:     "#FF4D4D",
+  CANCELLED:  "#8B949E",
+};
+const STATUS_LABEL: Record<string, string> = {
+  COMPLETE:   "Completed scan record",
+  PROCESSING: "Processing",
+  QUEUED:     "Queued",
+  FAILED:     "Failed",
+  CANCELLED:  "Cancelled",
+};
+
+function ScanDetailHeader({
+  scanId,
+  status,
+  summary,
+  recentMatch,
+  isExportable,
+  onExport,
+}: {
+  scanId: string;
+  status: RiskScanStatus | null;
+  summary: RiskScanSummary | null;
+  recentMatch: RecentScan | null;
+  isExportable: boolean;
+  onExport: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopyId() {
+    navigator.clipboard.writeText(scanId).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
+  const st = status?.status ?? null;
+  const statusColor = st ? (STATUS_COLOR[st] ?? "#8B949E") : "#8B949E";
+  const statusLabel = st ? (STATUS_LABEL[st] ?? st) : "Loading…";
+
+  const filename = summary?.filename ?? recentMatch?.filename ?? null;
+
+  const createdAt  = status?.created_at  ?? summary?.created_at  ?? recentMatch?.created_at  ?? null;
+  const startedAt  = status?.started_at  ?? recentMatch?.started_at  ?? null;
+  const completedAt = status?.completed_at ?? summary?.completed_at ?? recentMatch?.completed_at ?? null;
+  const runtime    = fmtRuntime(startedAt ?? createdAt, completedAt);
+
+  const processedRows = status?.processed_rows ?? recentMatch?.processed_rows ?? 0;
+  const totalRows     = status?.total_rows     ?? recentMatch?.total_rows     ?? 0;
+  const validRows     = status?.valid_rows     ?? recentMatch?.valid_rows     ?? 0;
+  const invalidRows   = status?.invalid_rows   ?? recentMatch?.invalid_rows   ?? 0;
+  const p0 = status?.p0_count ?? recentMatch?.p0_count ?? 0;
+  const p1 = status?.p1_count ?? recentMatch?.p1_count ?? 0;
+  const p2 = status?.p2_count ?? recentMatch?.p2_count ?? 0;
+  const p3 = status?.p3_count ?? recentMatch?.p3_count ?? 0;
+
+  const totalExposure    = summary?.exposure.total_amount    ?? recentMatch?.total_amount    ?? null;
+  const criticalExposure = summary?.exposure.critical_amount ?? recentMatch?.critical_amount ?? null;
+
+  const metrics: Array<{ label: string; value: string; color?: string }> = [
+    {
+      label: "Processed",
+      value: totalRows > 0
+        ? `${processedRows.toLocaleString()} / ${totalRows.toLocaleString()}`
+        : processedRows.toLocaleString(),
+    },
+    { label: "Valid",    value: validRows.toLocaleString(),   color: validRows > 0 ? "#10B981" : undefined },
+    ...(invalidRows > 0 ? [{ label: "Invalid", value: invalidRows.toLocaleString(), color: "#FF4D4D" }] : []),
+    ...(p0 > 0 ? [{ label: "P0 Critical", value: p0.toLocaleString(), color: "#FF4D4D" }] : []),
+    ...(p1 > 0 ? [{ label: "P1 High",     value: p1.toLocaleString(), color: "#F59E0B" }] : []),
+    ...(p2 > 0 ? [{ label: "P2 Medium",   value: p2.toLocaleString(), color: "#22D3EE" }] : []),
+    ...(p3 > 0 ? [{ label: "P3 Low",      value: p3.toLocaleString(), color: "#8B949E" }] : []),
+    ...(criticalExposure !== null && criticalExposure > 0
+      ? [{ label: "Critical exposure", value: fmtCompactCurrency(criticalExposure), color: "#FF8080" }]
+      : []),
+    ...(totalExposure !== null && totalExposure > 0
+      ? [{ label: "Total exposure", value: fmtCompactCurrency(totalExposure), color: "#C9D1D9" }]
+      : []),
+  ];
+
+  return (
+    <div className="card overflow-hidden">
+
+      {/* ── Top row: status + filename + actions ── */}
+      <div
+        className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}
+      >
+        <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+          <span
+            className="shrink-0 rounded px-2 py-0.5 font-mono text-[10px] font-bold"
+            style={{
+              color: statusColor,
+              background: `${statusColor}14`,
+              border: `1px solid ${statusColor}38`,
+            }}
+          >
+            {statusLabel}
+          </span>
+          {filename && (
+            <span
+              className="truncate font-mono text-[13px] font-medium"
+              style={{ color: "#C9D1D9", maxWidth: "400px" }}
+              title={filename}
+            >
+              {filename}
+            </span>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={handleCopyId}
+            className="rounded px-2.5 py-1 text-[11px]"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.09)",
+              color: copied ? "#10B981" : "#6B7280",
+              cursor: "pointer",
+            }}
+          >
+            {copied ? "Copied" : "Copy scan ID"}
+          </button>
+          {isExportable && (
+            <button
+              type="button"
+              onClick={onExport}
+              className="rounded px-2.5 py-1 text-[11px] font-semibold"
+              style={{
+                background: "rgba(167,139,250,0.08)",
+                border: "1px solid rgba(167,139,250,0.22)",
+                color: "#A78BFA",
+                cursor: "pointer",
+              }}
+            >
+              Export CSV
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Metadata row: scan ID, timestamps, runtime ── */}
+      <div
+        className="flex flex-wrap items-center gap-x-6 gap-y-1.5 px-4 py-2.5"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+      >
+        <span className="font-mono text-[11px]" style={{ color: "#4B5563" }} title={scanId}>
+          <span style={{ color: "#6B7280" }}>ID </span>
+          {scanId}
+        </span>
+        {createdAt && (
+          <span className="text-[11px]" style={{ color: "#4B5563" }}>
+            <span style={{ color: "#6B7280" }}>Created </span>
+            {fmtTs(createdAt)}
+          </span>
+        )}
+        {completedAt && (
+          <span className="text-[11px]" style={{ color: "#4B5563" }}>
+            <span style={{ color: "#6B7280" }}>Completed </span>
+            {fmtTs(completedAt)}
+          </span>
+        )}
+        {runtime !== "—" && (
+          <span className="text-[11px]" style={{ color: "#4B5563" }}>
+            <span style={{ color: "#6B7280" }}>Runtime </span>
+            {runtime}
+          </span>
+        )}
+      </div>
+
+      {/* ── Metrics strip ── */}
+      <div className="flex flex-wrap">
+        {metrics.map((m, i) => (
+          <div
+            key={m.label}
+            className="px-4 py-2.5"
+            style={{
+              borderRight: i < metrics.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+              borderBottom: "none",
+            }}
+          >
+            <p
+              className="font-mono text-[14px] font-semibold tabular-nums leading-none"
+              style={{ color: m.color ?? "#C9D1D9" }}
+            >
+              {m.value}
+            </p>
+            <p className="mt-1 text-[10px] uppercase tracking-wider" style={{ color: "#4B5563" }}>
+              {m.label}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Failed error message ── */}
+      {st === "FAILED" && status?.error_message && (
+        <div className="px-4 pb-3">
+          <ErrorBanner message={status.error_message} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Recent scans panel ──────────────────────────────────────────────────────
 
 function RecentScansPanel({
@@ -1300,6 +1537,18 @@ export default function RiskScanPage() {
           scans={recentScans}
           activeScanId={scanId}
           onLoad={(id) => activateScan(id, "manual")}
+        />
+      )}
+
+      {/* ── Scan Detail Header ─────────────────────────────────── */}
+      {scanId && (
+        <ScanDetailHeader
+          scanId={scanId}
+          status={statusData ?? null}
+          summary={summaryData ?? null}
+          recentMatch={recentScans.find((s) => s.scan_id === scanId) ?? null}
+          isExportable={isComplete}
+          onExport={handleExport}
         />
       )}
 
