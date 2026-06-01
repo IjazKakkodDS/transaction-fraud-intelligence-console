@@ -1438,19 +1438,32 @@ export default function RiskScanPage() {
     }
   }
 
-  async function handleExport() {
+  async function handleExport(tier?: string) {
     if (!scanId || !isComplete) return;
     setExportError(null);
 
-    const totalRows = summaryData?.total_rows ?? statusData?.total_rows ?? 0;
-    if (totalRows >= LARGE_EXPORT_ROW_THRESHOLD) {
+    // Row count: use the tier-specific count when filtering, otherwise total.
+    const tierCounts: Record<string, number> = summaryData
+      ? {
+          P0: summaryData.tier_distribution.critical,
+          P1: summaryData.tier_distribution.high,
+          P2: summaryData.tier_distribution.medium,
+          P3: summaryData.tier_distribution.low,
+        }
+      : {};
+    const rowCount = tier && tierCounts[tier] !== undefined
+      ? tierCounts[tier]
+      : (summaryData?.total_rows ?? statusData?.total_rows ?? 0);
+
+    if (rowCount >= LARGE_EXPORT_ROW_THRESHOLD) {
+      const tierLabel = tier ? ` (${tier} tier)` : "";
       const confirmed = window.confirm(
-        `This export contains ${totalRows.toLocaleString()} rows and may be a very large CSV. Continue with the download?`,
+        `This export${tierLabel} contains ${rowCount.toLocaleString()} rows and may be a very large CSV. Continue with the download?`,
       );
       if (!confirmed) return;
     }
 
-    window.location.assign(getRiskScanExportUrl(scanId));
+    window.location.assign(getRiskScanExportUrl(scanId, tier));
   }
 
   const uploadError =
@@ -1809,34 +1822,90 @@ export default function RiskScanPage() {
         </section>
       )}
 
-      {/* ── Export bar ──────────────────────────────────────────── */}
-      {scanId && isComplete && !summary.isLoading && (
-        <div
-          className="flex flex-wrap items-center justify-between gap-3 rounded-lg px-4 py-3"
-          style={{
-            background: "rgba(255,255,255,0.025)",
-            border: "1px solid rgba(255,255,255,0.08)",
-          }}
-        >
-          <p className="text-[12px]" style={{ color: "#8B949E" }}>
-            Download all scan results including validation status and scoring outputs.
-          </p>
-          <button
-            type="button"
-            onClick={handleExport}
-            disabled={!isComplete}
-            className="rounded-md px-4 py-2 text-[12px] font-semibold"
-            style={{
-              background: "rgba(167,139,250,0.08)",
-              border: "1px solid rgba(167,139,250,0.22)",
-              color: "#A78BFA",
-              cursor: isComplete ? "pointer" : "not-allowed",
-            }}
-          >
-            Export CSV
-          </button>
-        </div>
-      )}
+      {/* ── Export section ──────────────────────────────────────── */}
+      {scanId && isComplete && !summary.isLoading && (() => {
+        const filteredCount = tierFilter && summaryData
+          ? ({
+              P0: summaryData.tier_distribution.critical,
+              P1: summaryData.tier_distribution.high,
+              P2: summaryData.tier_distribution.medium,
+              P3: summaryData.tier_distribution.low,
+            }[tierFilter] ?? 0)
+          : null;
+        const totalCount = summaryData?.total_rows ?? statusData?.total_rows ?? 0;
+
+        return (
+          <div className="card p-4" aria-label="Export scan results">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="space-y-1">
+                <p className="section-label">Export Scan Results</p>
+                <p
+                  className="text-[11px]"
+                  style={{ color: "#6B7280", maxWidth: "380px" }}
+                >
+                  {tierFilter
+                    ? `Current filter: ${tierFilter}. Export the filtered view or all results.`
+                    : "Results are streamed from the server. Large scans may take time to complete."}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Filtered export button — visible when a tier is selected */}
+                {tierFilter && filteredCount !== null && (
+                  <button
+                    type="button"
+                    onClick={() => handleExport(tierFilter)}
+                    className="rounded-md px-4 py-2 text-[12px] font-semibold"
+                    style={{
+                      background: "rgba(167,139,250,0.10)",
+                      border: "1px solid rgba(167,139,250,0.30)",
+                      color: "#A78BFA",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Export {tierFilter} Only
+                    {filteredCount > 0 && (
+                      <span
+                        className="ml-1.5 font-normal"
+                        style={{ color: "#8B7FBF" }}
+                      >
+                        {fmtCompact(filteredCount)}
+                      </span>
+                    )}
+                  </button>
+                )}
+
+                {/* Full export — always available */}
+                <button
+                  type="button"
+                  onClick={() => handleExport()}
+                  className="rounded-md px-4 py-2 text-[12px] font-semibold"
+                  style={{
+                    background: tierFilter
+                      ? "rgba(255,255,255,0.04)"
+                      : "rgba(167,139,250,0.08)",
+                    border: tierFilter
+                      ? "1px solid rgba(255,255,255,0.09)"
+                      : "1px solid rgba(167,139,250,0.22)",
+                    color: tierFilter ? "#6B7280" : "#A78BFA",
+                    cursor: "pointer",
+                  }}
+                >
+                  Export All Results
+                  {totalCount > 0 && (
+                    <span
+                      className="ml-1.5 font-normal"
+                      style={{ color: tierFilter ? "#4B5563" : "#8B7FBF" }}
+                    >
+                      {fmtCompact(totalCount)}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Export error ────────────────────────────────────────── */}
       {exportError && <ErrorBanner message={exportError} />}

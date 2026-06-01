@@ -1078,9 +1078,12 @@ def promote_scan_result(scan_id: str, result_id: int):
 
 
 @app.get("/risk-scan/{scan_id}/export")
-def export_risk_scan_csv(scan_id: str):
+def export_risk_scan_csv(scan_id: str, tier: str | None = None):
     """
-    Return all scan result rows as a streaming CSV download.
+    Return scan result rows as a streaming CSV download.
+
+    Optional `tier` query parameter filters by operational_priority (P0/P1/P2/P3).
+    Omitting `tier` returns all rows (default behaviour, unchanged).
 
     Responses:
       200 — text/csv attachment (streamed in batches)
@@ -1096,7 +1099,12 @@ def export_risk_scan_csv(scan_id: str):
             detail=f"Scan {scan_id} status is {scan['status']!r}. Export is only available for completed scans.",
         )
 
-    filename = f"risk-scan-{scan_id[:8]}-results.csv"
+    # Tier-filtered filename includes the tier label for clarity.
+    if tier:
+        filename = f"risk-scan-{scan_id[:8]}-{tier.lower()}-results.csv"
+    else:
+        filename = f"risk-scan-{scan_id[:8]}-results.csv"
+
     batch_size = int(os.getenv("RISK_SCAN_EXPORT_BATCH_SIZE", "10000"))
 
     def csv_stream():
@@ -1104,9 +1112,10 @@ def export_risk_scan_csv(scan_id: str):
         started = time.monotonic()
         first_yield_at = time.monotonic()
         logger.info(
-            "Risk scan export started | scan_id=%s filename=%s batch_size=%d total_rows=%s",
+            "Risk scan export started | scan_id=%s filename=%s tier=%s batch_size=%d total_rows=%s",
             scan_id,
             filename,
+            tier,
             batch_size,
             scan.get("total_rows"),
         )
@@ -1119,7 +1128,7 @@ def export_risk_scan_csv(scan_id: str):
                 int((time.monotonic() - first_yield_at) * 1000),
             )
 
-            for batch in stream_scan_results_for_export(scan_id, batch_size=batch_size):
+            for batch in stream_scan_results_for_export(scan_id, batch_size=batch_size, tier=tier):
                 if not batch:
                     continue
                 exported_rows += len(batch)

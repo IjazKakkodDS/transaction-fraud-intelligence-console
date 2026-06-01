@@ -139,8 +139,10 @@ export async function promoteRiskScanResult(
 // JavaScript memory and use the browser download manager instead.
 // ---------------------------------------------------------------------------
 
-export function getRiskScanExportUrl(scanId: string): string {
-  return `${BASE_URL}/risk-scan/${encodeURIComponent(scanId)}/export`;
+export function getRiskScanExportUrl(scanId: string, tier?: string): string {
+  const base = `${BASE_URL}/risk-scan/${encodeURIComponent(scanId)}/export`;
+  if (tier) return `${base}?tier=${encodeURIComponent(tier)}`;
+  return base;
 }
 
 // ---------------------------------------------------------------------------

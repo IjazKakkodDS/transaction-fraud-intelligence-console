@@ -1069,15 +1069,21 @@ def get_scan_results_paginated(
 def stream_scan_results_for_export(
     scan_id: str,
     batch_size: int = 10_000,
+    tier: str | None = None,
 ):
     """
     Stream scan result rows for CSV export using a Postgres server-side cursor.
 
     This avoids the UI pagination helper's COUNT/OFFSET work and keeps memory
     bounded to one fetch batch. Results preserve the existing export order.
+
+    Optional `tier` filters by operational_priority (P0/P1/P2/P3).
+    Passing tier=None returns all rows (default behaviour, unchanged).
     """
     if DATABASE_URL.startswith("sqlite"):
         rows = get_scan_results(scan_id)
+        if tier:
+            rows = [r for r in rows if r.get("operational_priority") == tier]
         for idx in range(0, len(rows), batch_size):
             yield rows[idx:idx + batch_size]
         return
@@ -1109,33 +1115,62 @@ def stream_scan_results_for_export(
             "validation_errors",
             "promoted",
         ]
-        cursor.execute(
-            """
-            SELECT
-                row_number,
-                transaction_id,
-                amount,
-                "timestamp",
-                country,
-                payment_method,
-                merchant_category,
-                device_id,
-                rule_flag,
-                model_prediction,
-                risk_score,
-                decision,
-                risk_tier,
-                operational_priority,
-                reasons,
-                validation_status,
-                validation_errors,
-                promoted
-            FROM portfolio_scan_results
-            WHERE scan_id = %s
-            ORDER BY risk_score DESC NULLS LAST, row_number ASC
-            """,
-            (scan_id,),
-        )
+        if tier:
+            cursor.execute(
+                """
+                SELECT
+                    row_number,
+                    transaction_id,
+                    amount,
+                    "timestamp",
+                    country,
+                    payment_method,
+                    merchant_category,
+                    device_id,
+                    rule_flag,
+                    model_prediction,
+                    risk_score,
+                    decision,
+                    risk_tier,
+                    operational_priority,
+                    reasons,
+                    validation_status,
+                    validation_errors,
+                    promoted
+                FROM portfolio_scan_results
+                WHERE scan_id = %s AND operational_priority = %s
+                ORDER BY risk_score DESC NULLS LAST, row_number ASC
+                """,
+                (scan_id, tier),
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT
+                    row_number,
+                    transaction_id,
+                    amount,
+                    "timestamp",
+                    country,
+                    payment_method,
+                    merchant_category,
+                    device_id,
+                    rule_flag,
+                    model_prediction,
+                    risk_score,
+                    decision,
+                    risk_tier,
+                    operational_priority,
+                    reasons,
+                    validation_status,
+                    validation_errors,
+                    promoted
+                FROM portfolio_scan_results
+                WHERE scan_id = %s
+                ORDER BY risk_score DESC NULLS LAST, row_number ASC
+                """,
+                (scan_id,),
+            )
 
         while True:
             rows = cursor.fetchmany(batch_size)

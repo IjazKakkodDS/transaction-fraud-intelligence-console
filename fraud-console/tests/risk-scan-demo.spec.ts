@@ -98,6 +98,13 @@ test.describe("10M risk scan demo walkthrough", () => {
     );
     expect(unbounded, "results must never be fetched without page_size").toBeFalsy();
 
+    // ── Export section — wait for summary data, then confirm controls ────
+    // The export section only renders after summary.isLoading resolves.
+    await expect(page.getByText("Export Scan Results")).toBeVisible({ timeout: 20000 });
+    await expect(
+      page.getByRole("button", { name: /export all results/i }).first()
+    ).toBeVisible();
+
     // ── Promote button present (not clicked) ───────────────────────────────
     const promoteBtn = page.getByRole("button", { name: /promote/i }).first();
     await expect(promoteBtn).toBeVisible({ timeout: 10000 });
