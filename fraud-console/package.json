@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "demo:visual": "playwright test tests/risk-scan-demo-visual.spec.ts --headed --project=chromium"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.0",
