@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Playwright test artifacts — screenshots, videos, reports, traces
+/test-results/
+/playwright-report/
+*.webm
