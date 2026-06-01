@@ -45,7 +45,11 @@ next-env.d.ts
 /playwright-report/
 *.webm
 
-# Demo recording output — generated video files, never committed
+# Demo recording output — generated video, audio files, never committed
 /demo/output/*
 !/demo/output/.gitkeep
+/demo/audio/*
 *.mp4
+*.mp3
+*.wav
+*.m4a
