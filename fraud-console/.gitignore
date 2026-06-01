@@ -44,3 +44,8 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 *.webm
+
+# Demo recording output — generated video files, never committed
+/demo/output/*
+!/demo/output/.gitkeep
+*.mp4
