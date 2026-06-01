@@ -22,10 +22,13 @@
  *     · Scan Detail Header (status, UUID, row counts, exposures)
  *     · Recent Portfolio Scans panel
  *     · Portfolio KPI rail and Tier Distribution
+ *     · Scan Report Modal — executive summary (View Scan Report → close)
  *     · Paginated results table (100 rows / page)
+ *     · Result Detail Drawer — row inspection (click row → close)
  *     · P1 High-risk tier filter
  *     · P3 Normal-risk tier filter
  *     · Page 2 navigation
+ *     · Export Scan Results section
  *  4. Review Queue
  *  5. Workflow Events
  *  6. Workflow Metrics (Reliability)
@@ -36,6 +39,7 @@
  *  • Promote button is identified but never clicked — no DB mutation.
  *  • No large-scan re-upload.
  *  • No DB row deletions.
+ *  • No downloads triggered.
  *
  * 10M SCAN FACTS (Phase 12D-8U verified benchmark)
  * -------------------------------------------------
@@ -71,7 +75,7 @@ test.use({
 
 test("Fraud Intelligence Console — product demo walkthrough", async ({ page }) => {
   // Visual walkthroughs need a generous timeout — pauses alone exceed 30s.
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
 
   // ── A. Overview ────────────────────────────────────────────────────────────
   await page.goto("/");
@@ -105,7 +109,10 @@ test("Fraud Intelligence Console — product demo walkthrough", async ({ page })
   ).toBeVisible({ timeout: 20_000 });
   await page.waitForTimeout(PAUSE.read);
 
-  // Confirm controls are visible (but do not click Export or trigger a download)
+  // Confirm action controls are visible
+  await expect(
+    page.getByRole("button", { name: /view scan report/i }).first()
+  ).toBeVisible({ timeout: 20_000 });
   await expect(
     page.getByRole("button", { name: /export csv/i }).first()
   ).toBeVisible();
@@ -114,7 +121,29 @@ test("Fraud Intelligence Console — product demo walkthrough", async ({ page })
   ).toBeVisible();
   await page.waitForTimeout(PAUSE.brief);
 
-  // ── Results table + pagination ─────────────────────────────────────────────
+  // ── E. Scan Report Modal ───────────────────────────────────────────────────
+  const reportBtn = page.getByRole("button", { name: /view scan report/i }).first();
+  await reportBtn.click();
+
+  const reportModal = page.getByTestId("scan-report-modal");
+  await expect(reportModal).toBeVisible({ timeout: 5_000 });
+  await page.waitForTimeout(PAUSE.read);
+
+  // Confirm report sections are visible
+  await expect(reportModal.getByText("Risk Distribution")).toBeVisible();
+  await expect(reportModal.getByText("Exposure Summary")).toBeVisible();
+  await page.waitForTimeout(PAUSE.read);
+
+  // Scroll to the bottom of the report modal to show all sections
+  await reportModal.locator("div.overflow-y-auto").evaluate((el) => el.scrollTo({ top: el.scrollHeight, behavior: "smooth" }));
+  await page.waitForTimeout(PAUSE.read);
+
+  // Close via footer Close button
+  await reportModal.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(reportModal).not.toBeVisible({ timeout: 3_000 });
+  await page.waitForTimeout(PAUSE.brief);
+
+  // ── F. Results table + promote button ─────────────────────────────────────
   await page.waitForSelector("table tbody tr", { timeout: 30_000 });
   await expect(page.getByText(/Showing 1/).first()).toBeVisible();
   await expect(page.getByText(/Page 1/).first()).toBeVisible();
@@ -126,25 +155,42 @@ test("Fraud Intelligence Console — product demo walkthrough", async ({ page })
   await promoteBtn.hover();   // hover only — no click
   await page.waitForTimeout(PAUSE.brief);
 
-  // ── E. P1 High-risk filter ─────────────────────────────────────────────────
+  // ── G. Result Detail Drawer ────────────────────────────────────────────────
+  const firstRow = page.locator("table tbody tr").first();
+  await firstRow.click();
+
+  const drawer = page.getByTestId("result-detail-drawer");
+  await expect(drawer).toBeVisible({ timeout: 5_000 });
+  await expect(drawer.getByText("Risk Summary")).toBeVisible();
+  await page.waitForTimeout(PAUSE.read);
+
+  // Scroll drawer body to show transaction attributes
+  await page.waitForTimeout(PAUSE.brief);
+
+  // Close drawer
+  await page.getByRole("button", { name: "Close" }).last().click();
+  await expect(drawer).not.toBeVisible({ timeout: 3_000 });
+  await page.waitForTimeout(PAUSE.brief);
+
+  // ── H. P1 High-risk filter ─────────────────────────────────────────────────
   const p1Tab = page.getByRole("button", { name: /^P1/ }).first();
   await p1Tab.click();
   await page.waitForSelector("table tbody tr", { timeout: 20_000 });
   await page.waitForTimeout(PAUSE.read);
 
-  // ── F. P3 Normal-risk filter ───────────────────────────────────────────────
+  // ── I. P3 Normal-risk filter ───────────────────────────────────────────────
   const p3Tab = page.getByRole("button", { name: /^P3/ }).first();
   await p3Tab.click();
   await page.waitForSelector("table tbody tr", { timeout: 20_000 });
   await page.waitForTimeout(PAUSE.read);
 
-  // ── G. Return to All ──────────────────────────────────────────────────────
+  // ── J. Return to All ──────────────────────────────────────────────────────
   const allTab = page.getByRole("button", { name: /^All/ }).first();
   await allTab.click();
   await page.waitForSelector("table tbody tr", { timeout: 15_000 });
   await page.waitForTimeout(PAUSE.brief);
 
-  // ── H. Page 2 ─────────────────────────────────────────────────────────────
+  // ── K. Page 2 navigation ─────────────────────────────────────────────────
   const nextBtn = page.getByRole("button", { name: /next/i }).first();
   await nextBtn.click();
   await expect(page.getByText(/Page 2/).first()).toBeVisible({ timeout: 15_000 });
@@ -157,22 +203,32 @@ test("Fraud Intelligence Console — product demo walkthrough", async ({ page })
   await expect(page.getByText(/Page 1/).first()).toBeVisible({ timeout: 10_000 });
   await page.waitForTimeout(PAUSE.brief);
 
-  // ── I. Review Queue ────────────────────────────────────────────────────────
+  // ── L. Export Scan Results section ────────────────────────────────────────
+  // Scroll to export section and confirm controls are visible
+  const exportSection = page.getByLabel("Export scan results");
+  await exportSection.scrollIntoViewIfNeeded();
+  await expect(exportSection).toBeVisible({ timeout: 10_000 });
+  await expect(
+    page.getByRole("button", { name: /export all results/i }).first()
+  ).toBeVisible();
+  await page.waitForTimeout(PAUSE.read);
+
+  // ── M. Review Queue ────────────────────────────────────────────────────────
   await page.goto("/queue");
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(PAUSE.read);
 
-  // ── J. Workflow Events ─────────────────────────────────────────────────────
+  // ── N. Workflow Events ─────────────────────────────────────────────────────
   await page.goto("/workflow/events");
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(PAUSE.read);
 
-  // ── K. Workflow Metrics ────────────────────────────────────────────────────
+  // ── O. Workflow Metrics ────────────────────────────────────────────────────
   await page.goto("/workflow/metrics");
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(PAUSE.read);
 
-  // ── L. Final hero shot — 10M scan ─────────────────────────────────────────
+  // ── P. Final hero shot — 10M scan ─────────────────────────────────────────
   await page.goto(SCAN_URL);
   await expect(
     page.getByText("Completed scan record")

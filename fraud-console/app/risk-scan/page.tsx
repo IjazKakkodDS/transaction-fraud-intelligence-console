@@ -989,19 +989,6 @@ function ScanDetailHeader({
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={handleCopyId}
-            className="rounded px-2.5 py-1 text-[11px]"
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.09)",
-              color: copied ? "#10B981" : "#6B7280",
-              cursor: "pointer",
-            }}
-          >
-            {copied ? "Copied" : "Copy scan ID"}
-          </button>
           {isExportable && onReport && (
             <button
               type="button"
@@ -1032,6 +1019,19 @@ function ScanDetailHeader({
               Export CSV
             </button>
           )}
+          <button
+            type="button"
+            onClick={handleCopyId}
+            className="rounded px-2.5 py-1 text-[11px]"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.09)",
+              color: copied ? "#10B981" : "#6B7280",
+              cursor: "pointer",
+            }}
+          >
+            {copied ? "Copied" : "Copy scan ID"}
+          </button>
         </div>
       </div>
 

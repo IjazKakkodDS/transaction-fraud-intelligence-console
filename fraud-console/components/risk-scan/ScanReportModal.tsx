@@ -5,11 +5,6 @@ import type { RiskScanSummary, RiskScanStatus, RecentScan } from "@/types/riskSc
 
 // ── Format helpers ───────────────────────────────────────────────────────────
 
-function fmtTs(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString();
-}
-
 function fmtCurrencyFull(n: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
