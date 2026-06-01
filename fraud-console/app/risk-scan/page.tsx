@@ -16,6 +16,7 @@ import { useRiskScanSummary } from "@/lib/hooks/useRiskScanSummary";
 import { useRiskScanResults } from "@/lib/hooks/useRiskScanResults";
 import { useRiskScanPromote } from "@/lib/hooks/useRiskScanPromote";
 import { ScanResultDrawer } from "@/components/risk-scan/ScanResultDrawer";
+import { ScanReportModal } from "@/components/risk-scan/ScanReportModal";
 
 // ─── Design constants ────────────────────────────────────────────────────────
 
@@ -896,6 +897,7 @@ function ScanDetailHeader({
   recentMatch,
   isExportable,
   onExport,
+  onReport,
 }: {
   scanId: string;
   status: RiskScanStatus | null;
@@ -903,6 +905,7 @@ function ScanDetailHeader({
   recentMatch: RecentScan | null;
   isExportable: boolean;
   onExport: () => void;
+  onReport?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -999,6 +1002,21 @@ function ScanDetailHeader({
           >
             {copied ? "Copied" : "Copy scan ID"}
           </button>
+          {isExportable && onReport && (
+            <button
+              type="button"
+              onClick={onReport}
+              className="rounded px-2.5 py-1 text-[11px] font-semibold"
+              style={{
+                background: "rgba(34,211,238,0.08)",
+                border: "1px solid rgba(34,211,238,0.22)",
+                color: "#22D3EE",
+                cursor: "pointer",
+              }}
+            >
+              View Scan Report
+            </button>
+          )}
           {isExportable && (
             <button
               type="button"
@@ -1312,6 +1330,7 @@ export default function RiskScanPage() {
   const [promoteError, setPromoteError]       = useState<string | null>(null);
   const [exportError, setExportError]         = useState<string | null>(null);
   const [selectedResultRow, setSelectedResultRow] = useState<RiskScanResult | null>(null);
+  const [showReport, setShowReport] = useState(false);
 
   // Recent scans panel
   const [recentScans, setRecentScans]             = useState<RecentScan[]>([]);
@@ -1673,6 +1692,7 @@ export default function RiskScanPage() {
           recentMatch={recentScans.find((s) => s.scan_id === scanId) ?? null}
           isExportable={isComplete}
           onExport={handleExport}
+          onReport={isComplete && summaryData ? () => setShowReport(true) : undefined}
         />
       )}
 
@@ -1922,6 +1942,17 @@ export default function RiskScanPage() {
             setSelectedResultRow(null);
           }}
           isPromoting={pendingPromoteId === selectedResultRow.id}
+        />
+      )}
+
+      {/* ── Scan report modal ────────────────────────────────────── */}
+      {showReport && summaryData && scanId && (
+        <ScanReportModal
+          scanId={scanId}
+          summary={summaryData}
+          statusData={statusData ?? null}
+          recentMatch={recentScans.find((s) => s.scan_id === scanId) ?? null}
+          onClose={() => setShowReport(false)}
         />
       )}
     </div>

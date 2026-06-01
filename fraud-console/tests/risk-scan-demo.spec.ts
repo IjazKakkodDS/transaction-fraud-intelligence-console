@@ -138,6 +138,28 @@ test.describe("10M risk scan demo walkthrough", () => {
     });
   });
 
+  test("opens and closes the scan report modal", async ({ page }) => {
+    await page.goto(SCAN_URL);
+
+    // "View Scan Report" only appears once summary has loaded
+    const reportBtn = page.getByRole("button", { name: /view scan report/i });
+    await expect(reportBtn).toBeVisible({ timeout: 25000 });
+
+    // Open the modal
+    await reportBtn.click();
+
+    const modal = page.getByTestId("scan-report-modal");
+    await expect(modal).toBeVisible({ timeout: 5000 });
+
+    // Scan filename and 10M row count must appear in the report
+    await expect(modal.getByText("risk-scan-12d8u-10m.csv")).toBeVisible();
+    await expect(modal.getByText(/10,000,000/).first()).toBeVisible();
+
+    // Close via the Close button in the footer
+    await modal.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(modal).not.toBeVisible({ timeout: 3000 });
+  });
+
   test("opens and closes the result detail drawer", async ({ page }) => {
     await page.goto(SCAN_URL);
 
