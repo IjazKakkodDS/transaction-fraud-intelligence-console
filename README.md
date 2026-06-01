@@ -61,8 +61,8 @@ It is designed to demonstrate how decision intelligence infrastructure behaves u
 | Demo cases | Case 21: REVIEW, risk_score=0.6, FALSE_POSITIVE verdict; Case 22: BLOCK, risk_score=1.0, unreviewed P0 |
 | AI investigation | Ollama/Mistral (local host) |
 | Demo seed script | python scripts/demo_seed.py |
-| Portfolio Risk Scan benchmark | Verified synthetic transaction benchmark through 5M rows |
-| 5M export hardening | Server-side cursor streaming export, 5,000,001 CSV lines, 824.14 MB, 61.46s local export |
+| Portfolio Risk Scan benchmark | Verified local synthetic transaction benchmark through 10M rows |
+| 10M export hardening | Server-side cursor streaming export, 10,000,001 CSV lines, 1.64 GiB, 113.63s local export |
 
 ---
 
@@ -77,21 +77,24 @@ Verified local production-style benchmark results:
 | 1M synthetic transactions | Verified | Async scan completed successfully in PostgreSQL |
 | 2.5M synthetic transactions | Verified | Scale run exposed Postgres table bloat/export risk; cleanup and hardening followed |
 | 5M synthetic transactions | Verified | `5,000,000 / 5,000,000` processed, status `COMPLETE` |
+| 7.5M synthetic transactions | Verified | `7,500,000 / 7,500,000` processed after ingestion/export/dedup hardening |
+| 10M synthetic transactions | Verified | `10,000,000 / 10,000,000` processed after result-query index hardening |
 
-Verified 5M benchmark details:
+Verified 10M benchmark details:
 
 | Metric | Observed value |
 |---|---|
-| Scan UUID | `4f3438f7-cabf-49c8-848f-5cb2d717f48f` |
-| Valid / invalid / skipped rows | `5,000,000 / 0 / 0` |
-| Priority counts | P0 `749,839`, P1 `472,412`, P2 `0`, P3 `3,777,749` |
-| Total exposure | `$6,982,753,484.22` |
-| Critical exposure | `$5,058,942,542.95` |
-| Hardened export | HTTP 200, 61.46s total, 0.0055s time to first byte |
-| Export file | 824.14 MB, 5,000,001 lines including header |
+| Scan UUID | `aa0971d2-bdb6-49c7-bac3-fa355aa161ad` |
+| Valid / invalid / skipped rows | `10,000,000 / 0 / 0` |
+| Processing time | 103m 35s (~1,610 rows/sec) |
+| Priority counts | P0 `0`, P1 `8,420,051`, P2 `0`, P3 `1,579,949` |
+| Total exposure | `$25,095,000,000.00` |
+| High exposure | `$24,455,516,419.00` |
+| Hardened export | HTTP 200, 113.63s total, 0.006987s time to first byte |
+| Export file | 1.64 GiB, 10,000,001 lines including header |
 | API stability after export | RestartCount `0`, OOMKilled `false` |
 
-These benchmarks use synthetic data in a local Docker Compose runtime. They are not claims of real-world bank production deployment. 7.5M and 10M scans are future verification targets and are not currently claimed as verified.
+These benchmarks use synthetic data in a local Docker Compose runtime. They are not claims of real-world bank production deployment, regulatory approval, or real-world fraud model performance.
 
 ---
 
@@ -533,8 +536,10 @@ The Automation Reliability Center computes its health verdict from actual event 
 | Investigation requires Ollama on host | The investigation consumer connects to Ollama at `host.docker.internal:11434`. AI investigations will not complete if Ollama is not running on the host machine. |
 | No dead-letter handling | Failed scoring or investigation consumer events are logged and skipped. Failed messages are not routed to a dead-letter topic. |
 | Benchmarks are synthetic and local | Portfolio Risk Scan benchmarks are verified synthetic transaction benchmarks in local Docker Compose, not a real bank production deployment. |
-| Ultra-scale upload path still needs hardening | 5M async scan and export are verified. 7.5M and 10M remain future targets, and the upload path may need chunked ingestion before those tiers are verified. |
-| Large generated artifacts stay untracked | Generated benchmark CSVs and export artifacts such as `scripts/verify_5m_export.csv` should not be committed. |
+| Large scan DB footprint | After accumulated 5M, 7.5M, and 10M scans, the local PostgreSQL database reached about 19 GB and may need an archive/cleanup strategy before repeated future benchmark runs. |
+| Filter count cost at scale | P1 result filtering remains correct and indexed, but the paginated count over 8.42M matching 10M rows took about 4.188s locally. |
+| Benchmark mode env | `.env` may be left in 10M benchmark mode after scale verification; reset row caps and dedup settings for normal development if needed. |
+| Large generated artifacts stay untracked | Generated benchmark CSVs and export artifacts should remain local and must not be committed. |
 
 ---
 
@@ -685,25 +690,26 @@ No deployed URL is available at this time.
 
 | Phase | Description | Status |
 |---|---|---|
-| Phase 12D closeout | Benchmark evidence pack and documentation reconciliation for verified 5M Portfolio Risk Scan | Current |
-| Phase 12D next scale | 7.5M verification, then 10M verification after upload/runtime hardening | Planned |
+| Phase 12D closeout | Benchmark evidence pack and documentation reconciliation for verified 10M Portfolio Risk Scan | Current |
+| Post-10M data operations | Archive/cleanup strategy for accumulated large scan results and benchmark artifacts | Planned |
 | Phase 12E | Schema mapping and data quality layer for varied real-world file layouts | Planned |
 | Phase 12F | Rich synthetic banking dataset generator with users, merchants, velocity patterns, and fraud injections | Planned |
 | Phase 12G | Enhanced fraud decision engine with per-dimension score breakdown | Planned |
-| Phase 12H | Benchmark evidence pack with reproducible scripts, traceability proof, and demo-safe reporting | Planned |
+| Phase 12H | Benchmark evidence pack, traceability proof, scan report generation, and demo-safe reporting | Planned |
 | Phase 13 | Behavioral Intelligence Layer - entity-aware velocity signals, amount deviation, merchant and device history | Planned |
 | Phase 14 | Dirty Data and Stream Resilience Testing - missing field injection, duplicate events, out-of-order arrival, degradation verification | Planned |
 | Phase 15 | Graph / Mule Network Intelligence - shared device and merchant detection, account cluster risk, mule-ring indicators | Planned |
 | Phase 16 | Adversarial Synthetic Fraud Simulation - structurally realistic adversarial fraud patterns for model stress testing | Planned |
 
 Near-term roadmap priorities:
-- Chunked CSV ingestion for ultra-scale uploads beyond the verified 5M tier
-- 7.5M verification followed by 10M verification, with no claim until each run passes
-- Scan history and scan detail UX improvements
+- Post-10M DB cleanup/archive strategy for repeated benchmark runs
+- Scan history and scan detail UX polish where useful
+- Result detail drawer, filtered exports, and scan report generator
 - Schema mapping and data quality scoring for varied transaction files
 - Rich synthetic banking dataset generation for more realistic benchmark inputs
 - Enhanced fraud decisioning with per-dimension explanations
-- Benchmark evidence pack and deployment/demo-safe operating mode
+- Case dossier 2.0, AI investigation brief hardening, workflow/audit/governance polish
+- Observability/reliability, durable worker architecture, auth/RBAC, and deployment/demo-safe mode
 
 ---
 
