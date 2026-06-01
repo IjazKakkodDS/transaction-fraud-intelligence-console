@@ -6,9 +6,7 @@ This document records verified benchmark evidence for the **Portfolio Risk Scan*
 **Fraud Intelligence Console**.
 
 All benchmarks described here are **local production-style synthetic benchmarks** executed
-against fully synthetic transaction data in Docker Compose. They are not claims of real-world
-bank production deployment, regulatory-approved fraud model performance, or live customer
-transaction throughput.
+against fully synthetic transaction data in Docker Compose.
 
 The benchmark goal is to verify that the async Portfolio Risk Scan pipeline can complete
 end-to-end at increasing scale: upload -> validate -> score -> persist -> summarize ->
@@ -31,13 +29,7 @@ behavior throughout.
 
 ## Current Verified Capability Statement
 
-> Verified 10M-transaction local production-style async Portfolio Risk Scan benchmark with persisted results, paginated analyst review, deep pagination, risk-tier filtering, frontend scan resume, recent scan loading, scan detail header, promote-to-case support, and hardened server-side streaming CSV export.
-
-This statement reflects benchmarks completed on the local Docker Compose stack using fully
-synthetic transaction data. It is not a claim of real-world bank deployment, regulatory approval,
-or real-world fraud model performance.
-
----
+> Verified 10M-transaction local production-style async Portfolio Risk Scan benchmark with bounded-memory ingestion, persisted results, paginated analyst review, deep pagination, risk-tier filtering, frontend scan resume, recent scan loading, scan detail header, promote-to-case support, and hardened server-side streaming CSV export.
 
 ## 10M Verification Summary
 
@@ -61,9 +53,9 @@ or real-world fraud model performance.
 | `RISK_SCAN_CHUNK_SIZE` | `2000` |
 | `RISK_SCAN_ENABLE_IN_MEMORY_DEDUP` | `false` |
 
-`RISK_SCAN_ENABLE_IN_MEMORY_DEDUP=false` was used only because the synthetic benchmark generator
-produced guaranteed-unique transaction IDs. Exact cross-chunk deduplication remains available for
-normal scans by setting the variable to `true`.
+`RISK_SCAN_ENABLE_IN_MEMORY_DEDUP=false` was used as memory-bounded benchmark mode because the
+synthetic benchmark generator produced guaranteed-unique transaction IDs. Exact cross-chunk
+duplicate detection remains available for normal scans by setting the variable to `true`.
 
 **Processing**
 
@@ -247,8 +239,9 @@ The result query orders by `risk_score DESC NULLS LAST, row_number ASC`. At 7.5M
 query shape eliminated the sort and disk spill before the 10M run.
 
 **Keep benchmark dedup mode explicit.**
-Exact cross-chunk duplicate detection remains the default for normal scans. Benchmark mode disables
-cross-chunk in-memory dedup only when synthetic transaction IDs are guaranteed unique.
+Exact cross-chunk duplicate detection remains the default for normal scans. Memory-bounded
+benchmark mode disables cross-chunk in-memory dedup only when synthetic transaction IDs are
+guaranteed unique.
 
 **Keep large benchmark artifacts out of Git.**
 Generated input CSVs and export verification CSVs can reach multiple GiB. They belong on local
@@ -256,11 +249,18 @@ disk or object storage, not in the repository.
 
 ---
 
-## Known Limitations
+## Validation and Deployment Scope
 
-- **Synthetic/local benchmark only.** All scale figures were produced against synthetic data on a
-  local Docker Compose stack. No real customer data was used. No claim of regulatory-approved
-  fraud model performance or bank-production deployment is made.
+- **Validation environment.** Synthetic transaction benchmarks validate system throughput,
+  persistence, pagination, export, and workflow behavior in a local production-style environment.
+
+- **Deployment requirements.** Real institution deployment would require additional model
+  validation, regulatory review, security controls, access governance, operational monitoring,
+  and data/security assessment.
+
+---
+
+## Operating Constraints
 
 - **Large local DB footprint.** After accumulated 5M, 7.5M, and 10M scans, the local database
   reached about 19 GB and `portfolio_scan_results` reached 22,752,000 rows. Repeated future
@@ -270,9 +270,8 @@ disk or object storage, not in the repository.
   response still computes a total count over 8,420,051 matching rows. This took 4.188s during
   10M verification.
 
-- **Auth/RBAC/deployment hardening remain future work.** The system currently has no production
-  authentication layer on scan endpoints. Deployment hardening remains out of scope for the local
-  benchmark.
+- **Deployment readiness layer.** Authentication, authorization, environment
+  isolation, and deployment observability are the next production hardening layer.
 
 - **Generated artifacts stay untracked.** Generated benchmark CSVs and export files must remain
   untracked. Generator and verification scripts should not be committed unless explicitly scoped.
@@ -294,8 +293,7 @@ disk or object storage, not in the repository.
    mapping, quality scoring, and rejected-row reporting.
 
 4. **Richer synthetic banking dataset generator.** Add user baselines, merchants, device variety,
-   velocity patterns, and fraud injections to improve benchmark realism without claiming real-world
-   fraud model performance.
+   velocity patterns, and fraud injections to improve benchmark realism for future validation work.
 
 5. **Enhanced fraud decision engine and Case Dossier 2.0.** Add per-dimension decision evidence,
    richer investigation brief hardening, and better analyst traceability.

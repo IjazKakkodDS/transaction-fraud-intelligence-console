@@ -68,7 +68,7 @@ It is designed to demonstrate how decision intelligence infrastructure behaves u
 
 ## Portfolio Risk Scan Benchmark
 
-Portfolio Risk Scan is the bulk transaction intelligence workflow for scoring large synthetic transaction files, triaging rows into P0/P1/P2/P3 operational priority tiers, filtering paginated results, and promoting selected scan rows into full case dossiers.
+Portfolio Risk Scan is the bulk transaction intelligence workflow for portfolio-scale transaction risk scanning. It scores large synthetic transaction files through the benchmark-verified async processing path, persists every result row in PostgreSQL, supports paginated analyst review, filters by operational risk tier, reloads recent scans, surfaces a scan detail header, promotes selected rows into full case dossiers, and exports results through a hardened server-side cursor stream.
 
 Verified local production-style benchmark results:
 
@@ -94,7 +94,9 @@ Verified 10M benchmark details:
 | Export file | 1.64 GiB, 10,000,001 lines including header |
 | API stability after export | RestartCount `0`, OOMKilled `false` |
 
-These benchmarks use synthetic data in a local Docker Compose runtime. They are not claims of real-world bank production deployment, regulatory approval, or real-world fraud model performance.
+### Validation Scope
+
+Benchmarks were executed on synthetic transaction data in a local production-style Docker Compose environment. Production deployment would require institution-specific model validation, access control, monitoring, governance, and data/security review.
 
 ---
 
@@ -303,7 +305,7 @@ flowchart TD
 
 ## Model and Decisioning
 
-The scoring engine is an enhanced baseline hybrid model. It is not a production-certified fraud detection model and should not be treated as one. The XGBoost classifier was trained on a 1,000-row synthetic dataset with engineered risk signals. Training accuracy on synthetic data does not reflect expected performance against real-world fraud distributions.
+The scoring engine is an enhanced baseline hybrid model designed to demonstrate decisioning architecture, feature flow, rule integration, and analyst-facing evidence. The XGBoost classifier was trained on a 1,000-row synthetic dataset with engineered risk signals; institution-specific model validation would be required before any regulated deployment.
 
 The model produces a binary output (0 or 1) which is combined with a deterministic rule flag (0 or 1) using a configurable weighted formula:
 
@@ -526,16 +528,16 @@ The Automation Reliability Center computes its health verdict from actual event 
 
 | Constraint | Detail |
 |---|---|
-| Synthetic training data | The XGBoost model was trained on synthetic data. Training accuracy does not reflect real-world fraud detection performance. |
-| Local Docker Compose runtime | All services run locally. No production deployment has been completed. |
+| Synthetic training data | The XGBoost model was trained on synthetic data to validate system architecture and decision flow. Institution-specific model validation is required for deployment. |
+| Local Docker Compose runtime | All services run in a local production-style benchmark environment. Deployment hardening is tracked as future work. |
 | No authentication layer | The API and frontend have no authentication or authorisation in the current release. |
 | Cloud deployment not completed | Deployment planning is in progress under Phase 11P. No public URL is available. |
 | n8n workflow must be active | The n8n workflow must be published and active for audit callbacks to succeed. Dispatch events are written as FAILED when n8n is unreachable. |
-| Model is a decisioning baseline | The scoring engine is not a certified or production-validated fraud detection model. |
+| Model is a decisioning baseline | The scoring engine demonstrates the hybrid decisioning path; regulated use would require model validation and governance controls. |
 | Case IDs change after DB reset | If the PostgreSQL volume is deleted and the stack restarted, all case IDs change. Re-run `python scripts/demo_seed.py` after a reset and update docs/DEMO_STATE.md with the new IDs. |
 | Investigation requires Ollama on host | The investigation consumer connects to Ollama at `host.docker.internal:11434`. AI investigations will not complete if Ollama is not running on the host machine. |
 | No dead-letter handling | Failed scoring or investigation consumer events are logged and skipped. Failed messages are not routed to a dead-letter topic. |
-| Benchmarks are synthetic and local | Portfolio Risk Scan benchmarks are verified synthetic transaction benchmarks in local Docker Compose, not a real bank production deployment. |
+| Benchmarks are synthetic and local | Portfolio Risk Scan benchmarks validate throughput, persistence, pagination, export, and workflow behavior in local production-style conditions. |
 | Large scan DB footprint | After accumulated 5M, 7.5M, and 10M scans, the local PostgreSQL database reached about 19 GB and may need an archive/cleanup strategy before repeated future benchmark runs. |
 | Filter count cost at scale | P1 result filtering remains correct and indexed, but the paginated count over 8.42M matching 10M rows took about 4.188s locally. |
 | Benchmark mode env | `.env` may be left in 10M benchmark mode after scale verification; reset row caps and dedup settings for normal development if needed. |
@@ -567,7 +569,7 @@ The n8n integration externalises workflow logic from the FastAPI backend. Workfl
 
 ### Baseline XGBoost model vs full production fraud model
 
-The current model is deliberately positioned as a decisioning baseline. It demonstrates the scoring architecture, feature pipeline, and hybrid rule combination without overstating detection capability. Future phases (Phase 13 onward) plan to add behavioral velocity signals, entity-level history, and graph-level network features. The current model's decisions are driven by synthetic data patterns that may not reflect real fraud distributions.
+The current model is deliberately positioned as a decisioning baseline. It demonstrates the scoring architecture, feature pipeline, and hybrid rule combination while leaving institution-specific detection validation to later governance work. Future phases (Phase 13 onward) plan to add behavioral velocity signals, entity-level history, and graph-level network features.
 
 ---
 
