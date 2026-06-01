@@ -14,7 +14,10 @@
     "demo:record": "node demo/record-risk-scan-demo.mjs",
     "demo:voiceover": "node demo/generate-voiceover.mjs",
     "demo:merge-audio": "node demo/merge-voiceover.mjs",
-    "demo:narrated": "npm run demo:voiceover && npm run demo:merge-audio"
+    "demo:narrated": "npm run demo:voiceover && npm run demo:merge-audio",
+    "demo:edge-voiceover": "node demo/generate-edge-voiceover.mjs",
+    "demo:edge-merge": "node demo/merge-edge-voiceover.mjs",
+    "demo:edge-narrated": "npm run demo:edge-voiceover && npm run demo:edge-merge"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.0",
