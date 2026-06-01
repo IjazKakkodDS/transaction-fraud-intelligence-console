@@ -130,4 +130,28 @@ test.describe("10M risk scan demo walkthrough", () => {
       fullPage: false,
     });
   });
+
+  test("opens and closes the result detail drawer", async ({ page }) => {
+    await page.goto(SCAN_URL);
+
+    // Wait for results table to be ready
+    await page.waitForSelector("table tbody tr", { timeout: 30000 });
+
+    // Click the first data row to open the drawer
+    const firstRow = page.locator("table tbody tr").first();
+    await firstRow.click();
+
+    // Drawer should appear
+    const drawer = page.getByTestId("result-detail-drawer");
+    await expect(drawer).toBeVisible({ timeout: 5000 });
+
+    // Drawer contains a Risk Summary section
+    await expect(drawer.getByText("Risk Summary")).toBeVisible();
+
+    // Close via the × button
+    await page.getByRole("button", { name: "Close" }).last().click();
+
+    // Drawer should be gone
+    await expect(drawer).not.toBeVisible({ timeout: 3000 });
+  });
 });

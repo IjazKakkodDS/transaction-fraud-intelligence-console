@@ -15,6 +15,7 @@ import { useRiskScanStatus } from "@/lib/hooks/useRiskScanStatus";
 import { useRiskScanSummary } from "@/lib/hooks/useRiskScanSummary";
 import { useRiskScanResults } from "@/lib/hooks/useRiskScanResults";
 import { useRiskScanPromote } from "@/lib/hooks/useRiskScanPromote";
+import { ScanResultDrawer } from "@/components/risk-scan/ScanResultDrawer";
 
 // ─── Design constants ────────────────────────────────────────────────────────
 
@@ -518,10 +519,12 @@ function ResultsTable({
   rows,
   pendingId,
   onPromote,
+  onViewRow,
 }: {
   rows: RiskScanResult[];
   pendingId: number | null;
   onPromote: (row: RiskScanResult) => void;
+  onViewRow: (row: RiskScanResult) => void;
 }) {
   if (rows.length === 0) {
     return (
@@ -585,9 +588,18 @@ function ResultsTable({
               return (
                 <tr
                   key={row.id}
+                  onClick={() => onViewRow(row)}
                   style={{
                     background: rowBg,
                     borderBottom: "1px solid rgba(255,255,255,0.04)",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLTableRowElement).style.background =
+                      "rgba(34,211,238,0.035)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLTableRowElement).style.background = rowBg;
                   }}
                 >
                   {/* Priority */}
@@ -714,8 +726,11 @@ function ResultsTable({
                     </span>
                   </td>
 
-                  {/* Promotion */}
-                  <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
+                  {/* Promotion — stopPropagation keeps row-click from firing */}
+                  <td
+                    style={{ padding: "8px 12px", whiteSpace: "nowrap" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {row.validation_status === "VALID" && row.promoted ? (
                       <Link
                         href={`/cases/${row.promoted_case_id}`}
@@ -1201,6 +1216,7 @@ export default function RiskScanPage() {
   const [pendingPromoteId, setPendingPromoteId] = useState<number | null>(null);
   const [promoteError, setPromoteError]       = useState<string | null>(null);
   const [exportError, setExportError]         = useState<string | null>(null);
+  const [selectedResultRow, setSelectedResultRow] = useState<RiskScanResult | null>(null);
 
   // Recent scans panel
   const [recentScans, setRecentScans]             = useState<RecentScan[]>([]);
@@ -1692,6 +1708,7 @@ export default function RiskScanPage() {
               rows={resultRows}
               pendingId={pendingPromoteId}
               onPromote={handlePromote}
+              onViewRow={setSelectedResultRow}
             />
           )}
         </section>
@@ -1728,6 +1745,21 @@ export default function RiskScanPage() {
 
       {/* ── Export error ────────────────────────────────────────── */}
       {exportError && <ErrorBanner message={exportError} />}
+
+      {/* ── Result detail drawer ─────────────────────────────────── */}
+      {selectedResultRow && (
+        <ScanResultDrawer
+          row={selectedResultRow}
+          scanId={scanId}
+          filename={summaryData?.filename ?? recentScans.find((s) => s.scan_id === scanId)?.filename ?? null}
+          onClose={() => setSelectedResultRow(null)}
+          onPromote={async (row) => {
+            await handlePromote(row);
+            setSelectedResultRow(null);
+          }}
+          isPromoting={pendingPromoteId === selectedResultRow.id}
+        />
+      )}
     </div>
   );
 }
