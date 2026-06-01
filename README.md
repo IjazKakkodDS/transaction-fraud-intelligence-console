@@ -1,4 +1,8 @@
-# Fraud Intelligence Console
+# Real-Time Fraud Intelligence Console
+
+A local production-style fraud decisioning and analyst workflow platform for portfolio-scale
+transaction risk scanning, case triage, AI-assisted investigation, workflow auditability,
+and reliability monitoring.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-latest-009688?logo=fastapi&logoColor=white)
@@ -9,7 +13,412 @@
 ![Redpanda](https://img.shields.io/badge/Redpanda-Kafka--compatible-FF3B00)
 ![XGBoost](https://img.shields.io/badge/XGBoost-3.0+-F7931A)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
-![n8n](https://img.shields.io/badge/n8n-workflow-EA4B71)
+![Playwright](https://img.shields.io/badge/Playwright-1.60+-2EAD33?logo=playwright&logoColor=white)
+![FFmpeg](https://img.shields.io/badge/FFmpeg-available-007808)
+![Edge TTS](https://img.shields.io/badge/Edge_TTS-free-0078D4?logo=microsoftedge&logoColor=white)
+
+---
+
+## Demo and Walkthrough
+
+| Surface | Access |
+|---|---|
+| Frontend Console | http://localhost:3000 |
+| 10M Risk Scan Demo | http://localhost:3000/risk-scan?scan_id=aa0971d2-bdb6-49c7-bac3-fa355aa161ad |
+| Backend Health | http://localhost:8000/health |
+| Demo Video Pipeline | [fraud-console/demo/README.md](fraud-console/demo/README.md) |
+| Demo Storyboard | [docs/DEMO_STORYBOARD.md](docs/DEMO_STORYBOARD.md) |
+| Portfolio Case Study | [docs/PORTFOLIO_CASE_STUDY.md](docs/PORTFOLIO_CASE_STUDY.md) |
+
+**Recommended demo flow:**
+Overview &rarr; Dashboard &rarr; 10M Portfolio Risk Scan &rarr; Risk-Tier Filtering &rarr; Paginated Review &rarr; Review Queue &rarr; Workflow Events &rarr; Reliability Metrics
+
+Generated demo videos are local artefacts and are intentionally gitignored.
+
+---
+
+## System Summary
+
+Fraud review operations require more than a probability score. A scored transaction
+produces a risk signal, but the operational work begins where the model stops: cases must
+be prioritised against a live queue, risk evidence must be surfaced in context, analyst
+decisions must be formally recorded, and automation workflows must be verified to have
+executed as expected. The Fraud Intelligence Console is a local production-style decision
+intelligence platform that connects all of these layers in a single operational system --
+scoring, triage, investigation, verdict capture, workflow dispatch, audit, and reliability
+monitoring -- with every component reading from and writing to real PostgreSQL state.
+
+The Portfolio Risk Scan module extends the platform to bulk transaction intelligence.
+The async scan engine accepted a 720 MiB synthetic transaction file, processed 10,000,000
+rows through bounded-memory chunked ingestion, and persisted every scored result in
+PostgreSQL. Indexed composite queries returned paginated analyst review at sub-second
+response times through deep pagination. A hardened server-side cursor export streamed the
+full 1.64 GiB result set with a 6.987 ms time to first byte and no API restart.
+
+The platform also includes an automated demo generation pipeline: Playwright records
+a headed browser walkthrough, Microsoft Edge TTS synthesises a professional voiceover
+from the narration script, and FFmpeg merges them into a final narrated MP4 -- fully
+automated, locally reproducible, no API key required.
+
+---
+
+## Quantitative Snapshot
+
+| Metric | Verified Result |
+|---|---|
+| Portfolio Risk Scan benchmark scale | 10,000,000 transactions |
+| Processing time | ~103m 35s |
+| Average throughput | ~1,610 rows/sec |
+| Valid / invalid / skipped | 10,000,000 / 0 / 0 |
+| P1 High priority count | 8,420,051 |
+| P3 Low priority count | 1,579,949 |
+| Total synthetic exposure | $25,095,000,000 |
+| Export file | 1.64 GiB, 10,000,001 lines |
+| API RestartCount after export | 0 |
+| OOMKilled | false |
+| Retained benchmark result rows | 22,752,000 |
+| E2E Playwright checks | 7 / 7 passed |
+| Demo media pipeline | Playwright + Edge TTS + FFmpeg |
+| Docker Compose services | 7 |
+| Frontend routes | 8 |
+| Backend API endpoints | 21 |
+
+---
+
+## Technology Stack
+
+| Layer | Technologies |
+|---|---|
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS, TanStack Query, Recharts |
+| Backend API | FastAPI, Pydantic, Uvicorn |
+| Persistence | PostgreSQL 16, SQLAlchemy ORM, Alembic migrations |
+| Eventing | Redpanda (Kafka-compatible), topic-based async stream, kafka-python consumers |
+| Cache | Redis 7 |
+| Scoring | XGBoost 3.0+, scikit-learn, 9-feature hybrid fraud scoring engine |
+| AI Investigation | Ollama, Mistral, structured JSON prompt, schema enforcement, retry logic |
+| Workflow Automation | n8n, webhook dispatch, HTTP callback audit pattern |
+| Demo and Testing | Playwright, Microsoft Edge TTS, FFmpeg |
+| Runtime | Docker Compose (7 services) |
+
+---
+
+## Business Problem
+
+Fraud teams do not only need a model score. They need priority-ordered case queues,
+explainable risk evidence, AI investigation context, structured verdict capture, and a
+workflow layer that proves automation executed and records when it did not. The operational
+gap is between model output and decision workflow. A score in isolation is not an
+operationally complete output.
+
+Portfolio-scale transaction intelligence adds a second class of problem: bulk transaction
+files cannot be scored synchronously without blocking normal case operations. Export of
+large result sets fails if the export path reads the full dataset into memory. Deep
+pagination degrades without composite index support at multi-million-row scale.
+
+---
+
+## System Objective
+
+- Score and classify transaction risk using a hybrid XGBoost and deterministic rule engine.
+- Convert high-risk records into analyst-reviewable cases with AI investigation briefs.
+- Scan large transaction portfolios asynchronously with bounded ingestion and indexed results.
+- Preserve every workflow event through a queryable audit trail and reliability monitoring surface.
+
+---
+
+## Product Value
+
+| Capability | Operational Value |
+|---|---|
+| Portfolio Risk Scan | Asynchronously score millions of transactions; results persist, page, and export at scale |
+| Risk-Tier Filtering | P1/P3 tier filters run server-side against indexed queries; near-instant at 10M rows |
+| Indexed Server-Side Pagination | Composite ordered indexes; deep pagination (page 1,000) returns at 0.379s on 10M result set |
+| Promote-to-Case | Individual scan results promote to full Case Dossiers, connecting bulk scan and single-case review |
+| Analyst Queue | Priority-ordered queue with P0--P3 tier labels, risk score bars, and surgical status filters |
+| Case Dossier | Risk evidence, AI investigation brief, verdict capture, and case-scoped workflow audit in one workspace |
+| Workflow Events | Every automation dispatch and callback produces a durable, queryable audit event with case linkage |
+| Reliability Metrics | Health verdict (Healthy / Degraded / Critical) computed from actual event records; SLO-style targets |
+| AI Investigation Brief | Structured LLM report per case: recommendation, confidence, risk factors, triggered rules, rationale |
+| Automated Demo Pipeline | Playwright recording + Edge TTS narration + FFmpeg merge -- reproducible narrated demo artefacts |
+
+---
+
+## Product Architecture
+
+```mermaid
+flowchart LR
+    A[Transaction Intake / Portfolio CSV] --> B[FastAPI API Layer]
+    B --> C[Hybrid Scoring + Risk Scan Engine]
+    C --> D[(PostgreSQL)]
+    B --> E[Redpanda Event Bus]
+    E --> F[Scoring Consumer]
+    E --> G[Investigation Consumer]
+    G --> H[AI Investigation Brief]
+    B --> I[n8n Workflow Callback]
+    D --> J[Next.js Analyst Console]
+    J --> K[Queue · Cases · Risk Scan · Workflow · Metrics]
+```
+
+**FastAPI** orchestrates API request handling, async scan jobs, and workflow dispatch.
+**PostgreSQL** persists scan jobs, result rows, cases, investigations, verdicts, and all workflow state.
+**Redpanda** supports event-driven transaction scoring and investigation triggering.
+**Consumers** handle scoring and AI investigation workflows asynchronously.
+**Next.js** exposes the analyst review queue, case dossiers, risk scan surface, workflow audit trail, and reliability center.
+
+### Runtime transaction flow
+
+```
+Transaction submitted
+  -> POST /predict -> Redpanda (transactions.raw)
+  -> Scoring Consumer: feature engineering + XGBoost + rule evaluation
+  -> PostgreSQL: prediction + case record
+  -> Review Queue (/queue) -> Case Dossier (/cases/[id])
+  -> AI Investigation: consumer + Ollama/Mistral -> investigation record
+  -> Analyst Verdict: POST /review-case/{case_id}
+  -> Workflow Dispatch: POST /workflow/notify-case/{case_id} -> n8n
+  -> Audit Callback: n8n -> POST /workflow/audit-event
+  -> Workflow Events (/workflow/events) -> Reliability Metrics (/workflow/metrics)
+```
+
+### Scoring formula
+
+```
+risk_score = (0.6 x model_output) + (0.4 x rule_flag)
+```
+
+Model weights are environment-configurable. Decision thresholds: APPROVE below 0.3,
+REVIEW 0.3--0.7, BLOCK above 0.7.
+
+### 9-feature risk vector
+
+| Feature | Source |
+|---|---|
+| `amount` | Transaction amount |
+| `is_high_amount` | amount > $1,000 threshold |
+| `is_night_transaction` | Hour < 6 or > 22 UTC |
+| `is_international` | Explicit boolean field |
+| `is_high_risk_payment_method` | credit_card, digital_wallet |
+| `is_high_risk_country` | Country outside low-risk whitelist |
+| `is_high_risk_merchant_category` | electronics, gaming, travel |
+| `has_device_id` | 0 when device_id absent |
+| `is_mobile_device` | 1 when device_type is mobile |
+
+---
+
+## Product Modules
+
+| Module | Purpose |
+|---|---|
+| Fraud Intelligence Command Center | Live KPI strip, 6-stage pipeline map, stale case SLA pressure, system status |
+| Risk Command Dashboard | Case intelligence stats, decision mix chart, verdict outcomes, workflow health feed |
+| Transaction Intake | Guided intake form with scoring inputs, transaction identity, and investigation context |
+| Analyst Workbench | Priority-sorted review queue with P0--P3 tiers, score bars, and status filters |
+| Portfolio Risk Scan | Async bulk transaction scoring, progress polling, paginated results, tier filters, export |
+| Investigation Workspace | Full case dossier: risk evidence, AI brief, verdict capture, case-scoped audit trail |
+| Automation Audit Trail | Complete workflow event log with audit summary rail, status/source filters, and case linkage |
+| Automation Reliability Center | Health verdict, SLO panels, failure spotlight, action and source breakdown charts |
+| AI Investigation Layer | Per-case LLM investigation reports via Ollama/Mistral with schema enforcement and retry |
+| Demo Automation | Playwright recording pipeline, Edge TTS narration, FFmpeg narrated video export |
+
+---
+
+## Portfolio Risk Scan Operating Envelope
+
+The Portfolio Risk Scan module is designed around bounded ingestion, persisted results,
+indexed review queries, and streaming export paths. This keeps analyst review responsive
+while preserving evidence at portfolio scale.
+
+| Area | Verified Behavior |
+|---|---|
+| Async ingestion | HTTP 202 response with scan_id; background processing in 2,000-row configurable chunks |
+| Memory bounding | Chunk-scoped processing; full file content never held in API heap across chunk boundaries |
+| Max-row guardrail | RISK_SCAN_MAX_ROWS configurable; raised from 10k to 10M across five scale milestones |
+| Dedup mode | RISK_SCAN_ENABLE_IN_MEMORY_DEDUP configurable; benchmark mode for guaranteed-unique IDs |
+| Verified scale | 10,000,000 rows COMPLETE; 0 invalid; 0 skipped |
+| Indexed pagination | Composite ordered indexes on (scan_id, risk_score DESC, row_number ASC) |
+| P1 filter query (8.42M rows) | ~4.188s including paginated count |
+| P3 filter query (1.58M rows) | ~0.604s |
+| Deep pagination (page 1,000) | ~0.379s |
+| Streaming CSV export | Server-side cursor iterator; header emitted immediately; no full in-memory buffer |
+| Export time to first byte | ~0.006987s (10M benchmark) |
+| Full export duration | ~113.63s (1.64 GiB, 10M benchmark) |
+| API RestartCount post-export | 0 |
+| OOMKilled | false |
+| DB footprint note | Accumulated benchmark scans reached ~19 GiB; cleanup strategy documented in benchmark hygiene plan |
+
+### Scale ramp milestones
+
+| Scale | Status | Key outcome |
+|---|---|---|
+| 1M | Verified | Baseline throughput established |
+| 2.5M | Verified | Postgres table bloat identified and resolved |
+| 5M | Verified | Export path hardened from UI pagination to server-side cursor |
+| 7.5M | Verified | Composite ordered indexes added for deep pagination |
+| 10M | Verified | All hardening confirmed; full benchmark passed |
+
+---
+
+## Engineering Decisions
+
+**Async Portfolio Risk Scan**
+POST /risk-scan returns HTTP 202 immediately with a public scan UUID. Background
+processing writes progress to PostgreSQL after every chunk, making the scan resumable
+and observable via status polling without blocking the API.
+
+**Bounded-Memory Ingestion**
+Large CSV uploads spool to a temporary file rather than loading into API heap. The
+processor iterates in configurable chunks; only the current chunk is live in memory.
+This is what kept the API stable through 10,000,000-row scans.
+
+**Indexed Server-Side Pagination**
+Composite ordered PostgreSQL indexes make deep pagination and tier-filter queries
+cost-bounded at any result table size. Page 1,000 on a 10M result set returns in
+0.379s after index hardening.
+
+**Server-Side Streaming CSV Export**
+A bounded-batch cursor iterator writes rows directly to the HTTP response without
+buffering the full result set. This is what made a 1.64 GiB export possible with
+a sub-7ms time to first byte and zero API restarts.
+
+**Running Summary Counters**
+Each chunk update increments persistent counter columns rather than recomputing
+tier totals across all prior rows. This resolved the O(N²) summary degradation
+exposed at the 500k scale milestone.
+
+**PostgreSQL Persistence**
+All scan jobs, result rows, cases, investigations, verdicts, and workflow events persist
+in PostgreSQL. The scan result table is the single authority for pagination, filtering,
+and export -- the API holds no in-memory result cache.
+
+**Redpanda Eventing**
+Event-driven transaction scoring decouples the API from scoring computation.
+POST /predict publishes to the Redpanda broker and returns HTTP 202. The scoring
+consumer processes events asynchronously. The same pattern handles AI investigation
+triggering.
+
+**Playwright Verification**
+Playwright tests cover navigation smoke checks and the full 10M demo flow (7 checks,
+headless Chromium). The recording pipeline captures a headed walkthrough as a video
+artefact; functional tests and demo recording are independent paths.
+
+**Edge TTS Demo Narration**
+Edge TTS via the edge-tts Python package generates professional AI narration without
+an API key requirement. Narration extraction from the markdown script, TTS generation,
+and FFmpeg merge are fully automated via npm run demo:edge-narrated.
+
+---
+
+## Resource, Latency, and Reliability Profile
+
+| Metric | Value |
+|---|---|
+| API memory -- peak during 10M scan | ~915 MiB |
+| API memory -- post export | ~216 MiB |
+| PostgreSQL -- post 10M export | ~1.88 GiB (result table only) |
+| P1 filter query (8.42M rows, 10M scan) | ~4.188s |
+| P3 filter query (1.58M rows, 10M scan) | ~0.604s |
+| Deep pagination -- page 1,000 (10M scan) | ~0.379s |
+| Export TTFB (10M, 1.64 GiB) | ~0.006987s |
+| Full export duration (10M, 1.64 GiB) | ~113.63s |
+| API RestartCount post-export | 0 |
+| OOMKilled | false |
+| Demo video duration | 106.9s |
+| E2E Playwright checks | 7 / 7 passed |
+
+This profile captures the local benchmark operating envelope used for product validation
+and demo readiness.
+
+---
+
+## Validation and Deployment Scope
+
+Benchmarks were executed on synthetic transaction data in a local production-style
+environment. Institution deployment would require security review, access control,
+governance, monitoring, and model validation against real fraud labels.
+
+---
+
+## Repository Structure
+
+```
+real-time-fraud-triage-system/
+├── src/
+│   ├── api/              FastAPI endpoints, Pydantic schemas, scan processor
+│   ├── features/         9-feature engineering pipeline
+│   ├── models/           XGBoost training and inference
+│   ├── rules/            Deterministic fraud rule evaluation
+│   ├── investigation/    AI investigation consumer, Ollama reasoner, knowledge retrieval
+│   └── events/           Redpanda producer, consumer base, event schemas
+├── fraud-console/
+│   ├── app/              8 route pages (overview, dashboard, queue, intake, cases, workflow, risk-scan)
+│   ├── components/       Page-level and shared UI components
+│   ├── lib/              Typed API client, TanStack Query hooks, Zod schemas
+│   └── demo/             Playwright recording, Edge TTS narration, FFmpeg merge pipeline
+├── alembic/              PostgreSQL migration scripts
+├── docs/                 Product documentation, benchmarks, storyboard, case study
+├── data/
+│   ├── synthetic/        Synthetic training dataset
+│   └── knowledge/        AI investigation knowledge base documents
+├── scripts/              Demo seeding, verification utilities
+├── docker-compose.yml    7-service stack definition
+└── .env.example          Environment variable reference with documented defaults
+```
+
+---
+
+## Run Locally
+
+**Prerequisites:** Docker Desktop, Node.js 18+, Python 3.11+. Ollama on host for AI investigations.
+
+**Backend**
+```
+cd C:\ml_projects\real-time-fraud-triage-system
+docker compose up -d --build
+docker compose ps
+curl.exe http://localhost:8000/health
+```
+
+**Database migrations** (first run or after schema changes)
+```
+docker compose run --rm api alembic upgrade head
+```
+
+**Frontend**
+```
+cd C:\ml_projects\real-time-fraud-triage-system\fraud-console
+npm install
+npm run dev
+```
+
+Open http://localhost:3000.
+
+**Seed demo data**
+```
+cd C:\ml_projects\real-time-fraud-triage-system
+python scripts/demo_seed.py
+```
+
+See [docs/DEMO_STATE.md](docs/DEMO_STATE.md) for canonical case profiles, walkthrough instructions, and reseed procedures.
+
+---
+
+## Testing and Demo Automation
+
+```
+cd C:\ml_projects\real-time-fraud-triage-system\fraud-console
+
+npm run test:e2e          # 7-check Playwright suite (navigation + 10M demo flow)
+npm run demo:visual       # Headed browser walkthrough for live review
+npm run demo:record       # Record local WebM artefact (MP4 if ffmpeg in PATH)
+npm run demo:edge-narrated  # Generate narrated MP4: Edge TTS voiceover + FFmpeg merge
+```
+
+`test:e2e` runs headless Chromium against the live stack; all 7 checks cover navigation
+correctness and the 10M scan surface.
+
+`demo:edge-narrated` generates a full narrated product demo locally using Microsoft Edge
+TTS (free, no API key required) and FFmpeg. Generated video and audio artefacts are
+local-only and intentionally gitignored.
 
 ---
 
@@ -18,718 +427,41 @@
 | Document | Purpose |
 |---|---|
 | [docs/PORTFOLIO_CASE_STUDY.md](docs/PORTFOLIO_CASE_STUDY.md) | Full system and benchmark narrative for senior technical reviewers |
-| [docs/DEMO_STORYBOARD.md](docs/DEMO_STORYBOARD.md) | Scene-by-scene demo guide with narration angles and safe-scope wording |
+| [docs/DEMO_STORYBOARD.md](docs/DEMO_STORYBOARD.md) | Scene-by-scene demo guide with narration angles and scope wording |
+| [docs/RISK_SCAN_BENCHMARKS.md](docs/RISK_SCAN_BENCHMARKS.md) | Verified 10M benchmark evidence with full metric tables |
+| [docs/PRODUCT_STAGES.md](docs/PRODUCT_STAGES.md) | Complete build history, phase completion log, and product roadmap |
 | [fraud-console/demo/README.md](fraud-console/demo/README.md) | Demo video recording and AI narration pipeline |
-| [docs/RISK_SCAN_BENCHMARKS.md](docs/RISK_SCAN_BENCHMARKS.md) | Verified 10M benchmark evidence |
-| [docs/PRODUCT_STAGES.md](docs/PRODUCT_STAGES.md) | Full build history, phase completion log, roadmap |
-
----
-
-## Local Product Surfaces
-
-This product runs locally via Docker Compose. Deployment planning is in progress under Phase 11P. No public URL is available yet.
-
-| Surface | URL |
-|---|---|
-| Frontend | http://localhost:3000 |
-| Backend API | http://localhost:8000 |
-| API documentation (Swagger) | http://localhost:8000/docs |
-| n8n workflow editor | http://localhost:5678 |
-| Redpanda Pandaproxy | http://localhost:8082 |
-| Redpanda Console (dev profile) | http://localhost:8080 |
-
-**Recommended walkthrough flow:**
-
-Transaction Intake -> Review Queue -> Case Dossier -> Workflow Events -> Reliability Metrics
-
----
-
-## System Summary
-
-Fraud review operations require more than a probability score. A raw model output produces a decision signal, but the downstream work - triage prioritization, investigation context, analyst verdict capture, workflow dispatch, and audit trail generation - remains unaddressed. Fraud analysts reviewing a live queue need to know why a case scored as it did, what the AI investigation concludes, what automated workflows have touched the case, and whether the automation infrastructure that processed it is operating within acceptable reliability bounds.
-
-The Fraud Intelligence Console is a decision intelligence layer built for fraud review operations. It connects an event-driven transaction scoring pipeline to a structured review interface, an AI investigation engine, a workflow automation layer, and a reliability monitoring surface. Every component produces real data: risk scores derive from a live ML pipeline, investigations are generated by a local LLM instance, workflow events are written by a live n8n automation callback, and reliability metrics aggregate from actual event records in PostgreSQL.
-
-The system covers the full case lifecycle from transaction intake to final analyst disposition, with a complete and queryable audit trail at each stage. It also supports async Portfolio Risk Scan workflows for bulk transaction intelligence: CSV upload, durable scan progress, paginated results, risk tier filtering, case promotion, scan resume, and hardened server-side streaming CSV export.
-
-It is designed to demonstrate how decision intelligence infrastructure behaves under real operational conditions - including realistic degraded reliability states, preserved historical audit failures, unreviewed caseload pressure, and local production-style benchmark evidence for portfolio-scale fraud risk scan workflows.
-
----
-
-## Quantitative Snapshot
-
-| Dimension | Value |
-|---|---|
-| Runtime | Docker Compose (7 services) |
-| Frontend routes | 8 product routes |
-| Backend services | FastAPI, PostgreSQL, Redis, Redpanda, scoring consumer, investigation consumer, n8n |
-| Scoring formula | risk_score = (0.6 x model_output) + (0.4 x rule_flag) |
-| Model | Enhanced XGBoost baseline, 9-feature vector, synthetic training data |
-| Decision tiers | APPROVE (below 0.3), REVIEW (0.3 to 0.7), BLOCK (above 0.7) |
-| Feature dimensions | 9 engineered binary and continuous features |
-| Deterministic rules | 3 conditions: night high-amount, international high-risk high-amount, high-risk payment method night high-amount |
-| Workflow events after demo seed | 22 events (10 FAILED preserved, 12 SUCCESS) |
-| Reliability state after demo seed | Critical (10 preserved dispatch failures exceed threshold; 54.5% success rate below 70% floor) |
-| Demo cases | Case 21: REVIEW, risk_score=0.6, FALSE_POSITIVE verdict; Case 22: BLOCK, risk_score=1.0, unreviewed P0 |
-| AI investigation | Ollama/Mistral (local host) |
-| Demo seed script | python scripts/demo_seed.py |
-| Portfolio Risk Scan benchmark | Verified local synthetic transaction benchmark through 10M rows |
-| 10M export hardening | Server-side cursor streaming export, 10,000,001 CSV lines, 1.64 GiB, 113.63s local export |
-
----
-
-## Portfolio Risk Scan Benchmark
-
-Portfolio Risk Scan is the bulk transaction intelligence workflow for portfolio-scale transaction risk scanning. It scores large synthetic transaction files through the benchmark-verified async processing path, persists every result row in PostgreSQL, supports paginated analyst review, filters by operational risk tier, reloads recent scans, surfaces a scan detail header, promotes selected rows into full case dossiers, and exports results through a hardened server-side cursor stream.
-
-Verified local production-style benchmark results:
-
-| Scale | Status | Notes |
-|---|---|---|
-| 1M synthetic transactions | Verified | Async scan completed successfully in PostgreSQL |
-| 2.5M synthetic transactions | Verified | Scale run exposed Postgres table bloat/export risk; cleanup and hardening followed |
-| 5M synthetic transactions | Verified | `5,000,000 / 5,000,000` processed, status `COMPLETE` |
-| 7.5M synthetic transactions | Verified | `7,500,000 / 7,500,000` processed after ingestion/export/dedup hardening |
-| 10M synthetic transactions | Verified | `10,000,000 / 10,000,000` processed after result-query index hardening |
-
-Verified 10M benchmark details:
-
-| Metric | Observed value |
-|---|---|
-| Scan UUID | `aa0971d2-bdb6-49c7-bac3-fa355aa161ad` |
-| Valid / invalid / skipped rows | `10,000,000 / 0 / 0` |
-| Processing time | 103m 35s (~1,610 rows/sec) |
-| Priority counts | P0 `0`, P1 `8,420,051`, P2 `0`, P3 `1,579,949` |
-| Total exposure | `$25,095,000,000.00` |
-| High exposure | `$24,455,516,419.00` |
-| Hardened export | HTTP 200, 113.63s total, 0.006987s time to first byte |
-| Export file | 1.64 GiB, 10,000,001 lines including header |
-| API stability after export | RestartCount `0`, OOMKilled `false` |
-
-### Validation Scope
-
-Benchmarks were executed on synthetic transaction data in a local production-style Docker Compose environment. Production deployment would require institution-specific model validation, access control, monitoring, governance, and data/security review.
-
----
-
-## Technology Stack
-
-| Layer | Technologies |
-|---|---|
-| Frontend | Next.js 16, React, TypeScript, Tailwind CSS, TanStack Query, Recharts |
-| API | FastAPI, Pydantic, Uvicorn |
-| Persistence | PostgreSQL 16, SQLAlchemy ORM, Alembic migrations |
-| Eventing | Redpanda (Kafka-compatible), topic-based async stream, kafka-python consumer |
-| Cache | Redis |
-| ML scoring | XGBoost 3.0+, scikit-learn, joblib, pandas, NumPy |
-| AI investigation | Ollama (local), Mistral model, structured JSON prompt with schema enforcement and retry logic |
-| Workflow automation | n8n, webhook dispatch, HTTP callback to FastAPI audit endpoint |
-| Runtime | Docker Compose |
-
----
-
-## Business Problem
-
-Fraud teams operate under conditions that a raw model output alone cannot address. A scored transaction produces a probability estimate, but the analyst workload begins where the model stops: the case must be triaged against everything else in the queue, the available risk evidence must be assembled and inspected, an investigation context must be formed, a decision must be recorded, and the downstream workflow triggered by that decision must be verified to have executed correctly.
-
-When these steps are handled by separate, unconnected tools, traceability degrades. Analysts work without a shared audit record. Workflow failures are invisible until complaints arrive downstream. Reliability problems in the automation layer accumulate silently until they exceed tolerance. A score in isolation is not an operationally complete output.
-
-Auditability is a specific requirement in fraud review, not an incidental feature. Operational audit expectations require that every case has a documented decision chain: who reviewed it, what they concluded, when the workflow was triggered, and whether the automation performed correctly. Systems that do not natively produce this chain force teams to reconstruct it manually, at cost and with error exposure.
-
----
-
-## System Objective
-
-**Decision support.** The scoring engine evaluates each transaction against a 9-feature risk vector and applies a weighted combination of XGBoost model output and deterministic rule evaluation. The result is a risk score mapped to one of three actionable decision tiers: APPROVE, REVIEW, or BLOCK. Each scored case produces a set of human-readable reason codes surfacing the specific risk signals that drove the score.
-
-**Fraud triage.** The Review Queue presents the full caseload sorted by descending risk score and decision tier. Priority labels (P0 through P3) identify cases requiring the most immediate attention. Status filters allow analysts to focus on unreviewed cases, confirmed fraud, false positives, or approved cases in isolation. The queue is the operational starting point for the analyst shift.
-
-**AI investigation.** Each case has a dedicated investigation report generated by a locally hosted LLM (Ollama/Mistral). The report includes a structured recommendation (CONFIRM_FRAUD, FALSE_POSITIVE, or ESCALATE), a confidence rating, risk factors, mitigating factors, triggered rules, referenced playbooks, and recommendation rationale. The report is available within the Case Dossier alongside the raw risk evidence.
-
-**Analyst workflow.** The Case Dossier provides a structured verdict capture interface. Analysts submit a verdict (Confirmed Fraud, False Positive, or Approved), attach free-text notes, and record the review. Verdicts persist against the case record and are reflected in the Review Queue status badges and dashboard statistics.
-
-**Workflow automation.** Cases can be dispatched to an n8n automation workflow from the Case Dossier. The n8n workflow evaluates the case and writes a structured audit event back to the FastAPI API via callback. The dispatch action, callback result, escalation priority, and human-readable action label are all persisted in the workflow_events table and surfaced in the case-scoped audit trail.
-
-**Reliability and audit visibility.** The Automation Reliability Center aggregates all workflow events into SLO-style metrics: success rate, dispatch failure rate, automation coverage, and a health verdict (Healthy, Degraded, or Critical). Historical dispatch failures are preserved rather than purged, providing an accurate observability record of system behaviour over time.
-
----
-
-## System Value
-
-| Capability | Operational change |
-|---|---|
-| Hybrid scoring | Risk scores account for both model signal and deterministic rule conditions simultaneously, rather than relying on either alone |
-| Review Queue prioritization | Analysts see the highest-risk cases first with P0-P3 tier labels, eliminating manual sort effort |
-| Case Dossier | All evidence, investigation output, analyst verdict, and automation history for a case are co-located in a single workspace |
-| AI investigation | Each case has a structured LLM-generated investigation report available on demand, without requiring additional analyst research time |
-| Analyst verdict capture | Verdicts are structured and persistent, written directly to the case record rather than recorded in a separate system |
-| Workflow audit events | Every automation dispatch and callback produces a durable, queryable record with status, source, action, and case linkage |
-| Reliability metrics | Dispatch failure rates, success rates, and health verdicts are computed from the actual event record, not self-reported |
-| Demo seed state | Reproducible demo state via API-only seeding; canonical case IDs and investigation states are recoverable after any database reset |
-
----
-
-## Role in Workflow
-
-The console sits between raw transaction events and downstream fraud operations decisioning.
-
-**Upstream inputs:**
-- Transaction data submitted via the intake form or API
-- Event stream from the Redpanda broker (transactions.raw topic)
-- Transaction attributes: amount, timestamp, country, payment method, merchant category, device identifiers, international flag
-
-**Console functions:**
-- Event-driven scoring via the XGBoost pipeline and rule engine
-- Case creation and persistence in PostgreSQL
-- AI investigation generation via the investigation consumer and Ollama
-- Review queue triage and analyst verdict capture
-- Workflow automation dispatch and callback audit
-- Reliability metrics aggregation
-
-**Downstream outputs:**
-- Analyst decisions (Confirmed Fraud, False Positive, Approved) written to case records
-- Workflow audit events written by n8n callback and persisted to the workflow_events table
-- Escalation priority assignments surfaced in the audit trail
-- Aggregated reliability state available for operational reporting
-
-```mermaid
-graph TD
-    A[Transaction Intake] --> B[FastAPI POST /predict]
-    B --> C[Redpanda transactions.raw]
-    C --> D[Scoring Consumer]
-    D --> E[PostgreSQL predictions + cases]
-    E --> F[Review Queue]
-    F --> G[Case Dossier]
-    G --> H[Investigation Consumer]
-    H --> I[Ollama / Mistral]
-    I --> J[Investigation Report persisted]
-    G --> K[Analyst Verdict Capture]
-    K --> L[Verdict written to case record]
-    G --> M[Workflow Dispatch]
-    M --> N[n8n Automation]
-    N --> O[Audit Callback POST /workflow/audit-event]
-    O --> P[workflow_events table]
-    P --> Q[Reliability Metrics]
-```
-
----
-
-## Architecture
-
-### A. End-to-End Runtime Flow
-
-```
-Transaction Intake
-  -> POST /predict
-  -> Redpanda (transactions.raw)
-  -> Scoring Consumer
-  -> PostgreSQL (predictions + cases)
-  -> Review Queue (/queue)
-  -> Case Dossier (/cases/[id])
-  -> AI Investigation (investigation-consumer -> Ollama/Mistral)
-  -> Analyst Verdict (POST /review-case/{case_id})
-  -> Workflow Dispatch (POST /workflow/notify-case/{case_id} -> n8n)
-  -> Audit Callback (POST /workflow/audit-event <- n8n)
-  -> Workflow Events (/workflow/events)
-  -> Reliability Metrics (/workflow/metrics)
-```
-
-### B. Event-Driven Scoring Architecture
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant FastAPI
-    participant Redpanda
-    participant ScoringConsumer
-    participant PostgreSQL
-
-    Client->>FastAPI: POST /predict (transaction payload)
-    FastAPI-->>Client: HTTP 202 Accepted
-    FastAPI->>Redpanda: publish to transactions.raw
-    Redpanda->>ScoringConsumer: consume event
-    ScoringConsumer->>ScoringConsumer: feature engineering + XGBoost + rule evaluation
-    ScoringConsumer->>PostgreSQL: write prediction + create case
-    Client->>FastAPI: GET /predictions/{transaction_id}
-    FastAPI->>PostgreSQL: fetch scored result
-    FastAPI-->>Client: scored prediction with decision and risk score
-```
-
-### C. Case Investigation and Workflow Architecture
-
-```mermaid
-sequenceDiagram
-    participant Analyst
-    participant CaseDossier
-    participant FastAPI
-    participant InvestigationConsumer
-    participant Ollama
-    participant n8n
-    participant PostgreSQL
-
-    Analyst->>CaseDossier: open case
-    CaseDossier->>FastAPI: POST /cases/{id}/investigate
-    FastAPI->>InvestigationConsumer: enqueue investigation
-    InvestigationConsumer->>Ollama: structured prompt with risk evidence
-    Ollama-->>InvestigationConsumer: JSON investigation report
-    InvestigationConsumer->>PostgreSQL: persist investigation record
-    CaseDossier->>FastAPI: GET /cases/{id}/investigation
-    FastAPI-->>CaseDossier: investigation report
-
-    Analyst->>CaseDossier: submit verdict
-    CaseDossier->>FastAPI: POST /review-case/{id}
-    FastAPI->>PostgreSQL: write analyst verdict and notes
-
-    Analyst->>CaseDossier: dispatch workflow
-    CaseDossier->>FastAPI: POST /workflow/notify-case/{id}
-    FastAPI->>n8n: POST webhook fraud-case
-    n8n->>FastAPI: POST /workflow/audit-event (callback)
-    FastAPI->>PostgreSQL: persist workflow_event record
-```
-
-### D. Decisioning Flow
-
-```mermaid
-flowchart TD
-    A[Raw Transaction] --> B[Feature Engineering]
-    B --> C[9-feature vector]
-    C --> D[XGBoost Classifier]
-    C --> E[Deterministic Rule Engine]
-    D --> F[model_output: 0 or 1]
-    E --> G{Rule conditions}
-    G -->|night high-amount| H[rule_flag = 1]
-    G -->|international high-risk high-amount| H
-    G -->|high-risk payment method night high-amount| H
-    G -->|no condition fires| I[rule_flag = 0]
-    F --> J[risk_score = 0.6 x model_output + 0.4 x rule_flag]
-    H --> J
-    I --> J
-    J --> K{Decision threshold}
-    K -->|score below 0.3| L[APPROVE]
-    K -->|score 0.3 to 0.7| M[REVIEW]
-    K -->|score above 0.7| N[BLOCK]
-    L --> O[Reason codes generated]
-    M --> O
-    N --> O
-```
-
----
-
-## Model and Decisioning
-
-The scoring engine is an enhanced baseline hybrid model designed to demonstrate decisioning architecture, feature flow, rule integration, and analyst-facing evidence. The XGBoost classifier was trained on a 1,000-row synthetic dataset with engineered risk signals; institution-specific model validation would be required before any regulated deployment.
-
-The model produces a binary output (0 or 1) which is combined with a deterministic rule flag (0 or 1) using a configurable weighted formula:
-
-```
-risk_score = (MODEL_WEIGHT x model_output) + (RULE_WEIGHT x rule_flag)
-```
-
-Default weights: MODEL_WEIGHT = 0.6, RULE_WEIGHT = 0.4. Both are configurable via environment variables.
-
-### Feature vector
-
-| Feature | Derivation |
-|---|---|
-| `amount` | Transaction amount (continuous) |
-| `is_high_amount` | amount > HIGH_AMOUNT_THRESHOLD (default: $1,000) |
-| `is_night_transaction` | Hour < 6 or > 22 UTC |
-| `is_international` | Explicit boolean from transaction payload |
-| `is_high_risk_payment_method` | credit_card, digital_wallet |
-| `is_high_risk_country` | Country not in low-risk whitelist (US, CA, GB, AU, DE, FR, NL, JP) |
-| `is_high_risk_merchant_category` | electronics, gaming, travel |
-| `has_device_id` | 0 when device_id is absent or null |
-| `is_mobile_device` | 1 when device_type is mobile |
-
-### Deterministic rule conditions
-
-Any rule condition firing sets rule_flag = 1.
-
-| Rule | Condition |
-|---|---|
-| Night high-amount | is_high_amount = 1 AND is_night_transaction = 1 |
-| International high-risk high-amount | is_high_amount = 1 AND is_international = 1 AND is_high_risk_country = 1 |
-| High-risk payment method, night, high-amount | is_high_risk_payment_method = 1 AND is_night_transaction = 1 AND is_high_amount = 1 |
-
-### Decision thresholds
-
-All thresholds are overridable via environment variables.
-
-| Score range | Decision | Threshold |
-|---|---|---|
-| Below REVIEW_THRESHOLD | APPROVE | REVIEW_THRESHOLD default: 0.3 |
-| REVIEW_THRESHOLD to BLOCK_THRESHOLD | REVIEW | BLOCK_THRESHOLD default: 0.7 |
-| Above BLOCK_THRESHOLD | BLOCK | |
-
----
-
-## Core Components
-
-### Transaction Intake
-
-The intake form at `/intake` accepts a transaction payload across three structured input sections: scoring inputs (amount, timestamp, country, payment method, merchant category, international flag), transaction identity (user ID, merchant ID, currency, city), and investigation context (device ID, device type, IP address). On submission, the form posts to `POST /predict` and polls `GET /predictions/{transaction_id}` for the scored result. A handoff link in the score result panel navigates directly to the Case Dossier for that case.
-
-### Scoring Engine
-
-The scoring engine runs inside the scoring consumer as an event-driven worker. It reads raw transaction events from the Redpanda `transactions.raw` topic, runs the transaction through the feature engineering pipeline, evaluates the XGBoost model, applies the three deterministic rule conditions, combines the outputs using the weighted formula, and writes the prediction and case records to PostgreSQL. The consumer runs continuously and processes events as they arrive from the broker.
-
-### Event Pipeline
-
-Transaction events flow through a Kafka-compatible Redpanda broker. `POST /predict` publishes the raw transaction JSON to the `transactions.raw` topic and returns HTTP 202 immediately. The scoring consumer subscribes to that topic and processes each event asynchronously. AI investigation events flow through a separate consumer subscribed to the `cases.created` topic. Both consumers run as long-lived Docker services.
-
-### Review Queue
-
-The Review Queue at `/queue` displays all cases sorted by descending risk score, with BLOCK as the tie-breaker for equal scores. Each row shows a P0-P3 priority tier label, a risk score bar, decision badge, analyst status badge, and reason code preview. Status filters allow the queue to be narrowed to any single analyst status or displayed in full. BLOCK rows are visually highlighted with a red left border.
-
-Priority tier assignment:
-- P0: BLOCK decision or risk_score >= 0.85
-- P1: risk_score >= 0.7
-- P2: risk_score >= 0.4
-- P3: all other cases
-
-### Portfolio Risk Scan
-
-The Portfolio Risk Scan surface at `/risk-scan` supports bulk CSV risk scoring for synthetic transaction portfolios. The async scan endpoint returns a public `scan_id`, persists progress in PostgreSQL, and exposes status, summary, paginated result, tier filter, promotion, and CSV export endpoints. Results remain paginated in the frontend at 100 rows per page, and completed scans can be reopened by public scan UUID through the resume input or `?scan_id=` query parameter.
-
-Large exports use a backend server-side cursor stream rather than browser-side buffering or UI pagination. The export path yields the CSV header immediately, fetches rows from PostgreSQL in bounded batches, and preserves the existing attachment filename and CSV column contract.
-
-### Case Dossier
-
-The Case Dossier at `/cases/[id]` is the full investigation workspace for a single case. It displays the case header (risk score bar, decision badge, analyst verdict badge), a risk evidence panel (rule flag, reason tags, timestamp, transaction metadata), the AI investigation panel, the analyst verdict capture form, and the case-scoped workflow automation audit trail. All data is fetched from the live API.
-
-### AI Investigation
-
-The investigation consumer subscribes to the `cases.created` topic and triggers an investigation when a new case is available. It assembles a structured prompt from the case evidence - including risk score, decision, reason codes, feature values, and rule flags - and sends it to a local Ollama instance configured with the Mistral model. The response is parsed against a constrained JSON schema enforcing enumerated values for recommendation and confidence. On schema validation failure the call is retried up to a configured maximum before the investigation is marked failed.
-
-The investigation report includes:
-- Recommendation: CONFIRM_FRAUD, FALSE_POSITIVE, or ESCALATE
-- Confidence: HIGH, MEDIUM, or LOW
-- Risk factors (list)
-- Mitigating factors (list)
-- Rules triggered (list)
-- Playbooks referenced (list)
-- Recommendation rationale and confidence rationale (text)
-
-Investigations can be re-triggered from the Case Dossier using the Re-run Investigation button, which posts to `POST /cases/{case_id}/investigate`.
-
-### Analyst Verdict Capture
-
-The analyst verdict panel in the Case Dossier accepts a structured verdict selection (Confirmed Fraud, False Positive, or Approved), free-text analyst notes, and a submit action. The verdict is posted to `POST /review-case/{case_id}` and persisted to the case record. The analyst status is then reflected in the Review Queue status badges and the Case Dossier case header.
-
-### Workflow Automation
-
-The Workflow Automation panel in the Case Dossier dispatches a case to an n8n automation workflow via `POST /workflow/notify-case/{case_id}`. The n8n workflow evaluates the case, determines whether escalation is required, and writes a structured audit event back to `POST /workflow/audit-event`. The audit event includes the workflow action, status (SUCCESS or FAILED), escalation priority, source, and human-readable message.
-
-Source labels displayed in the UI are sanitised: n8n is shown as Automation; fastapi is shown as API.
-
-### Workflow Events
-
-The Automation Audit Trail at `/workflow/events` shows the full history of all workflow events. The audit summary rail displays counts for total events, successful, failed, escalations, and case-linked events. Events are filterable by status (All, Success, Failed) and source (All, Automation, API, Manual). FAILED rows are highlighted with a red left border. Each event links back to its associated Case Dossier where applicable.
-
-Historical FAILED events are preserved in the audit trail intentionally. They represent the period before the n8n production webhook path was active and provide accurate volume for the Reliability Metrics aggregation.
-
-### Reliability Metrics
-
-The Automation Reliability Center at `/workflow/metrics` aggregates all workflow events into operational health metrics. The health verdict (Healthy, Degraded, or Critical) is computed from the success rate and dispatch failure count. SLO-style progress bars display current values for Success Rate, Dispatch Failure Rate, and Automation Coverage. A failure spotlight section identifies non-zero dispatch failures. Action and source breakdown charts show the distribution of workflow actions and originating sources. A reliability outcome donut chart displays the aggregate success percentage.
-
-### Demo Seed Script
-
-`scripts/demo_seed.py` seeds two canonical demo cases via HTTP API calls only. It checks API health before proceeding, uses idempotency checks to avoid duplicate cases, polls for scoring and investigation completion, submits analyst verdicts where required, and confirms workflow audit events. The script requires no database access and no direct service connections beyond the FastAPI API at `http://localhost:8000`.
-
----
-
-## Product Surfaces
-
-| Route | Surface | Purpose |
-|---|---|---|
-| `/` | Fraud Intelligence Command Center | Live KPI strip, animated 6-stage pipeline map, stale case SLA pressure indicator, operational module navigation |
-| `/dashboard` | Risk Command Center | Decision mix chart, case intelligence stats grid, verdict outcome breakdown, workflow health activity feed |
-| `/intake` | Transaction Intake | Guided intake form with three input sections, scoring result panel, and Case Dossier handoff link |
-| `/queue` | Analyst Workbench | Prioritised review queue with P0-P3 tiers, risk score bars, decision and status badges, status filters |
-| `/risk-scan` | Portfolio Risk Scan | Async bulk transaction scoring, progress polling, scan resume, paginated results, tier filters, export, and case promotion |
-| `/cases/[id]` | Investigation Workspace | Full case dossier with risk evidence panel, AI investigation report, analyst verdict form, and workflow audit trail |
-| `/workflow/events` | Automation Audit Trail | Full workflow event log with audit summary rail, status and source filters, and case linkage |
-| `/workflow/metrics` | Automation Reliability Center | Health verdict, SLO-style reliability panels, failure spotlight, action and source breakdown charts |
-
----
-
-## API Surface
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/health` | API health check |
-| POST | `/predict` | Submit transaction for async risk scoring (returns HTTP 202) |
-| GET | `/predictions/{transaction_id}` | Poll for scored result after submission |
-| GET | `/review-queue` | Retrieve case queue, filterable by analyst status |
-| GET | `/case/{case_id}` | Retrieve full case record |
-| POST | `/cases/{case_id}/investigate` | Trigger or re-run AI investigation for a case |
-| GET | `/cases/{case_id}/investigation` | Retrieve AI investigation report for a case |
-| POST | `/review-case/{case_id}` | Submit analyst verdict and notes |
-| POST | `/workflow/notify-case/{case_id}` | Dispatch case to n8n workflow automation |
-| POST | `/workflow/audit-event` | Write a workflow audit event (n8n callback target) |
-| GET | `/workflow/events` | Retrieve all workflow events |
-| GET | `/workflow/events?case_id={case_id}` | Retrieve workflow events filtered by case |
-| GET | `/workflow/metrics` | Retrieve aggregated workflow reliability metrics |
-| GET | `/workflow/daily-summary` | Retrieve daily fraud operations summary |
-| GET | `/workflow/stale-cases` | Retrieve cases exceeding the review SLA threshold |
-| POST | `/risk-scan` | Queue async Portfolio Risk Scan upload and return public scan UUID |
-| GET | `/risk-scan/{scan_id}/status` | Poll durable scan progress and priority counts |
-| GET | `/risk-scan/{scan_id}/summary` | Retrieve completed scan summary, exposure, and top risk patterns |
-| GET | `/risk-scan/{scan_id}/results` | Retrieve paginated scan results with optional filters |
-| GET | `/risk-scan/{scan_id}/export` | Stream full scan results as CSV from the backend |
-| POST | `/risk-scan/{scan_id}/promote/{result_id}` | Promote one valid scan row into a case dossier |
-
-Full interactive documentation is available at `http://localhost:8000/docs` when the stack is running.
-
----
-
-## Demo State
-
-Two canonical demo cases are seeded by `python scripts/demo_seed.py`. Full seeding instructions, case profiles, and the product surface walkthrough guide are in [docs/DEMO_STATE.md](docs/DEMO_STATE.md).
-
-| Case | transaction_id | Decision | risk_score | rule_flag | analyst_status | Investigation |
-|---|---|---|---|---|---|---|
-| 21 | demo_review_false_positive_001_a750 | REVIEW | 0.6 | 0 | FALSE_POSITIVE | COMPLETE, FALSE_POSITIVE, MEDIUM confidence |
-| 22 | demo_intake_showcase_001 | BLOCK | 1.0 | 1 | null (unreviewed) | COMPLETE, CONFIRM_FRAUD, HIGH confidence |
-
-**Case 21** demonstrates a mid-risk false positive path. A $750 night transaction from Russia using a credit card for electronics with no device identifier. The amount falls below the HIGH_AMOUNT_THRESHOLD, so the deterministic rule does not fire (rule_flag=0). The XGBoost model assigns a positive fraud signal based on the risk profile, producing risk_score=0.6 and a REVIEW decision. Analyst verdict set to FALSE_POSITIVE with notes.
-
-**Case 22** is the primary intake showcase case. An $8,500 night transaction from Russia using a credit card for electronics with no device identifier. Both the deterministic rule and the model fire at maximum confidence, producing risk_score=1.0 and a BLOCK decision. Left unreviewed to demonstrate the P0 unreviewed queue state and the Transaction Intake handoff path.
-
-The seed script is idempotent by transaction_id. Running it against a stack that already contains these cases reuses the existing records without creating duplicates.
-
----
-
-## Operational Flow
-
-1. Start Docker services: `docker compose up -d` and confirm all seven services are running with `docker compose ps`.
-2. Confirm API health: `curl http://localhost:8000/health`.
-3. Start the frontend: `cd fraud-console && npm run dev`.
-4. Open Transaction Intake at `http://localhost:3000/intake`. Use the intake form to submit a transaction manually or enter the Case 22 profile ($8,500, country RU, night timestamp, credit card, electronics, no device ID).
-5. Observe the scoring result panel. The decision, risk score, and reason codes appear after the scoring consumer processes the event from the Redpanda stream.
-6. Follow the Open Case Dossier handoff link into the Case Dossier for the submitted case.
-7. Review the risk evidence panel. Trigger or inspect the AI investigation report.
-8. Submit an analyst verdict using the verdict dropdown and notes field.
-9. Dispatch workflow automation using the Dispatch Workflow Automation button. The automation audit trail updates within seconds when the n8n callback writes the audit event.
-10. Navigate to `/workflow/events` to inspect the full automation audit trail with status and source filters.
-11. Navigate to `/workflow/metrics` to review the health verdict, SLO-style reliability panels, and failure spotlight.
-
----
-
-## Runtime Reliability and Auditability
-
-Every workflow automation action produces a durable `workflow_events` record in PostgreSQL. The record captures:
-
-| Field | Content |
-|---|---|
-| `workflow_action` | Action performed: NO_ESCALATION_REQUIRED, ESCALATE_TO_FRAUD_OPS, WORKFLOW_DISPATCH_FAILED |
-| `status` | SUCCESS or FAILED |
-| `source` | Originating service: n8n, fastapi, or manual |
-| `escalation_priority` | HIGH, MEDIUM, or LOW |
-| `message` | Human-readable action summary |
-| `case_id` | Case linkage (where applicable) |
-| `created_at` | UTC timestamp |
-
-Historical dispatch failures are preserved in the audit trail and reflected in Reliability Metrics. The 10 FAILED events present after demo seeding represent the period before the n8n production webhook path was activated. Preserving them provides an accurate observability record rather than a sanitised all-green display.
-
-The Automation Reliability Center computes its health verdict from actual event data. A Degraded verdict when dispatch failures exist is the accurate operational state. Reliability tools that selectively delete their own evidence are not credible reliability tools.
-
----
-
-## Known System Constraints
-
-| Constraint | Detail |
-|---|---|
-| Synthetic training data | The XGBoost model was trained on synthetic data to validate system architecture and decision flow. Institution-specific model validation is required for deployment. |
-| Local Docker Compose runtime | All services run in a local production-style benchmark environment. Deployment hardening is tracked as future work. |
-| No authentication layer | The API and frontend have no authentication or authorisation in the current release. |
-| Cloud deployment not completed | Deployment planning is in progress under Phase 11P. No public URL is available. |
-| n8n workflow must be active | The n8n workflow must be published and active for audit callbacks to succeed. Dispatch events are written as FAILED when n8n is unreachable. |
-| Model is a decisioning baseline | The scoring engine demonstrates the hybrid decisioning path; regulated use would require model validation and governance controls. |
-| Case IDs change after DB reset | If the PostgreSQL volume is deleted and the stack restarted, all case IDs change. Re-run `python scripts/demo_seed.py` after a reset and update docs/DEMO_STATE.md with the new IDs. |
-| Investigation requires Ollama on host | The investigation consumer connects to Ollama at `host.docker.internal:11434`. AI investigations will not complete if Ollama is not running on the host machine. |
-| No dead-letter handling | Failed scoring or investigation consumer events are logged and skipped. Failed messages are not routed to a dead-letter topic. |
-| Benchmarks are synthetic and local | Portfolio Risk Scan benchmarks validate throughput, persistence, pagination, export, and workflow behavior in local production-style conditions. |
-| Large scan DB footprint | After accumulated 5M, 7.5M, and 10M scans, the local PostgreSQL database reached about 19 GB and may need an archive/cleanup strategy before repeated future benchmark runs. |
-| Filter count cost at scale | P1 result filtering remains correct and indexed, but the paginated count over 8.42M matching 10M rows took about 4.188s locally. |
-| Benchmark mode env | `.env` may be left in 10M benchmark mode after scale verification; reset row caps and dedup settings for normal development if needed. |
-| Large generated artifacts stay untracked | Generated benchmark CSVs and export artifacts should remain local and must not be committed. |
-
----
-
-## Key Design Tradeoffs
-
-### Event-driven scoring vs synchronous scoring
-
-Async scoring via Redpanda decouples the API from the scoring computation, allows the consumer to scale independently, and produces a clean event record in the broker. The tradeoff is that `POST /predict` returns HTTP 202 and the client must poll `GET /predictions/{transaction_id}` for the result. A synchronous path (`SYNC_SCORING_ENABLED=true`) is available for development convenience and is controlled by environment variable.
-
-### Hybrid model plus rules vs model-only decisioning
-
-The weighted combination of XGBoost output and a deterministic rule flag allows the scoring system to enforce known fraud patterns - high-value night transactions, international high-risk combinations - regardless of model confidence. A model-only approach would miss these cases if the model output is uncertain. The tradeoff is that the rule flag can override a low model score, which requires careful threshold calibration to avoid false positives at the BLOCK tier.
-
-### Preserved historical failures vs all-green demo state
-
-Historical WORKFLOW_DISPATCH_FAILED events from the pre-production webhook activation period are preserved in the audit trail. This produces a Critical health verdict in Reliability Metrics, which is the accurate operational state. Deleting those records would produce a misleading Healthy verdict that does not reflect actual system history.
-
-### API-only seed script vs direct database seeding
-
-`scripts/demo_seed.py` uses only HTTP API calls. No direct database connections, no ORM imports, no SQL. This means the seed script exercises the actual product flow rather than bypassing it, and it remains valid across database schema changes as long as the API contract is stable. The tradeoff is that the script depends on the full stack being healthy, including the scoring and investigation consumers.
-
-### Local workflow automation with n8n vs hardcoded backend workflow
-
-The n8n integration externalises workflow logic from the FastAPI backend. Workflow conditions, escalation routing, and audit payload construction live in a visual workflow editor rather than in application code. The tradeoff is an additional service dependency: if n8n is not running or the webhook path is not published, dispatch events fail and are recorded as WORKFLOW_DISPATCH_FAILED in the audit trail.
-
-### Baseline XGBoost model vs full production fraud model
-
-The current model is deliberately positioned as a decisioning baseline. It demonstrates the scoring architecture, feature pipeline, and hybrid rule combination while leaving institution-specific detection validation to later governance work. Future phases (Phase 13 onward) plan to add behavioral velocity signals, entity-level history, and graph-level network features.
-
----
-
-## Repository Structure
-
-```
-real-time-fraud-triage-system/
-  src/
-    api/                    # FastAPI application, all HTTP endpoints, Pydantic schemas
-    config/                 # Shared scoring configuration and environment variable loading
-    db/                     # SQLAlchemy models and PostgreSQL persistence layer
-    events/                 # Kafka event schemas, Redpanda producer, scoring consumer
-    features/               # Feature engineering pipeline (9-feature vector)
-    investigation/          # AI investigation consumer, Ollama reasoner, retriever, tools
-    models/                 # XGBoost model training script and inference pipeline
-    rules/                  # Deterministic fraud rule evaluation (3 rule conditions)
-    triage/                 # Decision logic: APPROVE / REVIEW / BLOCK threshold mapping
-    pipeline/               # End-to-end fraud pipeline orchestration
-    monitoring/             # Structured logging
-    utils/                  # Shared utilities
-  fraud-console/            # Next.js 16 frontend
-    app/                    # App Router pages: /, /dashboard, /intake, /queue, /cases/[id], /workflow/*
-    components/             # Shared UI components (cases, dashboard, intake, queue, workflow, layout)
-    lib/                    # API client, TanStack Query hooks, Zod schemas, utilities
-  alembic/                  # Database migration files
-  data/
-    raw/                    # Raw transaction data (placeholder)
-    processed/              # Processed feature data (placeholder)
-    synthetic/              # Synthetic training dataset and generation script
-    knowledge/              # Knowledge base documents for AI investigation context
-  saved_models/
-    fraud_model.pkl         # Trained XGBoost model artifact
-  scripts/
-    demo_seed.py            # Demo data seeding via HTTP API calls only
-    verify_event_pipeline.py
-  docs/
-    DEMO_STATE.md           # Canonical demo case reference and walkthrough guide
-    PRODUCT_STAGES.md       # Build history, phase tracking, and product roadmap
-  docker-compose.yml        # 7-service Docker Compose stack definition
-  Dockerfile                # FastAPI service image
-  requirements.txt          # Python dependencies
-  .env.example              # Environment variable reference with documented defaults
-```
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Docker Desktop running
-- Node.js 18+
-- Python 3.11+ (for the seed script)
-- Ollama running on the host machine (required for AI investigation; the investigation consumer will retry if Ollama is unavailable)
-
-### Start the backend stack
-
-```bash
-cd C:\ml_projects\real-time-fraud-triage-system
-
-# Copy environment configuration
-cp .env.example .env
-
-# Edit .env and set N8N_WEBHOOK_URL to http://host.docker.internal:5678/webhook/fraud-case
-# when the n8n workflow is published and active
-
-# Build and start all services
-docker compose up -d --build
-
-# Confirm all services are running
-docker compose ps
-
-# Confirm API is healthy
-curl http://localhost:8000/health
-```
-
-### Run database migrations (first run or after schema changes)
-
-```bash
-docker compose run --rm api alembic upgrade head
-```
-
-### Start the frontend
-
-```bash
-cd C:\ml_projects\real-time-fraud-triage-system\fraud-console
-npm install
-npm run dev
-```
-
-Open `http://localhost:3000`.
-
-### Seed demo data
-
-```bash
-cd C:\ml_projects\real-time-fraud-triage-system
-python scripts/demo_seed.py
-```
-
-Expected runtime: 3 to 8 minutes depending on investigation consumer throughput. See [docs/DEMO_STATE.md](docs/DEMO_STATE.md) for the full walkthrough guide, canonical case reference, and reseed instructions.
-
-### Optional: Redpanda Console (Kafka topic browser, dev profile)
-
-```bash
-docker compose --profile dev up -d
-# Open http://localhost:8080
-```
-
----
-
-## Deployment
-
-Deployment planning is in progress under Phase 11P. Environment variable finalisation, service-level configuration requirements, and target deployment architecture are being confirmed before any public deployment is completed.
-
-No deployed URL is available at this time.
 
 ---
 
 ## Roadmap
 
-| Phase | Description | Status |
-|---|---|---|
-| Phase 12D closeout | Benchmark evidence pack and documentation reconciliation for verified 10M Portfolio Risk Scan | Current |
-| Post-10M data operations | Archive/cleanup strategy for accumulated large scan results and benchmark artifacts | Planned |
-| Phase 12E | Schema mapping and data quality layer for varied real-world file layouts | Planned |
-| Phase 12F | Rich synthetic banking dataset generator with users, merchants, velocity patterns, and fraud injections | Planned |
-| Phase 12G | Enhanced fraud decision engine with per-dimension score breakdown | Planned |
-| Phase 12H | Benchmark evidence pack, traceability proof, scan report generation, and demo-safe reporting | Planned |
-| Phase 13 | Behavioral Intelligence Layer - entity-aware velocity signals, amount deviation, merchant and device history | Planned |
-| Phase 14 | Dirty Data and Stream Resilience Testing - missing field injection, duplicate events, out-of-order arrival, degradation verification | Planned |
-| Phase 15 | Graph / Mule Network Intelligence - shared device and merchant detection, account cluster risk, mule-ring indicators | Planned |
-| Phase 16 | Adversarial Synthetic Fraud Simulation - structurally realistic adversarial fraud patterns for model stress testing | Planned |
-
-Near-term roadmap priorities:
-- Post-10M DB cleanup/archive strategy for repeated benchmark runs
-- Scan history and scan detail UX polish where useful
-- Result detail drawer, filtered exports, and scan report generator
-- Schema mapping and data quality scoring for varied transaction files
-- Rich synthetic banking dataset generation for more realistic benchmark inputs
-- Enhanced fraud decisioning with per-dimension explanations
-- Case dossier 2.0, AI investigation brief hardening, workflow/audit/governance polish
-- Observability/reliability, durable worker architecture, auth/RBAC, and deployment/demo-safe mode
+| Capability | Status |
+|---|---|
+| Risk Scan result detail drawer | Planned |
+| Scan history browsing | Planned |
+| Filtered export UX | Planned |
+| Scan report generator | Planned |
+| Schema mapping and data quality layer | Planned |
+| Rich synthetic fraud scenario generator | Planned |
+| Fraud decision engine upgrade (per-dimension scoring) | Planned |
+| Case dossier 2.0 | Planned |
+| AI investigation brief hardening | Planned |
+| Governance, audit, and RBAC hardening | Planned |
+| Cloud deployment and demo-safe access | Planned |
 
 ---
 
-## License
+## Resume-Safe Positioning
 
-License information to be added before public release.
+Built a local production-style fraud decision console with a 7-service Docker Compose
+runtime, async Redpanda scoring pipeline, PostgreSQL persistence, analyst queues,
+AI-assisted case investigation, workflow automation audit trails, SLO-style reliability
+metrics, and a verified 10M-transaction Portfolio Risk Scan benchmark -- 103m 35s,
+~1,610 rows/sec average throughput, 1.64 GiB streaming export, zero API restarts.
+
+Position as a local production-style engineering system and benchmarked fraud workflow
+console, not as a deployed bank production fraud model.
 
 ---
 
@@ -737,4 +469,4 @@ License information to be added before public release.
 
 **Ijaz Kakkod**
 
-Machine Learning Systems | Fraud Intelligence | Decision Intelligence | Model Governance
+Machine Learning Systems &nbsp;|&nbsp; Fraud Intelligence &nbsp;|&nbsp; Decision Intelligence &nbsp;|&nbsp; Model Governance
