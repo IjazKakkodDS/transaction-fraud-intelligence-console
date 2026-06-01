@@ -309,6 +309,79 @@ disk or object storage, not in the repository.
 
 ---
 
+## Post-10M Benchmark Hygiene
+
+### Storage footprint after 10M verification (2026-06-01)
+
+**Database**
+
+| Object | Size |
+|---|---|
+| `portfolio_scan_results` total | **19 GB** |
+| `portfolio_scan_results` heap | 5,392 MB |
+| `portfolio_scan_results` indexes (12) | 13 GB |
+| Full database | 19 GB |
+| Docker volume `pgdata` | part of 20.9 GB local volumes |
+| Total accumulated result rows | **22,752,000** |
+
+Largest indexes by size:
+
+| Index | Size |
+|---|---|
+| `ix_scan_results_scan_score_row` | 2,669 MB |
+| `ix_scan_results_scan_validation_row` | 2,649 MB |
+| `ix_scan_results_scan_priority_score_row_nullslast` | 2,198 MB |
+| `ix_scan_results_scan_score_row_nullslast` | 2,009 MB |
+| `ix_portfolio_scan_results_transaction_id` | 1,462 MB |
+
+**Local generated artifacts (C:\tmp)**
+
+| File | Size |
+|---|---|
+| `risk-scan-12d8u-10m-export.csv` | 1,638.9 MB |
+| `risk-scan-12d8r-7p5m-export.csv` | 1,221.3 MB |
+| `risk-scan-12d8u-10m.csv` | 719.6 MB |
+| `risk-scan-12d8r-7p5m.csv` | 532 MB |
+| Smaller verification files | < 10 MB |
+| **Total C:\tmp benchmark files** | **~4.1 GB** |
+
+These files are untracked and outside the repository. They can be deleted once the benchmark
+documentation is confirmed to be fully captured in this file.
+
+**Environment reset needed**
+
+`.env` was left in 10M benchmark mode after scale verification. The following variables need
+to be reset for normal development before the next product feature phase:
+
+| Variable | Current (benchmark) | Reset to (normal dev) |
+|---|---|---|
+| `RISK_SCAN_MAX_ROWS` | `10000000` | `5000000` or lower |
+| `RISK_SCAN_CHUNK_SIZE` | `2000` | `2000` (unchanged; already correct) |
+| `RISK_SCAN_ENABLE_IN_MEMORY_DEDUP` | `false` | `true` |
+
+`RISK_SCAN_ENABLE_IN_MEMORY_DEDUP` is the most important reset: leaving it `false` means
+cross-chunk duplicate detection is silently inactive for normal analyst scans. Reset to `true`
+before any non-benchmark use.
+
+### Cleanup decision options
+
+| Option | Action | Trade-off |
+|---|---|---|
+| **A — Preserve everything** | No change; keep all 22.7M rows | Safest for evidence; 19 GB database remains |
+| **B — Keep large scans only** | Delete result rows for scans below 1M (IDs 66–77) after approval | Frees ~200k rows, negligible space saving — not worth the risk |
+| **C — Keep 10M + 7.5M + 5M only** | Delete rows for scans 66–77 after approval; preserve IDs 68, 78, 79 | Frees ~192k rows; DB stays at ~19 GB (dominated by large scans) |
+| **D — Archive then TRUNCATE all** | Export all remaining scan summaries to Markdown; TRUNCATE results table | Smallest DB footprint; irreversible without re-running benchmarks |
+| **E — Keep as-is until demo/video** | No action now; clean after final portfolio screenshots are captured | Recommended if UI demos have not yet been recorded against live 10M data |
+
+**Recommended: Option E for now, then Option C after demo/video is complete.**
+
+The 10M and 7.5M benchmark scans are live in the database and accessible from the frontend.
+Recording a product walkthrough or case study demo against real scan data is best done before
+any cleanup. The small development scans (IDs 66–77) can be deleted later — they are
+verification artifacts, not portfolio evidence.
+
+---
+
 ## Git and Artifact Policy
 
 | Artifact type | Policy |
