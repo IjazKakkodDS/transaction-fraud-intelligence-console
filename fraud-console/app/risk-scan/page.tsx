@@ -68,6 +68,33 @@ function fmtTs(iso: string | null | undefined): string {
   return new Date(iso).toLocaleString();
 }
 
+/** Short relative timestamp for list views: "2h ago", "Jun 1, 3:22 PM", etc. */
+function fmtShortTs(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d   = new Date(iso);
+  const now = new Date();
+  const ms  = now.getTime() - d.getTime();
+  if (ms < 0)         return d.toLocaleString();
+  const mins  = Math.floor(ms / 60_000);
+  if (mins < 1)       return "just now";
+  if (mins < 60)      return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24)     return `${hours}h ago`;
+  const days  = Math.floor(hours / 24);
+  if (days < 7)       return `${days}d ago`;
+  return d.toLocaleDateString("en-US", {
+    month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit",
+  });
+}
+
+/** Compact integer: 1,234,567 → "1.2M", 12345 → "12K" */
+function fmtCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `${Math.round(n / 1_000)}K`;
+  return n.toLocaleString();
+}
+
 function fmtRuntime(
   startIso: string | null | undefined,
   endIso: string | null | undefined,
@@ -1055,6 +1082,22 @@ function ScanDetailHeader({
 
 // ─── Recent scans panel ──────────────────────────────────────────────────────
 
+const SCAN_STATUS_COLOR: Record<string, string> = {
+  COMPLETE:   "#10B981",
+  PROCESSING: "#22D3EE",
+  FAILED:     "#FF4D4D",
+  QUEUED:     "#F59E0B",
+  CANCELLED:  "#8B949E",
+};
+
+const SCAN_STATUS_LABEL: Record<string, string> = {
+  COMPLETE:   "Complete",
+  PROCESSING: "Processing",
+  QUEUED:     "Queued",
+  FAILED:     "Failed",
+  CANCELLED:  "Cancelled",
+};
+
 function RecentScansPanel({
   scans,
   activeScanId,
@@ -1064,20 +1107,12 @@ function RecentScansPanel({
   activeScanId: string | null;
   onLoad: (scanId: string) => void;
 }) {
-  const [copied, setCopied] = useState<string | null>(null);
-
-  function handleCopy(scanId: string) {
-    navigator.clipboard.writeText(scanId).catch(() => {});
-    setCopied(scanId);
-    setTimeout(() => setCopied(null), 1500);
-  }
-
   if (scans.length === 0) {
     return (
       <div className="card p-5">
         <p className="section-label mb-2">Recent Portfolio Scans</p>
         <p className="text-[12px]" style={{ color: "#6B7280" }}>
-          No scans found. Upload a CSV to start your first portfolio risk scan.
+          No scans found. Upload a CSV file to start your first portfolio risk scan.
         </p>
       </div>
     );
@@ -1091,109 +1126,169 @@ function RecentScansPanel({
       >
         <p className="section-label">Recent Portfolio Scans</p>
       </div>
+
       <div>
         {scans.map((scan, idx) => {
-          const isActive = scan.scan_id === activeScanId;
-          const statusColor =
-            scan.status === "COMPLETE"    ? "#10B981" :
-            scan.status === "PROCESSING"  ? "#22D3EE" :
-            scan.status === "FAILED"      ? "#FF4D4D" :
-            scan.status === "QUEUED"      ? "#F59E0B" : "#8B949E";
-          const statusLabel =
-            scan.status === "COMPLETE"    ? "Completed" :
-            scan.status === "PROCESSING"  ? "Processing" :
-            scan.status === "QUEUED"      ? "Queued" :
-            scan.status === "FAILED"      ? "Failed" :
-            scan.status === "CANCELLED"   ? "Cancelled" : scan.status;
-          const displayTime = scan.completed_at ?? scan.created_at ?? null;
+          const isActive     = scan.scan_id === activeScanId;
+          const statusColor  = SCAN_STATUS_COLOR[scan.status]  ?? "#8B949E";
+          const statusLabel  = SCAN_STATUS_LABEL[scan.status]  ?? scan.status;
+          const displayTime  = scan.completed_at ?? scan.started_at ?? scan.created_at ?? null;
+
+          // Row count: "10,000,000 / 10,000,000" when processing, "10,000,000" when done
+          const rowCount =
+            scan.status === "PROCESSING" && scan.total_rows > 0
+              ? `${scan.processed_rows.toLocaleString()} / ${scan.total_rows.toLocaleString()}`
+              : scan.total_rows > 0
+              ? scan.total_rows.toLocaleString()
+              : null;
+
+          // Priority summary: show P0/P1 if non-zero, compact
+          const priorityHints: Array<{ label: string; color: string }> = [];
+          if (scan.p0_count > 0)
+            priorityHints.push({ label: `P0 ${fmtCompact(scan.p0_count)}`, color: "#FF4D4D" });
+          if (scan.p1_count > 0)
+            priorityHints.push({ label: `P1 ${fmtCompact(scan.p1_count)}`, color: "#F59E0B" });
 
           return (
             <div
               key={scan.scan_id}
-              className="flex flex-wrap items-center gap-3 px-4 py-3"
+              onClick={() => { if (!isActive) onLoad(scan.scan_id); }}
               style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "10px 16px",
                 borderBottom: idx < scans.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
-                background: isActive ? "rgba(34,211,238,0.04)" : "transparent",
+                // Active: cyan left accent + tint; inactive: clickable hover
+                borderLeft: isActive
+                  ? "2px solid #22D3EE"
+                  : "2px solid transparent",
+                background: isActive ? "rgba(34,211,238,0.045)" : "transparent",
+                cursor: isActive ? "default" : "pointer",
+                transition: "background 0.1s",
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive)
+                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.022)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = isActive
+                  ? "rgba(34,211,238,0.045)"
+                  : "transparent";
               }}
             >
-              {/* Status + filename + metrics */}
-              <div className="min-w-0 flex-1 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
+              {/* Status dot */}
+              <div
+                style={{
+                  flexShrink: 0,
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: statusColor,
+                  boxShadow: isActive ? `0 0 6px ${statusColor}88` : "none",
+                }}
+              />
+
+              {/* Main content */}
+              <div style={{ minWidth: 0, flex: 1 }}>
+                {/* Row 1: filename + status badge */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "3px" }}>
                   <span
-                    className="shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px] font-bold"
+                    className="font-mono text-[12px] font-medium"
                     style={{
-                      color: statusColor,
-                      background: `${statusColor}14`,
-                      border: `1px solid ${statusColor}38`,
+                      color: "#C9D1D9",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      maxWidth: "280px",
                     }}
-                  >
-                    {statusLabel}
-                  </span>
-                  <span
-                    className="truncate font-mono text-[11px]"
-                    style={{ color: "#C9D1D9", maxWidth: "320px" }}
                     title={scan.filename ?? scan.scan_id}
                   >
                     {scan.filename ?? "—"}
                   </span>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                  <span className="text-[11px] tabular-nums" style={{ color: "#6B7280" }}>
-                    {scan.total_rows.toLocaleString()} rows
+                  <span
+                    className="font-mono text-[9px] font-bold uppercase"
+                    style={{
+                      flexShrink: 0,
+                      borderRadius: "3px",
+                      padding: "2px 6px",
+                      color: statusColor,
+                      background: `${statusColor}14`,
+                      border: `1px solid ${statusColor}30`,
+                    }}
+                  >
+                    {statusLabel}
                   </span>
-                  {scan.p0_count > 0 && (
-                    <span className="text-[11px] tabular-nums" style={{ color: "#FF4D4D" }}>
-                      P0: {scan.p0_count.toLocaleString()}
+                </div>
+
+                {/* Row 2: row count · priority hints · error · timestamp */}
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0 10px" }}>
+                  {rowCount && (
+                    <span
+                      className="font-mono text-[11px] tabular-nums"
+                      style={{ color: "#6B7280" }}
+                    >
+                      {rowCount} rows
                     </span>
                   )}
-                  {scan.p1_count > 0 && (
-                    <span className="text-[11px] tabular-nums" style={{ color: "#F59E0B" }}>
-                      P1: {scan.p1_count.toLocaleString()}
+                  {priorityHints.map((h) => (
+                    <span
+                      key={h.label}
+                      className="text-[11px] tabular-nums"
+                      style={{ color: h.color }}
+                    >
+                      {h.label}
                     </span>
-                  )}
-                  {scan.critical_amount > 0 && (
-                    <span className="text-[11px] tabular-nums" style={{ color: "#FF8080" }}>
-                      Critical exposure: {fmtCurrency(scan.critical_amount)}
+                  ))}
+                  {scan.status === "FAILED" && scan.error_message && (
+                    <span
+                      className="text-[11px]"
+                      style={{
+                        color: "#FF8080",
+                        maxWidth: "200px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                      title={scan.error_message}
+                    >
+                      {scan.error_message}
                     </span>
                   )}
                   {displayTime && (
                     <span className="text-[11px]" style={{ color: "#4B5563" }}>
-                      {new Date(displayTime).toLocaleString()}
+                      {fmtShortTs(displayTime)}
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Action buttons */}
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleCopy(scan.scan_id)}
-                  className="rounded px-2 py-1 text-[11px]"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.09)",
-                    color: copied === scan.scan_id ? "#10B981" : "#6B7280",
-                    cursor: "pointer",
-                  }}
-                >
-                  {copied === scan.scan_id ? "Copied" : "Copy scan ID"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onLoad(scan.scan_id)}
-                  disabled={isActive}
-                  className="rounded px-2.5 py-1 text-[11px] font-semibold"
-                  style={{
-                    background: isActive ? "rgba(34,211,238,0.04)" : "rgba(34,211,238,0.10)",
-                    border: "1px solid rgba(34,211,238,0.22)",
-                    color: isActive ? "#4B5563" : "#22D3EE",
-                    cursor: isActive ? "default" : "pointer",
-                  }}
-                >
-                  {isActive ? "Active" : "Load scan"}
-                </button>
-              </div>
+              {/* Open / Active button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isActive) onLoad(scan.scan_id);
+                }}
+                disabled={isActive}
+                className="text-[11px] font-semibold"
+                style={{
+                  flexShrink: 0,
+                  borderRadius: "5px",
+                  padding: "4px 10px",
+                  background: isActive
+                    ? "transparent"
+                    : "rgba(34,211,238,0.08)",
+                  border: isActive
+                    ? "1px solid rgba(255,255,255,0.06)"
+                    : "1px solid rgba(34,211,238,0.22)",
+                  color: isActive ? "#374151" : "#22D3EE",
+                  cursor: isActive ? "default" : "pointer",
+                  minWidth: "48px",
+                }}
+              >
+                {isActive ? "Active" : "Open"}
+              </button>
             </div>
           );
         })}
