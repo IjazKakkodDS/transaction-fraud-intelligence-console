@@ -13,6 +13,18 @@
 
 ---
 
+## Key Documents
+
+| Document | Purpose |
+|---|---|
+| [docs/PORTFOLIO_CASE_STUDY.md](docs/PORTFOLIO_CASE_STUDY.md) | Full system and benchmark narrative for senior technical reviewers |
+| [docs/DEMO_STORYBOARD.md](docs/DEMO_STORYBOARD.md) | Scene-by-scene demo guide with narration angles and safe-scope wording |
+| [fraud-console/demo/README.md](fraud-console/demo/README.md) | Demo video recording and AI narration pipeline |
+| [docs/RISK_SCAN_BENCHMARKS.md](docs/RISK_SCAN_BENCHMARKS.md) | Verified 10M benchmark evidence |
+| [docs/PRODUCT_STAGES.md](docs/PRODUCT_STAGES.md) | Full build history, phase completion log, roadmap |
+
+---
+
 ## Local Product Surfaces
 
 This product runs locally via Docker Compose. Deployment planning is in progress under Phase 11P. No public URL is available yet.
