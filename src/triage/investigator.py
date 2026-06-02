@@ -29,6 +29,68 @@ _RICH_BOOST_WEIGHTS: dict = {
     "is_rich_fraud_scenario":      0.25,  # scenario_family present and not 'normal'
 }
 
+# ---------------------------------------------------------------------------
+# Behavioural boost weights (Phase 13D)
+# Bounded, additive, optional, and neutral when history is absent.
+# ---------------------------------------------------------------------------
+_BEHAVIOURAL_BOOST_WEIGHTS: dict = {
+    "amount_deviation_ratio": 0.05,
+    "velocity_deviation_ratio": 0.05,
+    "balance_drop_ratio": 0.04,
+    "new_device_for_customer": 0.03,
+    "new_country_for_customer": 0.03,
+    "new_counterparty_for_account": 0.03,
+    "unusual_channel_for_customer": 0.02,
+    "unusual_merchant_for_customer": 0.02,
+}
+_BEHAVIOURAL_BOOST_CAP = 0.20
+
+
+def calculate_behavioural_boost(row: pd.Series) -> float:
+    """
+    Compute a bounded behavioural boost for a single row.
+
+    Returns 0.0 when behavioural features are missing or neutral.
+    """
+    def _safe_float(value) -> float:
+        try:
+            if value is None or (isinstance(value, float) and pd.isna(value)):
+                return 0.0
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _safe_truthy(value) -> bool:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)) and not pd.isna(value):
+            return value == 1
+        if isinstance(value, str):
+            return value.strip().lower() in {"true", "1", "yes", "y"}
+        return False
+
+    boost = 0.0
+
+    if _safe_float(row.get("amount_deviation_ratio", 0.0)) >= 3.0:
+        boost += _BEHAVIOURAL_BOOST_WEIGHTS["amount_deviation_ratio"]
+    if _safe_float(row.get("velocity_deviation_ratio", 0.0)) >= 3.0:
+        boost += _BEHAVIOURAL_BOOST_WEIGHTS["velocity_deviation_ratio"]
+    if _safe_float(row.get("balance_drop_ratio", 0.0)) >= 0.20:
+        boost += _BEHAVIOURAL_BOOST_WEIGHTS["balance_drop_ratio"]
+
+    if _safe_truthy(row.get("new_device_for_customer", 0)):
+        boost += _BEHAVIOURAL_BOOST_WEIGHTS["new_device_for_customer"]
+    if _safe_truthy(row.get("new_country_for_customer", 0)):
+        boost += _BEHAVIOURAL_BOOST_WEIGHTS["new_country_for_customer"]
+    if _safe_truthy(row.get("new_counterparty_for_account", 0)):
+        boost += _BEHAVIOURAL_BOOST_WEIGHTS["new_counterparty_for_account"]
+    if _safe_truthy(row.get("unusual_channel_for_customer", 0)):
+        boost += _BEHAVIOURAL_BOOST_WEIGHTS["unusual_channel_for_customer"]
+    if _safe_truthy(row.get("unusual_merchant_for_customer", 0)):
+        boost += _BEHAVIOURAL_BOOST_WEIGHTS["unusual_merchant_for_customer"]
+
+    return min(boost, _BEHAVIOURAL_BOOST_CAP)
+
 
 def triage_decision(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -52,7 +114,10 @@ def triage_decision(df: pd.DataFrame) -> pd.DataFrame:
         rich_boost = 0
 
     df["rich_signal_boost"] = rich_boost
-    df["risk_score"] = (base_score + rich_boost).clip(upper=1.0)
+
+    behavioural_boost = df.apply(calculate_behavioural_boost, axis=1)
+    df["behavioural_boost"] = behavioural_boost
+    df["risk_score"] = (base_score + rich_boost + behavioural_boost).clip(upper=1.0)
 
     def decide(score: float) -> str:
         if score >= BLOCK_THRESHOLD:

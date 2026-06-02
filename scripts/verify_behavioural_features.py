@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from src.features.transaction_features import generate_basic_features
+from src.triage.investigator import calculate_behavioural_boost
 
 
 def _assert(condition: bool, message: str) -> None:
@@ -34,9 +35,10 @@ def _check_neutral_row(row: pd.Series) -> None:
     _assert(row["new_counterparty_for_account"] == 0, "new_counterparty_for_account not neutral")
     _assert(row["unusual_channel_for_customer"] == 0, "unusual_channel_for_customer not neutral")
     _assert(row["unusual_merchant_for_customer"] == 0, "unusual_merchant_for_customer not neutral")
+    _assert(calculate_behavioural_boost(row) == 0.0, "behavioural_boost not neutral")
 
 
-def _check_behavioural_row(row: pd.Series) -> None:
+def _check_behavioural_row(row: pd.Series) -> float:
     _assert(row["amount_deviation_ratio"] == 4.0, "amount_deviation_ratio mismatch")
     _assert(row["velocity_deviation_ratio"] == 3.0, "velocity_deviation_ratio mismatch")
     _assert(abs(row["balance_drop_ratio"] - 0.2) < 1e-9, "balance_drop_ratio mismatch")
@@ -45,6 +47,15 @@ def _check_behavioural_row(row: pd.Series) -> None:
     _assert(row["new_counterparty_for_account"] == 1, "new_counterparty_for_account mismatch")
     _assert(row["unusual_channel_for_customer"] == 1, "unusual_channel_for_customer mismatch")
     _assert(row["unusual_merchant_for_customer"] == 1, "unusual_merchant_for_customer mismatch")
+    boost = calculate_behavioural_boost(row)
+    _assert(boost > 0.0, "behavioural_boost not applied")
+    _assert(boost <= 0.20, "behavioural_boost exceeds cap")
+    return boost
+
+
+def _check_risk_score_cap(existing_score: float, boost: float) -> None:
+    capped = min(1.0, existing_score + boost)
+    _assert(capped <= 1.0, "risk_score exceeds cap")
 
 
 def main() -> int:
@@ -101,8 +112,23 @@ def main() -> int:
     result = generate_basic_features(df)
 
     _check_neutral_row(result.iloc[0])
-    _check_behavioural_row(result.iloc[1])
+    behavioural_boost = _check_behavioural_row(result.iloc[1])
     _check_neutral_row(result.iloc[2])
+
+    _check_risk_score_cap(0.95, behavioural_boost)
+
+    extreme_row = {
+        "amount_deviation_ratio": 10.0,
+        "velocity_deviation_ratio": 10.0,
+        "balance_drop_ratio": 1.0,
+        "new_device_for_customer": 1,
+        "new_country_for_customer": 1,
+        "new_counterparty_for_account": 1,
+        "unusual_channel_for_customer": 1,
+        "unusual_merchant_for_customer": 1,
+    }
+    extreme_boost = calculate_behavioural_boost(pd.Series(extreme_row))
+    _assert(extreme_boost <= 0.20, "behavioural_boost cap not enforced")
 
     print("PASS: behavioural feature extraction validation")
     return 0

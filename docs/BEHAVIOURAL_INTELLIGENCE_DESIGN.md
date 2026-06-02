@@ -214,6 +214,35 @@ model-risk review.
 
 ---
 
+## Phase 13D - Behavioural Scoring Integration Implementation
+
+**Status:** In progress
+
+Phase 13D implements a bounded, additive behavioural boost when behavioural history exists.
+The base model/rule blend, rich signal boost weights, thresholds, and reason-code emission
+remain unchanged in this phase.
+
+**Behavioural boost weights and thresholds:**
+- `amount_deviation_ratio >= 3.0`: +0.05
+- `velocity_deviation_ratio >= 3.0`: +0.05
+- `balance_drop_ratio >= 0.20`: +0.04
+- `new_device_for_customer`: +0.03
+- `new_country_for_customer`: +0.03
+- `new_counterparty_for_account`: +0.03
+- `unusual_channel_for_customer`: +0.02
+- `unusual_merchant_for_customer`: +0.02
+- Behavioural boost cap: 0.20
+
+**No-history behaviour:**
+- If behavioural fields are missing or neutral, `behavioural_boost = 0.0`.
+
+**Compatibility boundaries:**
+- Base scoring weights (0.6 model / 0.4 rule) unchanged.
+- Rich signal boost weights unchanged.
+- Priority thresholds unchanged.
+- APPROVE/REVIEW/BLOCK thresholds unchanged.
+- No behavioural reason-code emission until Phase 13E.
+
 ## Behavioural Reason Codes - Proposed Only
 
 These reason codes are proposed vocabulary for a later implementation phase. They are not
