@@ -243,10 +243,29 @@ remain unchanged in this phase.
 - APPROVE/REVIEW/BLOCK thresholds unchanged.
 - No behavioural reason-code emission until Phase 13E.
 
-## Behavioural Reason Codes - Proposed Only
+---
 
-These reason codes are proposed vocabulary for a later implementation phase. They are not
-implemented in Phase 13A.
+## Phase 13E - Behavioural Reason-Code and Validation Lock
+
+**Status:** In progress
+
+Phase 13E locks behavioural reason-code taxonomy and enables evidence-gated emission.
+Reason codes are emitted only when behavioural evidence exists; no-history rows emit none.
+Scoring weights, boost weights, thresholds, frontend display, and DB schema remain unchanged.
+
+**Locked behavioural reason codes and triggers:**
+- `BEHAVIOURAL_AMOUNT_DEVIATION`: `amount_deviation_ratio >= 3.0`
+- `BEHAVIOURAL_VELOCITY_DEVIATION`: `velocity_deviation_ratio >= 3.0`
+- `BALANCE_DROP_ANOMALY`: `balance_drop_ratio >= 0.20`
+- `NEW_DEVICE_FOR_CUSTOMER`: `new_device_for_customer` truthy
+- `NEW_COUNTRY_FOR_CUSTOMER`: `new_country_for_customer` truthy
+- `NEW_COUNTERPARTY_FOR_ACCOUNT`: `new_counterparty_for_account` truthy
+- `UNUSUAL_CHANNEL_FOR_CUSTOMER`: `unusual_channel_for_customer` truthy
+- `BEHAVIOURAL_PROFILE_SHIFT`: `unusual_merchant_for_customer` truthy
+
+## Behavioural Reason Codes - Locked
+
+These reason codes are locked for behavioural evidence emission in Phase 13E.
 
 | Proposed code | Meaning |
 |---|---|

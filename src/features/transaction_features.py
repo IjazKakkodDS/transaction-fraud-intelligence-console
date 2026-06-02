@@ -2,6 +2,7 @@
 Feature engineering for transaction data.
 """
 
+import numbers
 import pandas as pd
 
 from src.config.config import (
@@ -45,6 +46,49 @@ def _parse_optional_bool(series: pd.Series) -> pd.Series:
     truthy = normalized.isin(["true", "1", "yes", "y"])
     falsy = normalized.isin(["false", "0", "no", "n"])
     return pd.Series(pd.NA, index=series.index).where(~truthy, True).where(~falsy, False)
+
+
+def _safe_float(value) -> float:
+    try:
+        if value is None or (isinstance(value, float) and pd.isna(value)):
+            return 0.0
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _safe_truthy(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, numbers.Number) and not pd.isna(value):
+        return value == 1
+    if isinstance(value, str):
+        return value.strip().lower() in {"true", "1", "yes", "y"}
+    return False
+
+
+def extract_behavioural_reason_codes(row: pd.Series) -> list:
+    codes = []
+
+    if _safe_float(row.get("amount_deviation_ratio", 0.0)) >= 3.0:
+        codes.append("BEHAVIOURAL_AMOUNT_DEVIATION")
+    if _safe_float(row.get("velocity_deviation_ratio", 0.0)) >= 3.0:
+        codes.append("BEHAVIOURAL_VELOCITY_DEVIATION")
+    if _safe_float(row.get("balance_drop_ratio", 0.0)) >= 0.20:
+        codes.append("BALANCE_DROP_ANOMALY")
+
+    if _safe_truthy(row.get("new_device_for_customer", 0)):
+        codes.append("NEW_DEVICE_FOR_CUSTOMER")
+    if _safe_truthy(row.get("new_country_for_customer", 0)):
+        codes.append("NEW_COUNTRY_FOR_CUSTOMER")
+    if _safe_truthy(row.get("new_counterparty_for_account", 0)):
+        codes.append("NEW_COUNTERPARTY_FOR_ACCOUNT")
+    if _safe_truthy(row.get("unusual_channel_for_customer", 0)):
+        codes.append("UNUSUAL_CHANNEL_FOR_CUSTOMER")
+    if _safe_truthy(row.get("unusual_merchant_for_customer", 0)):
+        codes.append("BEHAVIOURAL_PROFILE_SHIFT")
+
+    return codes
 
 
 def generate_reasons(df: pd.DataFrame) -> pd.Series:
@@ -99,6 +143,9 @@ def generate_reasons(df: pd.DataFrame) -> pd.Series:
             parts.append("High chargeback history")
         if row.get("is_amount_anomaly", 0) == 1:
             parts.append("Transaction amount significantly above 30-day average")
+
+        # --- Behavioural reason codes (Phase 13E) ---
+        parts.extend(extract_behavioural_reason_codes(row))
 
         # --- Scenario-family contextual label ---
         # Appended last so it reads as analyst context, not a primary signal.

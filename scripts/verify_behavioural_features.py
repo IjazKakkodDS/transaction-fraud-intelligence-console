@@ -13,7 +13,10 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from src.features.transaction_features import generate_basic_features
+from src.features.transaction_features import (
+    extract_behavioural_reason_codes,
+    generate_basic_features,
+)
 from src.triage.investigator import calculate_behavioural_boost
 
 
@@ -36,6 +39,7 @@ def _check_neutral_row(row: pd.Series) -> None:
     _assert(row["unusual_channel_for_customer"] == 0, "unusual_channel_for_customer not neutral")
     _assert(row["unusual_merchant_for_customer"] == 0, "unusual_merchant_for_customer not neutral")
     _assert(calculate_behavioural_boost(row) == 0.0, "behavioural_boost not neutral")
+    _assert(extract_behavioural_reason_codes(row) == [], "behavioural reason codes not neutral")
 
 
 def _check_behavioural_row(row: pd.Series) -> float:
@@ -50,12 +54,29 @@ def _check_behavioural_row(row: pd.Series) -> float:
     boost = calculate_behavioural_boost(row)
     _assert(boost > 0.0, "behavioural_boost not applied")
     _assert(boost <= 0.20, "behavioural_boost exceeds cap")
+    expected_codes = {
+        "BEHAVIOURAL_AMOUNT_DEVIATION",
+        "BEHAVIOURAL_VELOCITY_DEVIATION",
+        "BALANCE_DROP_ANOMALY",
+        "NEW_DEVICE_FOR_CUSTOMER",
+        "NEW_COUNTRY_FOR_CUSTOMER",
+        "NEW_COUNTERPARTY_FOR_ACCOUNT",
+        "UNUSUAL_CHANNEL_FOR_CUSTOMER",
+        "BEHAVIOURAL_PROFILE_SHIFT",
+    }
+    actual_codes = set(extract_behavioural_reason_codes(row))
+    _assert(actual_codes == expected_codes, "behavioural reason codes mismatch")
     return boost
 
 
 def _check_risk_score_cap(existing_score: float, boost: float) -> None:
     capped = min(1.0, existing_score + boost)
     _assert(capped <= 1.0, "risk_score exceeds cap")
+
+
+def _check_neutral_behavioural_codes(row: pd.Series) -> None:
+    _assert(calculate_behavioural_boost(row) == 0.0, "behavioural_boost not neutral")
+    _assert(extract_behavioural_reason_codes(row) == [], "behavioural reason codes not neutral")
 
 
 def main() -> int:
@@ -108,12 +129,57 @@ def main() -> int:
         "account_balance_before": 500.0,
     }
 
-    df = _build_df([legacy_row, behavioural_row, zero_baseline_row])
+    rich_no_behavioural_row = {
+        "transaction_id": "t_rich_no_behavioural",
+        "timestamp": "2024-01-01T12:00:00",
+        "amount": 250.0,
+        "payment_method": "debit_card",
+        "country": "US",
+        "merchant_category": "grocery",
+        "device_id": "dev_4",
+        "device_type": "mobile",
+        "txn_count_1h": 6,
+        "failed_attempts_1h": 4,
+        "merchant_risk_score": 0.8,
+        "avg_transaction_amount_30d": 50.0,
+    }
+
+    neutral_behavioural_row = {
+        "transaction_id": "t_neutral_behavioural",
+        "timestamp": "2024-01-01T12:00:00",
+        "amount": 100.0,
+        "payment_method": "debit_card",
+        "country": "US",
+        "merchant_category": "grocery",
+        "device_id": "dev_5",
+        "device_type": "mobile",
+        "customer_avg_amount_30d": 120.0,
+        "customer_txn_count_24h_baseline": 5,
+        "txn_count_24h": 3,
+        "account_avg_balance_30d": 1000.0,
+        "account_balance_before": 2000.0,
+        "device_seen_count_90d": 5,
+        "counterparty_seen_before": "true",
+        "usual_country": "US",
+        "usual_channel": "web",
+        "channel": "web",
+        "merchant_customer_frequency_90d": 2,
+    }
+
+    df = _build_df([
+        legacy_row,
+        behavioural_row,
+        zero_baseline_row,
+        rich_no_behavioural_row,
+        neutral_behavioural_row,
+    ])
     result = generate_basic_features(df)
 
     _check_neutral_row(result.iloc[0])
     behavioural_boost = _check_behavioural_row(result.iloc[1])
     _check_neutral_row(result.iloc[2])
+    _check_neutral_row(result.iloc[3])
+    _check_neutral_behavioural_codes(result.iloc[4])
 
     _check_risk_score_cap(0.95, behavioural_boost)
 
