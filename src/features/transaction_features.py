@@ -11,6 +11,26 @@ from src.config.config import (
     LOW_RISK_COUNTRIES,
 )
 
+# ---------------------------------------------------------------------------
+# Scenario-family reason labels (Phase 12F-3)
+# Maps scenario_family values from rich CSVs to analyst-facing reason text.
+# Absent from legacy CSVs; safe to ignore when scenario_family not present.
+# ---------------------------------------------------------------------------
+_SCENARIO_REASON_LABELS: dict = {
+    "account_takeover":             "Account takeover pattern detected",
+    "card_testing":                 "Card testing velocity pattern",
+    "high_velocity_spend":          "High-velocity spend pattern",
+    "unusual_geography":            "Unusual geographic pattern",
+    "new_payee_transfer":           "New payee transfer risk",
+    "merchant_risk_spike":          "Merchant risk spike",
+    "mule_account_behaviour":       "Mule account behaviour pattern",
+    "refund_chargeback_abuse":      "Refund and chargeback abuse pattern",
+    "dormant_account_reactivation": "Dormant account reactivation detected",
+    "cross_border_high_value":      "Cross-border high-value transaction",
+    "device_mismatch":              "Device mismatch detected",
+    "suspicious_repeated_attempts": "Suspicious repeated attempts detected",
+}
+
 
 def generate_reasons(df: pd.DataFrame) -> pd.Series:
     """
@@ -20,9 +40,15 @@ def generate_reasons(df: pd.DataFrame) -> pd.Series:
     apply_fraud_rules, and triage_decision before this call. Works on both single-row
     and multi-row DataFrames. An empty string is returned for rows with no active
     signals (all conditions false).
+
+    Phase 12F-3: rich signal reason codes are appended when the corresponding
+    rich feature columns are present. Legacy rows without rich columns produce
+    the same output as before (all rich features default to 0).
     """
     def _row_reasons(row) -> str:
         parts = []
+
+        # --- Legacy reason codes (unchanged) ---
         if row["amount"] > HIGH_AMOUNT_THRESHOLD:
             parts.append("High transaction amount")
         if row["is_night_transaction"] == 1:
@@ -37,12 +63,55 @@ def generate_reasons(df: pd.DataFrame) -> pd.Series:
             parts.append("High-risk merchant category")
         if row.get("has_device_id", 1) == 0:
             parts.append("No device identifier present")
+
+        # --- Rich signal reason codes (Phase 12F-3) ---
+        # These only fire when the corresponding feature column was populated
+        # by generate_basic_features() from a rich CSV column. Legacy rows
+        # produce 0 for all rich features, so none of these conditions fire.
+        if row.get("is_low_trust_device", 0) == 1:
+            parts.append("Unrecognised device with low trust score")
+        if row.get("is_geo_anomaly", 0) == 1:
+            parts.append("Geographic location inconsistent with registered address")
+        if row.get("is_high_velocity_1h", 0) == 1:
+            parts.append("Transaction velocity exceeds 1-hour baseline")
+        if row.get("has_failed_attempts", 0) == 1:
+            parts.append("Multiple failed attempts preceding this transaction")
+        if row.get("is_high_risk_merchant_score", 0) == 1:
+            parts.append("High-risk merchant")
+        if row.get("is_new_payee_high_value", 0) == 1:
+            parts.append("First-time payment to unknown payee")
+        if row.get("has_chargebacks", 0) == 1:
+            parts.append("High chargeback history")
+        if row.get("is_amount_anomaly", 0) == 1:
+            parts.append("Transaction amount significantly above 30-day average")
+
+        # --- Scenario-family contextual label ---
+        # Appended last so it reads as analyst context, not a primary signal.
+        scenario = str(row.get("scenario_family", "") or "").strip().lower()
+        if scenario and scenario != "normal":
+            label = _SCENARIO_REASON_LABELS.get(scenario, "")
+            if label:
+                parts.append(label)
+
         return "|".join(parts)
 
     return df.apply(_row_reasons, axis=1)
 
 
 def generate_basic_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Extract model features and rich signal features from a scored DataFrame.
+
+    Legacy features (unchanged): hour_of_day, is_night_transaction, is_high_amount,
+    is_international, is_high_risk_payment_method, is_high_risk_country,
+    is_high_risk_merchant_category, has_device_id, is_mobile_device.
+
+    Rich signal features (Phase 12F-3): added from optional rich CSV columns.
+    Each uses a column-existence guard — legacy CSVs without these columns
+    receive a scalar 0 with no intermediate Series allocation, preserving
+    the performance of the 10M benchmark path.
+    """
+    # --- Legacy features ---
     df["hour_of_day"] = pd.to_datetime(df["timestamp"]).dt.hour
     df["is_night_transaction"] = df["hour_of_day"].apply(lambda h: 1 if h < 6 or h > 22 else 0)
     df["is_high_amount"] = df["amount"].apply(lambda a: 1 if a > HIGH_AMOUNT_THRESHOLD else 0)
@@ -75,4 +144,90 @@ def generate_basic_features(df: pd.DataFrame) -> pd.DataFrame:
         .fillna("")
         .apply(lambda t: 1 if str(t).lower() == "mobile" else 0)
     )
+
+    # --- Rich signal features (Phase 12F-3) ---
+    # Each block guards on column presence so legacy CSVs pay zero overhead.
+    # Default values are the safe non-triggering value for each feature.
+
+    # device_trust_score < 0.4 → unrecognised or low-trust device
+    # Default 1.0 (fully trusted) when column absent.
+    if "device_trust_score" in df.columns:
+        df["is_low_trust_device"] = (
+            pd.to_numeric(df["device_trust_score"], errors="coerce").fillna(1.0) < 0.4
+        ).astype(int)
+    else:
+        df["is_low_trust_device"] = 0
+
+    # geo_distance_km > 500 → IP location inconsistent with billing address
+    if "geo_distance_km" in df.columns:
+        df["is_geo_anomaly"] = (
+            pd.to_numeric(df["geo_distance_km"], errors="coerce").fillna(0.0) > 500
+        ).astype(int)
+    else:
+        df["is_geo_anomaly"] = 0
+
+    # txn_count_1h > 5 → velocity exceeds 1-hour baseline
+    if "txn_count_1h" in df.columns:
+        df["is_high_velocity_1h"] = (
+            pd.to_numeric(df["txn_count_1h"], errors="coerce").fillna(0) > 5
+        ).astype(int)
+    else:
+        df["is_high_velocity_1h"] = 0
+
+    # failed_attempts_1h >= 4 → multiple failed attempts in the last hour
+    if "failed_attempts_1h" in df.columns:
+        df["has_failed_attempts"] = (
+            pd.to_numeric(df["failed_attempts_1h"], errors="coerce").fillna(0) >= 4
+        ).astype(int)
+    else:
+        df["has_failed_attempts"] = 0
+
+    # merchant_risk_score >= 0.7 → high-risk merchant
+    if "merchant_risk_score" in df.columns:
+        df["is_high_risk_merchant_score"] = (
+            pd.to_numeric(df["merchant_risk_score"], errors="coerce").fillna(0.0) >= 0.7
+        ).astype(int)
+    else:
+        df["is_high_risk_merchant_score"] = 0
+
+    # new_payee_flag = true AND amount > 500 → first-time high-value payee
+    if "new_payee_flag" in df.columns:
+        _new_payee = (
+            df["new_payee_flag"]
+            .astype(str).str.strip().str.lower()
+            .isin(["true", "1"])
+        )
+        df["is_new_payee_high_value"] = (
+            _new_payee & (df["amount"] > 500)
+        ).astype(int)
+    else:
+        df["is_new_payee_high_value"] = 0
+
+    # chargeback_count_90d >= 2 → elevated chargeback history
+    if "chargeback_count_90d" in df.columns:
+        df["has_chargebacks"] = (
+            pd.to_numeric(df["chargeback_count_90d"], errors="coerce").fillna(0) >= 2
+        ).astype(int)
+    else:
+        df["has_chargebacks"] = 0
+
+    # amount > 3 × avg_transaction_amount_30d → significant amount anomaly
+    if "avg_transaction_amount_30d" in df.columns:
+        _avg30 = pd.to_numeric(df["avg_transaction_amount_30d"], errors="coerce").fillna(0.0)
+        df["is_amount_anomaly"] = (
+            (_avg30 > 0) & (df["amount"] > 3 * _avg30)
+        ).astype(int)
+    else:
+        df["is_amount_anomaly"] = 0
+
+    # scenario_family present and not 'normal' → rich fraud scenario record
+    if "scenario_family" in df.columns:
+        df["is_rich_fraud_scenario"] = (
+            ~df["scenario_family"]
+            .fillna("").astype(str).str.strip().str.lower()
+            .isin(["", "normal"])
+        ).astype(int)
+    else:
+        df["is_rich_fraud_scenario"] = 0
+
     return df

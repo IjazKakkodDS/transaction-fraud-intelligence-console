@@ -578,15 +578,67 @@ python scripts/verify_rich_banking_csv.py C:\tmp\rich-10k.csv
 **Reproducibility:** fixed seed produces identical output across runs
 **Generated CSVs:** gitignored — never committed to version control
 
-### Phase 12F-3 -- Scenario-Aware Scoring and Reason Mapping
+### Phase 12F-3 -- Scenario-Aware Scoring and Reason Mapping (complete)
 
-- Extend `generate_basic_features()` in `src/features/transaction_features.py` to extract new features from rich optional fields
-- New features: `is_high_velocity_1h`, `is_high_velocity_24h`, `is_geo_anomaly`, `is_low_trust_device`, `is_new_payee`, `has_chargebacks`, `is_dormant_reactivation`, `is_high_risk_merchant`, `has_failed_attempts`, `is_amount_anomaly`
-- Extend `generate_reasons()` with the 13 new reason codes; existing reason codes preserved
-- Extend `apply_fraud_rules()` with new rule conditions where confidence is high (new payee + high amount; velocity spike; geo anomaly)
-- No breaking changes to existing contracts
-- `validator.py` `REQUIRED_COLUMNS` unchanged
-- All new features degrade gracefully to their default (non-triggering) value when the source column is absent
+**Modified files:**
+- `src/features/transaction_features.py` -- rich feature extraction and reason codes
+- `src/triage/investigator.py` -- rich signal boost applied to risk_score
+
+**Rich features extracted (all with column-existence guards):**
+
+| Feature | Source column | Threshold |
+|---|---|---|
+| `is_low_trust_device` | `device_trust_score` | < 0.4 |
+| `is_geo_anomaly` | `geo_distance_km` | > 500 km |
+| `is_high_velocity_1h` | `txn_count_1h` | > 5 |
+| `has_failed_attempts` | `failed_attempts_1h` | >= 4 |
+| `is_high_risk_merchant_score` | `merchant_risk_score` | >= 0.7 |
+| `is_new_payee_high_value` | `new_payee_flag` + `amount` | flag=true AND amount > 500 |
+| `has_chargebacks` | `chargeback_count_90d` | >= 2 |
+| `is_amount_anomaly` | `avg_transaction_amount_30d` + `amount` | amount > 3x 30d avg |
+| `is_rich_fraud_scenario` | `scenario_family` | not empty and not 'normal' |
+
+**Rich signal boost weights (additive, capped at 1.0):**
+
+| Feature | Boost |
+|---|---|
+| `is_low_trust_device` | +0.10 |
+| `is_geo_anomaly` | +0.10 |
+| `is_high_velocity_1h` | +0.12 |
+| `has_failed_attempts` | +0.15 |
+| `is_high_risk_merchant_score` | +0.08 |
+| `is_new_payee_high_value` | +0.15 |
+| `has_chargebacks` | +0.10 |
+| `is_amount_anomaly` | +0.08 |
+| `is_rich_fraud_scenario` | +0.25 |
+
+`risk_score = min(1.0, 0.6 * model_prediction + 0.4 * rule_flag + rich_signal_boost)`
+
+**New reason codes added (8 signal codes + 12 scenario labels):**
+
+Signal codes: Unrecognised device with low trust score, Geographic location inconsistent
+with registered address, Transaction velocity exceeds 1-hour baseline, Multiple failed
+attempts preceding this transaction, High-risk merchant, First-time payment to unknown
+payee, High chargeback history, Transaction amount significantly above 30-day average.
+
+Scenario labels (appended as analyst context): Account takeover pattern detected,
+Card testing velocity pattern, High-velocity spend pattern, Unusual geographic pattern,
+New payee transfer risk, Merchant risk spike, Mule account behaviour pattern,
+Refund and chargeback abuse pattern, Dormant account reactivation detected,
+Cross-border high-value transaction, Device mismatch detected,
+Suspicious repeated attempts detected.
+
+**Verified results (1k rich CSV, seed=42):**
+- P0: 198, P1: 39, P2: 61, P3: 702 (rich scoring active)
+- Rich codes confirmed in P0/P1/P2 rows
+- Legacy 10k CSV: P0: 1546, P1: 913, P2: 0, P3: 7541 (unchanged -- no rich boost)
+- E2E 9/9 passed, Next.js build clean
+
+**Compatibility invariants preserved:**
+- `REQUIRED_COLUMNS` in `validator.py` unchanged
+- `apply_fraud_rules.py` unchanged
+- `scanner.py` result payload unchanged
+- All rich features degrade to 0 when source columns absent (legacy CSVs unaffected)
 
 ### Phase 12F-4 -- UI Support for Richer Fields
 
