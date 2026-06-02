@@ -749,6 +749,62 @@ matching the Phase 12D-5 reference with no rich codes and no rich boost.
 - Phase 12G-4 will review rule/model/rich signal weights before any scoring change.
 - Phase 12G-5 will lock the reason-code taxonomy for future case dossier and report surfaces.
 
+### Phase 12G-4 -- Rule / Model / Rich Signal Weight Review (complete)
+
+**Purpose:** Review the current scoring weights and thresholds for explainability, stability,
+and professional positioning before any future decision-engine changes.
+
+#### Weight Review Summary
+
+The current scoring design is acceptable for deterministic, scenario-aware triage on local
+synthetic benchmark data. No scoring code change is recommended in this phase.
+
+| Component | Current setting | Review verdict |
+|---|---:|---|
+| Model signal | 0.6 x `model_prediction` | Defensible primary signal for the existing hybrid baseline |
+| Rule signal | 0.4 x `rule_flag` | Defensible deterministic support signal for known high-risk patterns |
+| Rich signal boost | Additive, max 1.13 before cap | Acceptable for synthetic scenario triage because each boost is explainable |
+| Score cap | `risk_score <= 1.0` | Required to keep score normalized and UI/export contracts stable |
+| Decision thresholds | REVIEW >= 0.30, BLOCK >= 0.70 | Consistent with the existing decision contract |
+| Priority thresholds | P0 >= 0.80, P1 >= 0.60, P2 >= 0.30, P3 < 0.30 | Consistent with portfolio review ordering |
+
+#### Why Current Weights Are Acceptable
+
+The 0.6 model / 0.4 rule blend preserves the original hybrid scoring contract: the model remains
+the primary signal, while deterministic rules provide transparent operational override pressure.
+Rich boosts are additive because they represent scenario context that the original 9-feature
+model cannot express, such as low-trust device, velocity, failed attempts, new payee risk, and
+amount deviation.
+
+The rich boost can dominate the base score when several signals fire together. That behavior is
+acceptable for the Phase 12F synthetic scenario layer because it is deterministic, documented,
+and reason-code-backed. It should not be interpreted as calibrated probability.
+
+#### Threshold Interaction Review
+
+The BLOCK threshold (`risk_score >= 0.70`) and P0 threshold (`risk_score >= 0.80`) intentionally
+serve different purposes. Decision labels describe action severity: APPROVE, REVIEW, or BLOCK.
+Operational priority tiers provide a finer portfolio queue ordering: P0, P1, P2, P3. A row can
+therefore be BLOCK without being P0, which is expected and useful for analyst queue triage.
+
+P2 and REVIEW share the 0.30 lower bound, which keeps medium-risk portfolio rows aligned with
+manual review semantics. P1 starts at 0.60, below BLOCK, so high-priority review rows can still
+surface before they cross the block threshold.
+
+#### Legacy Protection
+
+Legacy rows remain protected by column-existence guards in `generate_basic_features()`. Missing
+rich fields receive non-triggering defaults, `is_rich_fraud_scenario` is 0 when
+`scenario_family` is absent, and `rich_signal_boost` stays 0.0. The legacy 10k regression
+therefore remains the reference for no-rich-boost behavior.
+
+#### Calibration Boundary
+
+These weights are deterministic development weights for local synthetic benchmark validation.
+Future production calibration would require institution-specific labelled fraud data, threshold
+analysis, false-positive and false-negative review, segment-level fairness and stability checks,
+and governance approval. Phase 12G-4 does not tune weights to improve synthetic distributions.
+
 ### Phase 12F-4 -- UI Support for Richer Fields (complete)
 
 **Approach:** Rich individual fields are not persisted in `portfolio_scan_results`. The
