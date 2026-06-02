@@ -640,6 +640,115 @@ Suspicious repeated attempts detected.
 - `scanner.py` result payload unchanged
 - All rich features degrade to 0 when source columns absent (legacy CSVs unaffected)
 
+### Phase 12G-3 -- Decision Engine Explainability Audit (complete)
+
+**Purpose:** Document the current decision engine contract so model output, deterministic
+rules, rich signal boosts, operational priorities, and reason codes are explainable before any
+future scoring change.
+
+#### Decision Engine Inputs
+
+| Input | Source | Role |
+|---|---|---|
+| `model_prediction` | XGBoost prediction from the 9-feature vector | Probabilistic/model signal, stored as 0 or 1 |
+| `rule_flag` | Deterministic fraud rules | Baseline rule signal, stored as 0 or 1 |
+| Rich signal features | Optional Phase 12F CSV fields via `generate_basic_features()` | Additive context for rich synthetic scenarios |
+| `scenario_family` | Optional synthetic label | Analyst context and synthetic verification anchor, not a real fraud label |
+
+#### Score Composition
+
+Legacy scoring remains:
+
+```text
+base_score = 0.6 * model_prediction + 0.4 * rule_flag
+```
+
+For rich records, `triage_decision()` adds `rich_signal_boost`:
+
+```text
+risk_score = min(1.0, base_score + rich_signal_boost)
+```
+
+The cap at `1.0` keeps `risk_score` in the expected normalized range even when multiple rich
+signals fire together. This preserves frontend formatting, priority mapping, export semantics,
+and downstream analyst interpretation.
+
+#### Rich Signal Boosts
+
+| Feature | Trigger | Boost |
+|---|---|---:|
+| `is_low_trust_device` | `device_trust_score` < 0.4 | +0.10 |
+| `is_geo_anomaly` | `geo_distance_km` > 500 | +0.10 |
+| `is_high_velocity_1h` | `txn_count_1h` > 5 | +0.12 |
+| `has_failed_attempts` | `failed_attempts_1h` >= 4 | +0.15 |
+| `is_high_risk_merchant_score` | `merchant_risk_score` >= 0.7 | +0.08 |
+| `is_new_payee_high_value` | `new_payee_flag` true and `amount` > 500 | +0.15 |
+| `has_chargebacks` | `chargeback_count_90d` >= 2 | +0.10 |
+| `is_amount_anomaly` | `amount` > 3x `avg_transaction_amount_30d` when baseline > 0 | +0.08 |
+| `is_rich_fraud_scenario` | `scenario_family` present and not `normal` | +0.25 |
+
+Maximum possible rich boost is 1.13 before capping. The boost is intentionally additive and
+deterministic for demo and verification transparency.
+
+#### Priority Tier Mapping
+
+Portfolio scan priority is assigned by `src/risk_scan/tier.py` after `risk_score` is computed.
+These bands are finer-grained than the APPROVE / REVIEW / BLOCK decision thresholds.
+
+| Risk score | `risk_tier` | `operational_priority` |
+|---|---|---|
+| >= 0.80 | Critical | P0 |
+| >= 0.60 and < 0.80 | High | P1 |
+| >= 0.30 and < 0.60 | Medium | P2 |
+| < 0.30 | Low | P3 |
+
+Decision labels continue to use configured defaults in `src/config/config.py`:
+APPROVE below 0.30, REVIEW from 0.30 to below 0.70, and BLOCK at 0.70 or above.
+
+#### Reason-Code Generation
+
+`generate_reasons()` builds a pipe-delimited string in three layers:
+
+1. Legacy reason codes from amount, time, model, international/country, payment method,
+   merchant category, and missing device signals.
+2. Rich signal reason codes when optional rich feature columns trigger.
+3. A scenario-family label appended last when `scenario_family` is present and not `normal`.
+
+The frontend drawer treats scenario labels as analyst context and renders them in a dedicated
+Scenario section. Rich signal reason codes render as amber chips; legacy reason codes remain red.
+Legacy scan rows have no scenario label and no rich signal codes, so the drawer remains visually
+compatible with pre-12F rows.
+
+#### Legacy Compatibility
+
+Legacy 5-column and 9-column CSVs do not contain rich columns. Each rich feature defaults to a
+non-triggering value, so `rich_signal_boost` is exactly 0.0 and the score remains:
+
+```text
+risk_score = 0.6 * model_prediction + 0.4 * rule_flag
+```
+
+The legacy 10k benchmark regression reproduced P0: 1,546 / P1: 913 / P2: 0 / P3: 7,541,
+matching the Phase 12D-5 reference with no rich codes and no rich boost.
+
+#### Validation Evidence
+
+- Rich 1k CSV, seed=42: P0: 198, P1: 39, P2: 61, P3: 702 with rich scoring active.
+- Rich 10k demo CSV, seed=229: 11/11 CSV checks passed and scan completed with all 12
+  scenario families present.
+- Rich 10k scored distribution: P0: 2,080 / P1: 375 / P2: 533 / P3: 7,012.
+- Frontend verification confirmed scenario labels and rich/legacy chip split in the drawer.
+- E2E 9/9 passed and frontend build was clean after the 12F rich scenario layer.
+
+#### Current Limits and Future Enhancements
+
+- `synthetic_fraud_label` and `scenario_family` are synthetic verification aids, not real-bank
+  fraud labels.
+- Rich boost weights are deterministic development weights and should not be presented as
+  institution-validated production calibration.
+- Phase 12G-4 will review rule/model/rich signal weights before any scoring change.
+- Phase 12G-5 will lock the reason-code taxonomy for future case dossier and report surfaces.
+
 ### Phase 12F-4 -- UI Support for Richer Fields (complete)
 
 **Approach:** Rich individual fields are not persisted in `portfolio_scan_results`. The
