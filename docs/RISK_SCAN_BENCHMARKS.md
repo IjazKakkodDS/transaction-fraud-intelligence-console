@@ -84,6 +84,38 @@ deployment.
 
 ## 10M Verification Summary
 
+### 10M Evidence Lock Table
+
+| Evidence area | Locked value |
+|---|---|
+| Scan ID | `aa0971d2-bdb6-49c7-bac3-fa355aa161ad` |
+| DB row ID | 79 |
+| Input CSV | `C:\tmp\risk-scan-12d8u-10m.csv` |
+| Input size | 754,587,572 bytes / 719.63 MiB |
+| Runtime environment | `RISK_SCAN_MAX_ROWS=10000000`; `RISK_SCAN_CHUNK_SIZE=2000`; `RISK_SCAN_ENABLE_IN_MEMORY_DEDUP=false` |
+| Upload | HTTP 202 in 5.79s |
+| Processing status | COMPLETE |
+| Processed rows | 10,000,000 / 10,000,000 |
+| Valid / invalid / skipped | 10,000,000 / 0 / 0 |
+| Started | 2026-06-01 01:34:37 UTC |
+| Completed | 2026-06-01 03:18:13 UTC |
+| Duration | ~103m 35s |
+| Average throughput | ~1,610 rows/sec |
+| Priority distribution | P0 0 / P1 8,420,051 / P2 0 / P3 1,579,949 |
+| Exposure | Total $25,095,000,000.00; high-tier $24,455,516,419.00 |
+| API performance | Summary 0.008s; page 1 0.676s; page 2 0.247s; deep page 1000 0.379s; P1 filter 4.188s; P3 filter 0.604s |
+| Export | HTTP 200; TTFB 0.006987s; duration 113.63s; size 1.64 GiB / 1,638.95 MiB; 10,000,001 lines |
+| Runtime health | API RestartCount 0; OOMKilled false |
+| Frontend checks | Query-param resume passed; Recent Scans panel passed; Scan Detail Header passed; result loading passed |
+| Regression checks | `/health` passed; existing 5M scan readable; existing 7.5M scan readable |
+| DB footprint after run | 22,752,000 `portfolio_scan_results` rows; total size 19 GB; index size 13 GB |
+
+**Reviewer interpretation:** This validates async ingestion, persisted result storage, indexed
+review, paginated retrieval, filtered querying, frontend resume/detail behavior, and streaming
+export at 10M-row scale in a local synthetic benchmark environment. It is not institution
+deployment evidence and should not be presented as real-bank fraud model calibration,
+production SLA proof, regulatory approval, or deployment certification.
+
 **Scan identifier**
 
 | Field | Value |
