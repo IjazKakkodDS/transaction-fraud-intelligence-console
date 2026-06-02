@@ -54,6 +54,28 @@ const RICH_SIGNAL_SET = new Set([
   "Transaction amount significantly above 30-day average",
 ]);
 
+const BEHAVIOURAL_REASON_SET = new Set([
+  "BEHAVIOURAL_AMOUNT_DEVIATION",
+  "BEHAVIOURAL_VELOCITY_DEVIATION",
+  "BALANCE_DROP_ANOMALY",
+  "NEW_DEVICE_FOR_CUSTOMER",
+  "NEW_COUNTRY_FOR_CUSTOMER",
+  "NEW_COUNTERPARTY_FOR_ACCOUNT",
+  "UNUSUAL_CHANNEL_FOR_CUSTOMER",
+  "BEHAVIOURAL_PROFILE_SHIFT",
+]);
+
+const BEHAVIOURAL_LABELS: Record<string, string> = {
+  "BEHAVIOURAL_AMOUNT_DEVIATION": "Amount deviation",
+  "BEHAVIOURAL_VELOCITY_DEVIATION": "Velocity deviation",
+  "BALANCE_DROP_ANOMALY": "Balance drop anomaly",
+  "NEW_DEVICE_FOR_CUSTOMER": "New device for customer",
+  "NEW_COUNTRY_FOR_CUSTOMER": "New country for customer",
+  "NEW_COUNTERPARTY_FOR_ACCOUNT": "New counterparty for account",
+  "UNUSUAL_CHANNEL_FOR_CUSTOMER": "Unusual channel",
+  "BEHAVIOURAL_PROFILE_SHIFT": "Behavioural profile shift",
+};
+
 // ── Format helpers ───────────────────────────────────────────────────────────
 
 function fmtCurrency(n: number | null): string {
@@ -163,10 +185,15 @@ export function ScanResultDrawer({
   // remain empty and their UI sections are not rendered.
   const scenarioLabel   = allReasons.find((r) => r in SCENARIO_LABEL_MAP) ?? null;
   const richSignals     = allReasons.filter((r) => RICH_SIGNAL_SET.has(r));
+  const behaviouralReasons = allReasons.filter((r) => BEHAVIOURAL_REASON_SET.has(r));
   const legacyReasons   = allReasons.filter(
-    (r) => !RICH_SIGNAL_SET.has(r) && !(r in SCENARIO_LABEL_MAP)
+    (r) =>
+      !RICH_SIGNAL_SET.has(r) &&
+      !BEHAVIOURAL_REASON_SET.has(r) &&
+      !(r in SCENARIO_LABEL_MAP)
   );
   const hasAnyReasons   = allReasons.length > 0;
+  const hasBehaviouralSignals = behaviouralReasons.length > 0;
 
   const deviceId = normalizeDeviceId(row.device_id);
 
@@ -388,6 +415,28 @@ export function ScanResultDrawer({
                     }}
                   >
                     {r}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ─ Behavioural Signals ─ */}
+          {hasBehaviouralSignals && (
+            <div className="pt-5">
+              <SectionHead label="Behavioural Signals" />
+              <div className="flex flex-wrap gap-1.5 px-5 pb-1">
+                {behaviouralReasons.map((r) => (
+                  <span
+                    key={r}
+                    className="rounded px-2 py-1 text-[11px] font-medium leading-none"
+                    style={{
+                      background: "rgba(96,165,250,0.08)",
+                      border: "1px solid rgba(96,165,250,0.20)",
+                      color: "#93C5FD",
+                    }}
+                  >
+                    {BEHAVIOURAL_LABELS[r] ?? r}
                   </span>
                 ))}
               </div>

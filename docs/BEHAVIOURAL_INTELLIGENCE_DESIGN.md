@@ -309,6 +309,9 @@ No frontend changes are made in Phase 13A. Future UI work may add sections such 
 The frontend should hide behavioural sections when behavioural evidence is absent. Legacy rows
 and rich rows without behavioural fields should render exactly as they do today.
 
+**Phase 13F (first slice) note:** Risk Scan drawer displays Behavioural Signals only when
+behavioural reason codes are present. Case Dossier display is not modified in this slice.
+
 ---
 
 ## Validation Matrix
