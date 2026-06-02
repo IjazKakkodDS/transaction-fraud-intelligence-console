@@ -178,6 +178,7 @@ scripts/verify_*.mjs
 !scripts/verify_rich_banking_csv.py
 !scripts/verify_behavioural_fraud_quality.py
 !scripts/verify_dirty_data_handling.py
+!scripts/verify_stream_resilience.py
 verify_header.js
 
 # =============================================================================

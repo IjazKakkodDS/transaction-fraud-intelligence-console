@@ -1,8 +1,9 @@
-# Dirty Data Resilience -- Phase 14 (CSV Slice)
+# Dirty Data Resilience -- Phase 14
 
 Phase 14 -- Dirty Data and Stream Resilience Testing.
-This document covers the first working slice: CSV / Portfolio Risk Scan dirty-data resilience.
-Stream consumer / Redpanda poison-pill testing is not yet started.
+This document covers both Phase 14 working slices:
+- Slice 1: CSV / Portfolio Risk Scan dirty-data resilience
+- Slice 2: Stream consumer event-boundary resilience (in-memory / schema-level validation)
 
 ---
 
@@ -15,9 +16,11 @@ Covered path:
 - `src/risk_scan/validator.py` -- CSV parse, column validation, row-level validation
 - `src/risk_scan/processor.py` -- chunked async scan orchestration (structurally reviewed)
 
-Not in scope for this slice:
-- Redpanda / Kafka stream consumer
-- Poison-pill or late-arriving event handling
+Not in scope for Slice 1 (covered by Slice 2 below):
+- Redpanda / Kafka stream consumer event-boundary resilience
+
+Not in scope for either slice:
+- Live Redpanda broker integration testing
 - Database migration changes
 - Scoring weight or threshold changes
 - Frontend changes
@@ -174,16 +177,151 @@ Scan ID: `7d2d5345-b523-4d83-b6e7-b0ac8f00827b`
 
 ---
 
-## Stream Consumer Testing
+## Stream Resilience -- Slice 2
 
-Stream consumer / Redpanda poison-pill testing is **not started** in this slice. The approved
-scope for the first Phase 14 working slice is CSV / Portfolio Risk Scan dirty-data resilience
-only. Stream resilience testing (partial enrichment, poison-pill events, out-of-order messages)
-is the next planned sub-phase within Phase 14.
+### Scope
+
+Controlled stream-resilience validation of the event parsing and schema validation
+boundaries for both the scoring consumer (`transactions.raw`) and the investigation
+consumer (`cases.investigate`). Verification uses in-memory payloads and direct
+Pydantic schema validation only. No live Redpanda broker, no DB writes, no API calls.
+
+Covered path:
+- `src/events/schemas.py` -- TransactionRawEvent, CaseCreatedEvent, TransactionScoredEvent
+- `src/investigation/schemas.py` -- InvestigationRequest
+- Consumer parsing logic replicated inline (json.loads + model_validate boundary)
+
+Import boundary:
+- Consumer modules (`consumer_scoring.py`, `investigation/consumer.py`) were intentionally
+  not imported. They register OS signal handlers and initialise infrastructure clients at
+  module level, which is unsafe in an offline verification context. The boundary under test
+  -- JSON parse then Pydantic model_validate -- is a two-line sequence replicated directly
+  in the verification script, precisely matching the code path in both consumers.
 
 ---
 
-## Verification Result
+### Stream Dirty-Event Taxonomy
+
+**Scoring consumer -- transactions.raw**
+
+| ID | Case | Schema constraint | Expected action |
+|---|---|---|---|
+| S01 | Empty bytes | n/a | json_error -> commit-and-skip |
+| S02 | Non-JSON payload | n/a | json_error -> commit-and-skip |
+| S03 | JSON list instead of object | model must receive a mapping | schema_error -> commit-and-skip |
+| S04 | Missing `transaction_id` | required str | schema_error -> commit-and-skip |
+| S05 | Missing all required fields | multiple required fields | schema_error -> commit-and-skip |
+| S06 | Invalid `amount` type (e.g., "abc") | float, coercion fails | schema_error -> commit-and-skip |
+| S07 | Null `transaction_id` | required str, None rejected | schema_error -> commit-and-skip |
+| S08 | `amount = 0` | `gt=0` | schema_error -> commit-and-skip |
+| S09 | Negative `amount` | `gt=0` | schema_error -> commit-and-skip |
+| S10 | `country` wrong length (e.g., "USA") | `max_length=2` | schema_error -> commit-and-skip |
+| S11 | Wrong `event_type` (e.g., "case.created") | `Literal["transaction.raw"]` | schema_error -> commit-and-skip |
+| S12 | Extra unexpected fields | `extra="ignore"` | VALID -- extra fields silently dropped |
+| S13 | Partial enrichment (optional fields absent) | optional fields have defaults | VALID -- safe defaults applied |
+| S14 | Duplicate event shape | valid schema; idempotency via DB | VALID at schema level -- DB dedup handles |
+
+**Investigation consumer -- cases.investigate**
+
+| ID | Case | Schema constraint | Expected action |
+|---|---|---|---|
+| I01 | Non-JSON payload | n/a | json_error -> commit-and-skip |
+| I02 | Missing `case_id` | required int | schema_error -> commit-and-skip |
+| I03 | Non-integer `case_id` (e.g., "abc") | int, coercion fails | schema_error -> commit-and-skip |
+| I04 | Extra unexpected fields | `extra="ignore"` | VALID -- extra fields silently dropped |
+| I05 | Empty bytes | n/a | json_error -> commit-and-skip |
+| I06 | Null `case_id` | required int, None rejected | schema_error -> commit-and-skip |
+
+**Structural invariants**
+
+| ID | Case | Constraint | Expected action |
+|---|---|---|---|
+| INV1 | `CaseCreatedEvent` with `decision="APPROVE"` | `Literal["REVIEW","BLOCK"]` | ValidationError -- APPROVE structurally blocked |
+| INV2 | `TransactionScoredEvent` with `risk_score=1.5` | `le=1.0` | ValidationError -- out-of-bounds score rejected |
+
+---
+
+### Consumer Resilience Boundaries
+
+**Scoring consumer** (`src/events/consumer_scoring.py`)
+
+The scoring consumer uses manual offset commits with two error handling tiers:
+
+- JSON decode errors and Pydantic ValidationErrors are caught as `(ValueError, ValidationError)`
+  and the offset is committed immediately. The message is permanently skipped.
+- All other exceptions (DB write failures, scoring pipeline errors, downstream Kafka publish
+  failures) are caught by a broad `except Exception` block and the offset is also committed.
+
+Current operational resilience boundary: the scoring consumer treats transient infrastructure
+failures (database unreachable, model error) identically to structurally unprocessable messages
+(malformed JSON, schema violation). Both result in a committed offset with no retry. This is the
+intended Phase 2 design; the source comments note that a deployment-hardened system would route
+unexpected failures to a dead-letter topic rather than silently committing them.
+
+**Investigation consumer** (`src/investigation/consumer.py`)
+
+The investigation consumer uses a split error handling strategy:
+
+- JSON decode errors and Pydantic ValidationErrors are caught and the offset is committed.
+  The message is permanently skipped (structurally unprocessable; retrying will not help).
+- All other exceptions (Postgres failure, Ollama timeout, pipeline error) are caught but the
+  offset is NOT committed. The consumer logs the error and continues polling. The broker
+  redelivers the message on the next run, allowing transient failures to be retried
+  without message loss.
+
+This is the stronger resilience posture of the two consumers.
+
+---
+
+### Operational Resilience Limits
+
+| Limit | Scope | Recommended hardening path |
+|---|---|---|
+| No dead-letter topic (DLQ) | Scoring consumer -- unexpected errors | Add a quarantine topic; route non-poison failures there instead of committing |
+| Poison pill vs transient error not separated | Scoring consumer | Separate `(ValueError, ValidationError)` handling from `Exception` handling; apply retry for the latter |
+| No stream resilience metrics | Both consumers | Add counters for skipped messages, retry attempts, and DLQ events; expose via monitoring endpoint |
+| No alerting for skipped malformed events | Both consumers | Emit a structured log event or metric on every commit-and-skip so operations can detect a flood of malformed messages |
+| DB idempotency constraint not yet added | Scoring consumer | Add `uq_predictions_event_id` unique constraint (noted as Phase 2 follow-up in source comments) |
+
+---
+
+### Recommended Deployment Hardening Path
+
+1. **DLQ / quarantine topic** -- route non-poison unexpected errors from the scoring consumer
+   to a `transactions.raw.dlq` topic instead of silently committing. Enables reprocessing
+   and forensic investigation without data loss.
+
+2. **Retry-policy separation** -- distinguish poison pills (permanent skip) from transient
+   errors (time-bounded retry with backoff). Apply the investigation consumer's pattern to
+   the scoring consumer.
+
+3. **Stream resilience metrics** -- instrument both consumers with per-message outcome
+   counters (accepted, poison-skipped, error-committed, retried) and surface them via the
+   existing reliability metrics endpoint or a dedicated stream health endpoint.
+
+4. **Alerting on skipped malformed events** -- a spike in commit-and-skip events indicates
+   either a schema-breaking producer change or a data quality incident upstream. Structured
+   log events per skip enable detection and triage.
+
+---
+
+### Stream Verification Script
+
+**Path:** `scripts/verify_stream_resilience.py`
+
+Runs 22 in-memory test cases covering both consumers and key structural invariants. No
+Redpanda broker, database, or API connection required.
+
+Test structure:
+- 14 scoring consumer cases (S01-S14): 11 poison-pill boundary, 3 schema-valid
+- 6 investigation consumer cases (I01-I06): 5 poison-pill boundary, 1 schema-valid
+- 2 structural invariant checks (INV1-INV2)
+
+All 22 tests verified PASS. Exit code 0 on success, 1 on any failure.
+
+---
+
+## CSV Verification Result
 
 ```
 Phase 14 -- CSV Dirty-Data Verification Report
@@ -196,4 +334,27 @@ Known limits        : 2
   - Negative amounts are accepted as VALID (no amount range check)
   - Extremely large amounts are accepted as VALID (no upper bound check)
 OVERALL: PASS  (15/15 tests)
+```
+
+---
+
+## Stream Verification Result
+
+```
+Phase 14 -- Stream Resilience Verification Report
+Total cases tested          : 22
+  Malformed / rejected      : 13  (poison-pill boundary)
+  Schema-valid / accepted   : 4  (extra fields, partial enrichment, duplicate shape, extra inv. fields)
+  Structural invariants     : 2  (CaseCreatedEvent APPROVE guard, risk_score bounds)
+
+Consumer actions verified (from source code inspection):
+  Scoring consumer   -- JSON/schema errors            : commit-and-skip (permanent)
+  Scoring consumer   -- unexpected runtime errors     : commit-and-skip [operational limit]
+  Investigation consumer -- JSON/schema errors        : commit-and-skip (permanent)
+  Investigation consumer -- unexpected runtime errors : NOT committed (retryable)
+
+Live Redpanda used  : No
+DB mutation         : No
+Source code changed : No
+OVERALL: PASS  (22/22 tests)
 ```
