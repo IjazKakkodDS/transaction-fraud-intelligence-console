@@ -83,6 +83,40 @@ baseline are both present.
 
 ---
 
+## Phase 13B Implementation Status
+
+**Status:** In progress
+
+Phase 13B implements optional behavioural feature extraction only. It does not change scoring
+weights, reason-code emission, frontend rendering, or database schema.
+
+**Optional baseline fields parsed (when present):**
+- `customer_avg_amount_30d`, `customer_avg_amount_90d`
+- `customer_txn_count_24h_baseline`, `customer_txn_count_7d_baseline`
+- `account_avg_balance_30d`, `account_failed_attempts_30d`
+- `device_seen_count_90d`, `device_first_seen_days`
+- `merchant_customer_frequency_90d`
+- `counterparty_seen_before`, `counterparty_first_seen_days`
+- `usual_country`, `usual_channel`, `usual_payment_method`
+
+**Derived behavioural features (neutral when inputs missing):**
+- `amount_deviation_ratio`
+- `velocity_deviation_ratio`
+- `balance_drop_ratio`
+- `new_device_for_customer`
+- `new_country_for_customer`
+- `new_counterparty_for_account`
+- `unusual_channel_for_customer`
+- `unusual_merchant_for_customer`
+
+**No-history behaviour:**
+- Missing or invalid behavioural baselines are treated as absent.
+- Derived ratios default to 0.0 when baselines or current values are missing.
+- Derived boolean indicators default to false when behavioural history is absent.
+- Scoring weights and behavioural reason codes remain unchanged in Phase 13B.
+
+---
+
 ## Behavioural Reason Codes - Proposed Only
 
 These reason codes are proposed vocabulary for a later implementation phase. They are not

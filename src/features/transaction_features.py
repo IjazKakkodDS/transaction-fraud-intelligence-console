@@ -32,6 +32,21 @@ _SCENARIO_REASON_LABELS: dict = {
 }
 
 
+def _coerce_numeric(series: pd.Series) -> pd.Series:
+    return pd.to_numeric(series, errors="coerce")
+
+
+def _normalize_str(series: pd.Series) -> pd.Series:
+    return series.fillna("").astype(str).str.strip()
+
+
+def _parse_optional_bool(series: pd.Series) -> pd.Series:
+    normalized = _normalize_str(series).str.lower()
+    truthy = normalized.isin(["true", "1", "yes", "y"])
+    falsy = normalized.isin(["false", "0", "no", "n"])
+    return pd.Series(pd.NA, index=series.index).where(~truthy, True).where(~falsy, False)
+
+
 def generate_reasons(df: pd.DataFrame) -> pd.Series:
     """
     Return a pipe-delimited reasons string for each row in a fully scored DataFrame.
@@ -145,6 +160,36 @@ def generate_basic_features(df: pd.DataFrame) -> pd.DataFrame:
         .apply(lambda t: 1 if str(t).lower() == "mobile" else 0)
     )
 
+    # --- Behavioural baseline fields (Phase 13B) ---
+    if "customer_avg_amount_30d" in df.columns:
+        df["customer_avg_amount_30d"] = _coerce_numeric(df["customer_avg_amount_30d"])
+    if "customer_avg_amount_90d" in df.columns:
+        df["customer_avg_amount_90d"] = _coerce_numeric(df["customer_avg_amount_90d"])
+    if "customer_txn_count_24h_baseline" in df.columns:
+        df["customer_txn_count_24h_baseline"] = _coerce_numeric(df["customer_txn_count_24h_baseline"])
+    if "customer_txn_count_7d_baseline" in df.columns:
+        df["customer_txn_count_7d_baseline"] = _coerce_numeric(df["customer_txn_count_7d_baseline"])
+    if "account_avg_balance_30d" in df.columns:
+        df["account_avg_balance_30d"] = _coerce_numeric(df["account_avg_balance_30d"])
+    if "account_failed_attempts_30d" in df.columns:
+        df["account_failed_attempts_30d"] = _coerce_numeric(df["account_failed_attempts_30d"])
+    if "device_seen_count_90d" in df.columns:
+        df["device_seen_count_90d"] = _coerce_numeric(df["device_seen_count_90d"])
+    if "device_first_seen_days" in df.columns:
+        df["device_first_seen_days"] = _coerce_numeric(df["device_first_seen_days"])
+    if "merchant_customer_frequency_90d" in df.columns:
+        df["merchant_customer_frequency_90d"] = _coerce_numeric(df["merchant_customer_frequency_90d"])
+    if "counterparty_seen_before" in df.columns:
+        df["counterparty_seen_before"] = _parse_optional_bool(df["counterparty_seen_before"])
+    if "counterparty_first_seen_days" in df.columns:
+        df["counterparty_first_seen_days"] = _coerce_numeric(df["counterparty_first_seen_days"])
+    if "usual_country" in df.columns:
+        df["usual_country"] = _normalize_str(df["usual_country"]).str.upper()
+    if "usual_channel" in df.columns:
+        df["usual_channel"] = _normalize_str(df["usual_channel"]).str.lower()
+    if "usual_payment_method" in df.columns:
+        df["usual_payment_method"] = _normalize_str(df["usual_payment_method"]).str.lower()
+
     # --- Rich signal features (Phase 12F-3) ---
     # Each block guards on column presence so legacy CSVs pay zero overhead.
     # Default values are the safe non-triggering value for each feature.
@@ -229,5 +274,93 @@ def generate_basic_features(df: pd.DataFrame) -> pd.DataFrame:
         ).astype(int)
     else:
         df["is_rich_fraud_scenario"] = 0
+
+    # --- Behavioural derived features (Phase 13B) ---
+    amount = _coerce_numeric(df["amount"]).fillna(0.0)
+
+    if "customer_avg_amount_30d" in df.columns or "customer_avg_amount_90d" in df.columns:
+        avg30 = df["customer_avg_amount_30d"] if "customer_avg_amount_30d" in df.columns else None
+        avg90 = df["customer_avg_amount_90d"] if "customer_avg_amount_90d" in df.columns else None
+        if avg30 is not None and avg90 is not None:
+            baseline_amount = avg30.where(avg30 > 0, avg90)
+        else:
+            baseline_amount = avg30 if avg30 is not None else avg90
+        df["amount_deviation_ratio"] = (
+            amount / baseline_amount
+        ).where(baseline_amount > 0).fillna(0.0)
+    else:
+        df["amount_deviation_ratio"] = 0.0
+
+    if "txn_count_24h" in df.columns and "customer_txn_count_24h_baseline" in df.columns:
+        current_txn_24h = _coerce_numeric(df["txn_count_24h"])
+        baseline_txn_24h = df["customer_txn_count_24h_baseline"]
+        df["velocity_deviation_ratio"] = (
+            current_txn_24h / baseline_txn_24h
+        ).where(baseline_txn_24h > 0).fillna(0.0)
+    else:
+        df["velocity_deviation_ratio"] = 0.0
+
+    if "account_avg_balance_30d" in df.columns and (
+        "account_balance_before" in df.columns or "account_balance_after" in df.columns
+    ):
+        baseline_balance = df["account_avg_balance_30d"]
+        if "account_balance_before" in df.columns:
+            current_balance = _coerce_numeric(df["account_balance_before"])
+        else:
+            current_balance = _coerce_numeric(df["account_balance_after"])
+        df["balance_drop_ratio"] = (
+            amount / baseline_balance
+        ).where((baseline_balance > 0) & current_balance.notna()).fillna(0.0)
+    else:
+        df["balance_drop_ratio"] = 0.0
+
+    if "device_seen_count_90d" in df.columns or "device_first_seen_days" in df.columns:
+        new_device = pd.Series(False, index=df.index)
+        if "device_seen_count_90d" in df.columns:
+            new_device = new_device | (df["device_seen_count_90d"] <= 1)
+        if "device_first_seen_days" in df.columns:
+            new_device = new_device | (df["device_first_seen_days"] <= 1)
+        df["new_device_for_customer"] = new_device.fillna(False).astype(int)
+    else:
+        df["new_device_for_customer"] = 0
+
+    if "country" in df.columns and "usual_country" in df.columns:
+        current_country = _normalize_str(df["country"]).str.upper()
+        usual_country = df["usual_country"]
+        df["new_country_for_customer"] = (
+            (current_country != "")
+            & (usual_country != "")
+            & (current_country != usual_country)
+        ).astype(int)
+    else:
+        df["new_country_for_customer"] = 0
+
+    if "counterparty_seen_before" in df.columns or "counterparty_first_seen_days" in df.columns:
+        new_counterparty = pd.Series(False, index=df.index)
+        if "counterparty_seen_before" in df.columns:
+            new_counterparty = new_counterparty | (df["counterparty_seen_before"] == False)
+        if "counterparty_first_seen_days" in df.columns:
+            new_counterparty = new_counterparty | (df["counterparty_first_seen_days"] <= 1)
+        df["new_counterparty_for_account"] = new_counterparty.fillna(False).astype(int)
+    else:
+        df["new_counterparty_for_account"] = 0
+
+    if "channel" in df.columns and "usual_channel" in df.columns:
+        current_channel = _normalize_str(df["channel"]).str.lower()
+        usual_channel = df["usual_channel"]
+        df["unusual_channel_for_customer"] = (
+            (current_channel != "")
+            & (usual_channel != "")
+            & (current_channel != usual_channel)
+        ).astype(int)
+    else:
+        df["unusual_channel_for_customer"] = 0
+
+    if "merchant_customer_frequency_90d" in df.columns:
+        df["unusual_merchant_for_customer"] = (
+            df["merchant_customer_frequency_90d"].fillna(1) <= 0
+        ).astype(int)
+    else:
+        df["unusual_merchant_for_customer"] = 0
 
     return df
