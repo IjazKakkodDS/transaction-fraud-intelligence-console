@@ -47,6 +47,62 @@ _BEHAVIOURAL_BOOST_WEIGHTS: dict = {
 }
 _BEHAVIOURAL_BOOST_CAP = 0.20
 
+# ---------------------------------------------------------------------------
+# Graph boost weights (Phase 15D)
+# Bounded, additive, evidence-gated, and neutral when graph context is absent.
+#
+# Only the four first-slice boolean flags contribute. Raw count columns
+# (accounts_per_device, device_cluster_size, etc.) are available on the row
+# but are deferred to later slices for boost contribution.
+#
+# Max possible uncapped boost: 0.05+0.07+0.05+0.05 = 0.22.
+# Cap applied at 0.15 -- tighter than behavioural (0.20) because graph signals
+# are batch-scoped and apply to every row sharing the same entity.
+#
+# These weights are provisional and will be calibrated in Phase 15E/15G
+# after reason codes and analyst-facing evidence are validated.
+# ---------------------------------------------------------------------------
+_GRAPH_BOOST_WEIGHTS: dict = {
+    "shared_device_flag":         0.05,  # device shared across >= 2 accounts
+    "cross_account_device_reuse": 0.07,  # device shared across DIFFERENT customers
+    "counterparty_fan_in_flag":   0.05,  # counterparty receives from > 3 accounts
+    "counterparty_fan_out_flag":  0.05,  # account distributes to > 3 counterparties
+}
+_GRAPH_BOOST_CAP = 0.15
+
+
+def calculate_graph_boost(row: pd.Series) -> float:
+    """
+    Compute a bounded graph boost for a single row.
+
+    Reads the four first-slice boolean graph indicator columns produced by
+    extract_graph_features() in transaction_features.py. Returns 0.0 when
+    graph entity fields were absent (all indicators default to False) or when
+    no indicator exceeds its threshold.
+
+    The same-customer same-device pattern does NOT trigger cross_account_device_reuse
+    (that flag is False when all accounts share the same customer_id), so a
+    legitimate multi-account customer on one device receives at most 0.05 boost
+    from shared_device_flag alone.
+
+    Note: graph indicator columns are stored as numpy.bool_ from Pandas boolean
+    comparisons. Unlike the int-cast behavioural features, these cannot be checked
+    with `== 1`. bool() is used directly to handle numpy.bool_, Python bool,
+    and integer 0/1 uniformly. pd.NA raises TypeError from bool(), which is
+    caught and treated as False.
+    """
+    def _as_bool(value) -> bool:
+        try:
+            return bool(value)
+        except (TypeError, ValueError):
+            return False
+
+    boost = 0.0
+    for col, weight in _GRAPH_BOOST_WEIGHTS.items():
+        if _as_bool(row.get(col, False)):
+            boost += weight
+    return min(boost, _GRAPH_BOOST_CAP)
+
 
 def calculate_behavioural_boost(row: pd.Series) -> float:
     """
@@ -119,7 +175,13 @@ def triage_decision(df: pd.DataFrame) -> pd.DataFrame:
 
     behavioural_boost = df.apply(calculate_behavioural_boost, axis=1)
     df["behavioural_boost"] = behavioural_boost
-    df["risk_score"] = (base_score + rich_boost + behavioural_boost).clip(upper=1.0)
+
+    # Graph boost (Phase 15D) -- additive, bounded at _GRAPH_BOOST_CAP (0.15).
+    # Legacy rows with no entity fields produce 0.0 via the indicator defaults.
+    graph_boost = df.apply(calculate_graph_boost, axis=1)
+    df["graph_boost"] = graph_boost
+
+    df["risk_score"] = (base_score + rich_boost + behavioural_boost + graph_boost).clip(upper=1.0)
 
     def decide(score: float) -> str:
         if score >= BLOCK_THRESHOLD:
