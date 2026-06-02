@@ -116,6 +116,70 @@ export at 10M-row scale in a local synthetic benchmark environment. It is not in
 deployment evidence and should not be presented as real-bank fraud model calibration,
 production SLA proof, regulatory approval, or deployment certification.
 
+### Resource, Latency, and Throughput Evidence
+
+#### Throughput
+
+| Metric | Evidence | Operational interpretation |
+|---|---|---|
+| Upload acceptance | HTTP 202 in 5.79s | The API accepted the 10M-row file as an async job instead of blocking the request until scoring completed. |
+| Processing duration | ~103m 35s | The background scan completed the full synthetic dataset without data loss. |
+| Average throughput | ~1,610 rows/sec | The local benchmark sustained portfolio-scale scoring throughput across the full run. |
+| Processing model | Async upload and background scoring | Ingestion acceptance is separated from long-running validation, scoring, persistence, and summary work. |
+
+#### API Latency
+
+| Endpoint / query | Evidence | Operational interpretation |
+|---|---|---|
+| Summary endpoint | 0.008s | Scan-level status and aggregate metrics remained fast after 10M persisted results. |
+| Results page 1 | 0.676s | Initial analyst review page loaded through bounded server-side pagination. |
+| Results page 2 | 0.247s | Adjacent result pages remained responsive and distinct. |
+| Deep page 1000 | 0.379s | Composite ordered indexes supported deep review without loading the full scan into browser memory. |
+| P1 filter | 4.188s for 8,420,051 matching rows | Large filtered retrieval remained correct; the total count over the dominant tier is the visible high-cardinality cost. |
+| P3 filter | 0.604s for 1,579,949 matching rows | Lower-cardinality filtered retrieval remained comfortably interactive. |
+
+#### Export Performance
+
+| Metric | Evidence | Operational interpretation |
+|---|---|---|
+| Export status | HTTP 200 | Full-scan export completed successfully. |
+| Time to first byte | 0.006987s | The server-side cursor emitted the CSV header immediately. |
+| Export duration | 113.63s | The complete 10M-row export streamed in bounded batches. |
+| Export size | 1.64 GiB / 1,638.95 MiB | The export path handled a multi-GiB result artifact without routing through frontend memory. |
+| Export line count | 10,000,001 lines | Header plus all 10,000,000 result rows were present. |
+
+#### Runtime Health
+
+| Metric | Evidence | Operational interpretation |
+|---|---|---|
+| API RestartCount | 0 | The API stayed up through scan verification and export. |
+| OOMKilled | false | No out-of-memory kill was recorded during the verified export path. |
+| Frontend usability | Resume, recent scans, scan detail header, and result loading passed | The analyst-facing scan surface remained usable against the large persisted scan. |
+| Regression readability | Existing 5M and 7.5M scans remained readable | Large-scan hardening did not break previously retained benchmark scans. |
+
+#### Database Footprint
+
+| Metric | Evidence | Operational interpretation |
+|---|---|---|
+| Accumulated result rows | 22,752,000 rows in `portfolio_scan_results` after the run | The database retained multiple large scans for review and evidence preservation. |
+| Result table size | 19 GB total size | Large local synthetic evidence has a meaningful storage footprint. |
+| Index size | 13 GB index size | Indexed pagination and filtering trade disk space for reviewer-facing query responsiveness. |
+| Reviewer takeaway | 19 GB local database footprint after accumulated benchmarks | Future repeated benchmark work needs retention, archive, or cleanup planning before additional large runs. |
+
+#### Interpretation
+
+- Async upload separates job acceptance from long-running validation, scoring, persistence, and
+  summary generation.
+- Indexed pagination supports analyst review without loading the entire scan into browser memory.
+- Filtered queries demonstrate operational retrieval against large result sets, while high-cardinality
+  totals still have measurable cost.
+- Streaming CSV export supports audit and report extraction without materializing the full output
+  in the frontend.
+- The database footprint highlights the storage and index trade-offs required for large local
+  synthetic benchmark evidence.
+- Institution deployment would require environment-specific validation, access control, security
+  review, monitoring, governance, and cost planning.
+
 **Scan identifier**
 
 | Field | Value |
