@@ -334,3 +334,53 @@ simulation. It is not calibrated against real fraud labels yet.
 
 Institution deployment would require labelled validation, governance, access control, security
 review, monitoring, cost planning, and model-risk review.
+
+---
+
+## Phase 13G - Behavioural Layer Verification and Close-Out
+
+**Status:** Complete
+
+### Verification summary
+
+**Existing unit script:** `python scripts/verify_behavioural_features.py` -- PASS
+
+**New fraud-quality script:** `scripts/verify_behavioural_fraud_quality.py` -- PASS
+
+Six controlled in-memory scenarios covering the full FP/FN framing:
+
+| Scenario | fraud_label | boost | codes | Interpretation |
+|---|---|---|---|---|
+| A: Legit, no history | 0 | 0.0 | none | No behavioural escalation; FN if fraud (legacy signals only defence) |
+| B: Legit, normal history | 0 | 0.0 | none | Baselines match; no FP escalation |
+| C: Legit, anomalies (FP risk) | 0 | 0.18 | 5 | Holiday customer; boost bounded; base=0.0 -> P3; if base=0.60 -> 0.78 (P0) |
+| D: Fraud, no history (FN limit) | 1 | 0.0 | none | No behavioural signal; legacy detects via night+high+RU+no-device |
+| E: Fraud, with history | 1 | 0.20 (capped) | 8 | All signals reinforce; cap enforced; final=1.0 |
+| F: Max-boost stress | n/a | 0.20 (capped) | 8 | Uncapped sum=0.27; cap=0.20; score cap=1.0 enforced |
+
+**Bug fixed (Phase 13G):** `calculate_behavioural_boost` in `investigator.py` used
+`isinstance(value, (int, float))` which does not match numpy.int64 values produced by
+`generate_basic_features`. Fixed to `isinstance(value, numbers.Number)` to align with
+the same pattern used by `extract_behavioural_reason_codes` in `transaction_features.py`.
+No weights, thresholds, or behavioural logic changed. Boolean-derived features now
+correctly contribute to the boost as designed in Phase 13D.
+
+**Legacy 10k regression scan:** `scan_id = 7d2d5345-b523-4d83-b6e7-b0ac8f00827b`
+
+| Tier | Count | Phase 12D-5 reference | Match |
+|---|---|---|---|
+| P0 | 1,546 | 1,546 | EXACT |
+| P1 | 913 | 913 | EXACT |
+| P2 | 0 | 0 | EXACT |
+| P3 | 7,541 | 7,541 | EXACT |
+
+**E2E:** 9/9 passed. **Build:** clean (8 routes).
+
+**Scoring weights and thresholds:** unchanged.
+**Frontend files:** unchanged.
+**Backend implementation:** one bug fix only (`investigator.py` type guard).
+
+**Disclaimer:** All fraud-quality evaluation results are from controlled
+in-memory synthetic scenarios. This is not real-world fraud calibration.
+Institution deployment requires labelled validation, governance, access
+control, security review, monitoring, and model-risk review.

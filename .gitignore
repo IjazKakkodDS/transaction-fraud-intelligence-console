@@ -175,6 +175,7 @@ scripts/generate_*_csv.py
 scripts/verify_*.py
 scripts/verify_*.mjs
 !scripts/verify_rich_banking_csv.py
+!scripts/verify_behavioural_fraud_quality.py
 verify_header.js
 
 # =============================================================================

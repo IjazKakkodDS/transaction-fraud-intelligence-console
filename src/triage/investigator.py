@@ -2,6 +2,8 @@
 Triage logic for routing flagged transactions to the appropriate investigation queue.
 """
 
+import numbers
+
 import pandas as pd
 
 from src.config.config import MODEL_WEIGHT, RULE_WEIGHT, REVIEW_THRESHOLD, BLOCK_THRESHOLD
@@ -63,7 +65,7 @@ def calculate_behavioural_boost(row: pd.Series) -> float:
     def _safe_truthy(value) -> bool:
         if isinstance(value, bool):
             return value
-        if isinstance(value, (int, float)) and not pd.isna(value):
+        if isinstance(value, numbers.Number) and not pd.isna(value):
             return value == 1
         if isinstance(value, str):
             return value.strip().lower() in {"true", "1", "yes", "y"}
