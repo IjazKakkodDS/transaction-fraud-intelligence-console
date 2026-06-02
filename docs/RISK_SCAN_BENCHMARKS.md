@@ -27,6 +27,57 @@ behavior throughout.
 
 ---
 
+## Phase 12H-1 Benchmark Evidence Pack
+
+### Benchmark Scope
+
+This evidence pack consolidates already documented local benchmark evidence for the Portfolio
+Risk Scan and rich synthetic banking scenario layer. It does not introduce new scans or new
+performance claims. The evidence covers synthetic transaction upload, validation, async
+processing, persistence, pagination, filtering, promotion, export, rich reason-code rendering,
+and generated artifact hygiene.
+
+### Local Environment Boundary
+
+Benchmarks were validated in a local production-style Docker Compose environment using synthetic
+transaction data. The results demonstrate local system behavior under controlled benchmark
+conditions. Deployment to an institution would require institution-specific validation, security
+review, access controls, monitoring, data governance, and operational approval.
+
+### Consolidated Evidence Table
+
+| Phase / Evidence Item | Dataset size | Input type | Processing mode | Result | Key metrics | Source / reference doc |
+|---|---:|---|---|---|---|---|
+| Legacy 10k regression reference | 10,000 rows | Legacy synthetic CSV | Portfolio risk scan regression | Passed | P0 1,546 / P1 913 / P2 0 / P3 7,541; exact match to Phase 12D-5 reference; no rich boost applied | `docs/RICH_SYNTHETIC_BANKING_SCHEMA.md`, `docs/PRODUCT_STAGES.md` |
+| Early scale ramp | 50k rows | Legacy synthetic CSV | Async portfolio scan | Verified | Detailed numeric metrics are not preserved in current docs | `docs/PRODUCT_STAGES.md` |
+| Early scale ramp | 100k rows | Legacy synthetic CSV | Async portfolio scan | Verified | Detailed numeric metrics are not preserved in current docs | `docs/PRODUCT_STAGES.md` |
+| Intermediate scale ramp | 250k rows | Legacy synthetic CSV | Async portfolio scan | Verified | Detailed numeric metrics are not preserved in current docs | `docs/PRODUCT_STAGES.md` |
+| Bottleneck discovery checkpoint | 500k rows | Legacy synthetic CSV | Async portfolio scan | Verified after summary optimization | Exposed O(n^2) summary recomputation; running aggregate counters introduced | `docs/PRODUCT_STAGES.md`, bottleneck timeline below |
+| Major scale benchmark | 1M rows | Legacy synthetic CSV | Async portfolio scan | Verified | COMPLETE, full export, all endpoints stable; detailed numeric metrics are not preserved in current docs | Executive summary above |
+| Table-bloat and export-risk checkpoint | 2.5M rows | Legacy synthetic CSV | Async portfolio scan | Verified after database cleanup | Postgres dead-space reclaim required; streaming export introduced | Executive summary above, bottleneck timeline below |
+| Export hardening checkpoint | 5,000,000 rows | Legacy synthetic CSV | Async portfolio scan with hardened export | Passed | Scan `4f3438f7-cabf-49c8-848f-5cb2d717f48f`; 5,000,000 / 0 / 0 valid / invalid / skipped; export HTTP 200 in 61.46s; 824.14 MB / 5,000,001 lines; API RestartCount 0 | 5M verification summary below |
+| Ingestion and index hardening checkpoint | 7,500,000 rows | Legacy synthetic CSV | Async portfolio scan with chunked ingestion and dedup benchmark mode | Passed | Scan `81ca48f2-e708-48b3-aa13-808989291fc0`; 7,500,000 / 0 / 0 valid / invalid / skipped; processing ~76m 24s; export HTTP 200 in 98.64s; 1.22 GiB / 7,500,001 lines | 7.5M verification summary below |
+| 10M async scan verification | 10,000,000 rows | Legacy synthetic CSV | Async portfolio scan with bounded-memory benchmark mode | Passed | Scan `aa0971d2-bdb6-49c7-bac3-fa355aa161ad`; upload HTTP 202 in 5.79s; 10,000,000 / 0 / 0 valid / invalid / skipped; processing ~103m 35s; P1 8,420,051 / P3 1,579,949; total exposure $25,095,000,000.00; high exposure $24,455,516,419.00 | 10M verification summary below |
+| 10M pagination and filtering | 10,000,000 rows | Persisted scan results | Indexed server-side pagination | Passed | Page 1: 0.676s; page 2: 0.247s; deep page 1000: 0.379s; P1 filter total 8,420,051 in 4.188s; P3 filter total 1,579,949 in 0.604s | 10M endpoint verification below |
+| 10M streaming export | 10,000,000 rows | Persisted scan results | Server-side cursor CSV export | Passed | HTTP 200; TTFB 0.006987s; duration 113.63s; 10,000,001 lines; 1,638.95 MiB; API RestartCount 0; OOMKilled false | 10M export verification below |
+| DB/index/resource evidence | Accumulated benchmark DB | Persisted scan history | Local Postgres evidence | Documented | `portfolio_scan_results` rows after run 22,752,000; total size 19 GB; index size 13 GB; database size 19 GB | Memory, database, and disk section below |
+| Rich 10k scenario scan | 10,000 rows | Rich synthetic banking CSV | Rich scenario Portfolio Risk Scan | Passed | Scan `62c601b2-ddf7-487b-ad32-976a71b3bf58`; 10,000 / 0 / 0 valid / invalid / skipped; processing ~6s; P0 2,080 / P1 375 / P2 533 / P3 7,012; export 10,001 lines / ~2.0 MB; drawer scenario and chip rendering verified | `docs/RICH_SYNTHETIC_BANKING_SCHEMA.md` |
+| Final narrated demo artifact | 10M scan demo flow | Local generated media | Playwright recording, captions, Edge TTS, FFmpeg merge | Documented | 2m 28.8s narrated MP4 artifact generated locally; media output remains ignored and is not committed | `docs/PRODUCT_STAGES.md`, `fraud-console/demo/README.md` |
+| Artifact hygiene | Generated CSVs, exports, media, helpers, env/cache files | Local artifacts | Git ignore policy | Passed | Generated benchmark CSVs, export CSVs, demo MP4/WebM/MP3, scratch scripts, evidence folders, environment files, caches, and build outputs remain untracked/ignored; rich banking generator and verifier remain tracked | `.gitignore`, `fraud-console/.gitignore`, Phase 12G-6 status |
+
+### Interpretation for Reviewers
+
+The benchmark evidence supports the scalability story for a local synthetic Portfolio Risk Scan:
+bounded-memory upload and processing, durable result persistence, indexed analyst pagination,
+tier filtering, promotion support, and streaming CSV export at 10M rows. The rich 10k scan adds
+scenario-aware synthetic banking evidence, including reason-code and drawer rendering coverage.
+
+These results should be read as local synthetic benchmark validation, not as real-bank fraud
+model calibration, production SLA evidence, regulatory approval, or proof of institution-ready
+deployment.
+
+---
+
 ## Current Verified Capability Statement
 
 > Verified 10M-transaction local production-style async Portfolio Risk Scan benchmark with bounded-memory ingestion, persisted results, paginated analyst review, deep pagination, risk-tier filtering, frontend scan resume, recent scan loading, scan detail header, promote-to-case support, and hardened server-side streaming CSV export.
