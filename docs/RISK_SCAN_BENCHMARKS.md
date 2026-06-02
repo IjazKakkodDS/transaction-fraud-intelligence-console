@@ -72,9 +72,11 @@ bounded-memory upload and processing, durable result persistence, indexed analys
 tier filtering, promotion support, and streaming CSV export at 10M rows. The rich 10k scan adds
 scenario-aware synthetic banking evidence, including reason-code and drawer rendering coverage.
 
-These results should be read as local synthetic benchmark validation, not as real-bank fraud
-model calibration, production SLA evidence, regulatory approval, or proof of institution-ready
-deployment.
+These results represent benchmark-scale validation of the async scan pipeline across
+upload, scoring, persistence, indexed retrieval, and streaming export in a local
+production-style environment. Institution-specific deployment would require
+labelled-outcome model calibration, access controls, monitoring, governance, and
+operational approval.
 
 ---
 
@@ -112,9 +114,10 @@ deployment.
 
 **Reviewer interpretation:** This validates async ingestion, persisted result storage, indexed
 review, paginated retrieval, filtered querying, frontend resume/detail behavior, and streaming
-export at 10M-row scale in a local synthetic benchmark environment. It is not institution
-deployment evidence and should not be presented as real-bank fraud model calibration,
-production SLA proof, regulatory approval, or deployment certification.
+export at 10M-row scale in a local production-style synthetic benchmark environment. The results
+confirm system-level behavior under controlled benchmark conditions. Institution-specific
+deployment would require labelled-outcome calibration, access controls, monitoring, governance,
+and operational approval.
 
 ### Resource, Latency, and Throughput Evidence
 

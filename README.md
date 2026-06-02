@@ -332,9 +332,10 @@ and demo readiness.
 
 ## Validation and Deployment Scope
 
-Benchmarks were executed on synthetic transaction data in a local production-style
-environment. Institution deployment would require security review, access control,
-governance, monitoring, and model validation against real fraud labels.
+The system is validated through benchmark-scale synthetic fraud scenarios in a
+production-style local environment. Institution-specific deployment would require
+security review, access controls, governance, monitoring, and labelled-outcome
+model calibration.
 
 ---
 
@@ -452,16 +453,19 @@ local-only and intentionally gitignored.
 
 ---
 
-## Resume-Safe Positioning
+## Engineering Summary
 
-Built a local production-style fraud decision console with a 7-service Docker Compose
-runtime, async Redpanda scoring pipeline, PostgreSQL persistence, analyst queues,
-AI-assisted case investigation, workflow automation audit trails, SLO-style reliability
-metrics, and a verified 10M-transaction Portfolio Risk Scan benchmark -- 103m 35s,
-~1,610 rows/sec average throughput, 1.64 GiB streaming export, zero API restarts.
+A production-style fraud intelligence platform engineered across a 7-service Docker
+Compose runtime -- async Redpanda event-driven scoring, PostgreSQL persistence, analyst
+queues, AI-assisted case investigation, workflow automation audit trails, SLO-style
+reliability monitoring, and a verified 10M-transaction Portfolio Risk Scan benchmark:
+103m 35s end-to-end, ~1,610 rows/sec average throughput, 1.64 GiB streaming export
+with a 6.987 ms time to first byte, zero API restarts.
 
-Position as a local production-style engineering system and benchmarked fraud workflow
-console, not as a deployed bank production fraud model.
+Validated through benchmark-scale synthetic fraud scenarios, controlled behavioural-risk
+verification, and regression checks. Designed with a clear extension path for
+institution-specific labelled-outcome calibration, access controls, monitoring,
+governance, and deployment hardening.
 
 ---
 
