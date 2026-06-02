@@ -640,15 +640,46 @@ Suspicious repeated attempts detected.
 - `scanner.py` result payload unchanged
 - All rich features degrade to 0 when source columns absent (legacy CSVs unaffected)
 
-### Phase 12F-4 -- UI Support for Richer Fields
+### Phase 12F-4 -- UI Support for Richer Fields (complete)
 
-- Extend `ScanResultDrawer` with conditional field groups:
-  - "Customer Behaviour" section: velocity counts, tenure, 30d average, chargeback count
-  - "Channel and Device" section: trust score, IP country, geo distance, channel
-  - "Scenario" section (demo/development only): scenario_family, synthetic_fraud_label
-- Extend `RiskScanResult` TypeScript type with optional rich fields
-- All additions are conditional on field presence; existing UI layout unchanged when fields absent
-- No changes to backend API response contract required for Phase 12F-4
+**Approach:** Rich individual fields are not persisted in `portfolio_scan_results`. The
+`reasons` pipe-delimited string is the sole carrier of rich scenario information in the
+result payload. The drawer was updated to extract maximum analyst value from reasons alone.
+
+**`ScanResultDrawer.tsx` changes:**
+
+Reason codes are classified client-side into three groups:
+- **Legacy signals** (7 existing codes) -- rendered as red chips, unchanged
+- **Rich signal codes** (8 Phase 12F-3 codes) -- rendered as amber chips
+- **Scenario family label** (e.g., "Card testing velocity pattern") -- extracted and
+  displayed in a separate "Scenario" section showing the pattern name in cyan
+
+The "Scenario" section only renders when a scenario label is present in reasons. Legacy
+scan rows have no such label, so the section is hidden and the drawer is visually
+identical to pre-12F-4.
+
+`device_id` normalisation: "NaN" and "None" strings (pandas serialisation of empty-string
+CSV cells) are treated as absent. Analysts see no "Device ID: NaN" entry.
+
+**No backend changes.** No Zod type changes. No DB migration.
+
+**Display behaviour by row type:**
+
+| Row source | Scenario section | Reason chip styles |
+|---|---|---|
+| Legacy scan (10M benchmark) | Hidden | All chips red (unchanged) |
+| Rich scan -- normal row | Hidden | Red chips only (no rich signals) |
+| Rich scan -- fraud row | Visible (pattern name in cyan) | Red legacy + amber rich chips |
+
+**Analyst view example (card_testing row):**
+```
+Scenario:        Card Testing
+Risk Signals:    High-risk payment method [red]
+                 Unrecognised device with low trust score [amber]
+                 Geographic location inconsistent with registered address [amber]
+                 Transaction velocity exceeds 1-hour baseline [amber]
+                 Multiple failed attempts preceding this transaction [amber]
+```
 
 ### Phase 12F-5 -- Demo Dataset Generation and Verification
 

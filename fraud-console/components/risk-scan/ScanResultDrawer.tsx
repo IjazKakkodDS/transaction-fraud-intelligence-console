@@ -19,6 +19,41 @@ const DECISION_COLOR: Record<string, string> = {
   APPROVE: "#10B981",
 };
 
+// ── Rich scenario classification (Phase 12F-4) ───────────────────────────────
+//
+// Scenario family labels are appended by the backend as the final reason code
+// when the row comes from a rich synthetic CSV. Detecting them here lets the
+// drawer surface a clean "Scenario" section without any backend payload change.
+//
+// Rich signal codes are the 8 new codes added in Phase 12F-3. They get amber
+// styling to distinguish them from the 7 legacy red reason codes.
+
+const SCENARIO_LABEL_MAP: Record<string, string> = {
+  "Account takeover pattern detected":      "Account Takeover",
+  "Card testing velocity pattern":          "Card Testing",
+  "High-velocity spend pattern":            "High-Velocity Spend",
+  "Unusual geographic pattern":             "Unusual Geography",
+  "New payee transfer risk":                "New Payee Transfer",
+  "Merchant risk spike":                    "Merchant Risk Spike",
+  "Mule account behaviour pattern":         "Mule Account",
+  "Refund and chargeback abuse pattern":    "Refund / Chargeback Abuse",
+  "Dormant account reactivation detected":  "Dormant Account Reactivation",
+  "Cross-border high-value transaction":    "Cross-Border High-Value",
+  "Device mismatch detected":               "Device Mismatch",
+  "Suspicious repeated attempts detected":  "Suspicious Repeated Attempts",
+};
+
+const RICH_SIGNAL_SET = new Set([
+  "Unrecognised device with low trust score",
+  "Geographic location inconsistent with registered address",
+  "Transaction velocity exceeds 1-hour baseline",
+  "Multiple failed attempts preceding this transaction",
+  "High-risk merchant",
+  "First-time payment to unknown payee",
+  "High chargeback history",
+  "Transaction amount significantly above 30-day average",
+]);
+
 // ── Format helpers ───────────────────────────────────────────────────────────
 
 function fmtCurrency(n: number | null): string {
@@ -39,6 +74,15 @@ function fmtScore(n: number | null): string {
 function fmtTs(iso: string | null | undefined): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleString();
+}
+
+// Normalise device_id values that pandas serialises as "NaN" or "None" for
+// empty-string CSV cells. Treat them the same as null/absent.
+function normalizeDeviceId(id: string | null | undefined): string | null {
+  if (!id) return null;
+  const lower = id.toLowerCase().trim();
+  if (lower === "nan" || lower === "none" || lower === "") return null;
+  return id;
 }
 
 // ── Small layout primitives ──────────────────────────────────────────────────
@@ -107,16 +151,31 @@ export function ScanResultDrawer({
     : row.risk_score >= 0.6 ? "#F59E0B"
     : "#10B981";
 
-  const reasons = row.reasons
+  const allReasons = row.reasons
     ? row.reasons.split("|").map((r) => r.trim()).filter(Boolean)
     : [];
+
+  // Classify reasons into three groups.
+  // scenarioLabel  — last entry matching a known scenario family label
+  // richSignals    — entries matching Phase 12F-3 rich signal codes
+  // legacyReasons  — everything else (the original 7 legacy codes)
+  // Legacy scans produce no rich signals and no scenario label; those groups
+  // remain empty and their UI sections are not rendered.
+  const scenarioLabel   = allReasons.find((r) => r in SCENARIO_LABEL_MAP) ?? null;
+  const richSignals     = allReasons.filter((r) => RICH_SIGNAL_SET.has(r));
+  const legacyReasons   = allReasons.filter(
+    (r) => !RICH_SIGNAL_SET.has(r) && !(r in SCENARIO_LABEL_MAP)
+  );
+  const hasAnyReasons   = allReasons.length > 0;
+
+  const deviceId = normalizeDeviceId(row.device_id);
 
   const hasAttributes =
     !!row.timestamp ||
     !!row.country ||
     !!row.payment_method ||
     !!row.merchant_category ||
-    !!row.device_id;
+    !!deviceId;
 
   const hasModelContext =
     row.model_prediction !== null || row.rule_flag !== null;
@@ -274,12 +333,37 @@ export function ScanResultDrawer({
             <FieldRow label="Row" value={String(row.row_number)} mono />
           </div>
 
+          {/* ─ Scenario (rich records only) ─ */}
+          {scenarioLabel && (
+            <div className="pt-5">
+              <SectionHead label="Scenario" />
+              <div
+                className="mx-5 mb-1 flex items-center gap-2.5 rounded-md px-3 py-2.5"
+                style={{
+                  background: "rgba(34,211,238,0.06)",
+                  border: "1px solid rgba(34,211,238,0.18)",
+                }}
+              >
+                <span
+                  className="text-[10px] font-semibold uppercase tracking-widest shrink-0"
+                  style={{ color: "#4B5563" }}
+                >
+                  Pattern
+                </span>
+                <span className="text-[12px] font-semibold" style={{ color: "#22D3EE" }}>
+                  {SCENARIO_LABEL_MAP[scenarioLabel]}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* ─ Risk Signals ─ */}
-          {reasons.length > 0 && (
+          {hasAnyReasons && (
             <div className="pt-5">
               <SectionHead label="Risk Signals" />
               <div className="flex flex-wrap gap-1.5 px-5 pb-1">
-                {reasons.map((r) => (
+                {/* Legacy signals — red chips (unchanged) */}
+                {legacyReasons.map((r) => (
                   <span
                     key={r}
                     className="rounded px-2 py-1 text-[11px] font-medium leading-none"
@@ -287,6 +371,20 @@ export function ScanResultDrawer({
                       background: "rgba(255,77,77,0.08)",
                       border: "1px solid rgba(255,77,77,0.16)",
                       color: "#FF8080",
+                    }}
+                  >
+                    {r}
+                  </span>
+                ))}
+                {/* Rich signal codes — amber chips */}
+                {richSignals.map((r) => (
+                  <span
+                    key={r}
+                    className="rounded px-2 py-1 text-[11px] font-medium leading-none"
+                    style={{
+                      background: "rgba(245,158,11,0.08)",
+                      border: "1px solid rgba(245,158,11,0.20)",
+                      color: "#F59E0B",
                     }}
                   >
                     {r}
@@ -300,11 +398,13 @@ export function ScanResultDrawer({
           {hasAttributes && (
             <div className="pt-5">
               <SectionHead label="Transaction Attributes" />
-              {row.timestamp     && <FieldRow label="Timestamp"        value={fmtTs(row.timestamp)} />}
-              {row.country       && <FieldRow label="Country"           value={row.country} />}
-              {row.payment_method && <FieldRow label="Payment Method"   value={row.payment_method} />}
-              {row.merchant_category && <FieldRow label="Merchant Category" value={row.merchant_category} />}
-              {row.device_id     && <FieldRow label="Device ID"         value={row.device_id} mono />}
+              {row.timestamp      && <FieldRow label="Timestamp"         value={fmtTs(row.timestamp)} />}
+              {row.country        && <FieldRow label="Country"            value={row.country} />}
+              {row.payment_method && <FieldRow label="Payment Method"    value={row.payment_method} />}
+              {row.merchant_category && (
+                <FieldRow label="Merchant Category" value={row.merchant_category} />
+              )}
+              {deviceId && <FieldRow label="Device ID" value={deviceId} mono />}
             </div>
           )}
 
