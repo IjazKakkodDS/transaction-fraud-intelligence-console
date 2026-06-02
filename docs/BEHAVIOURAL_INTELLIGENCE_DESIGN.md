@@ -85,7 +85,7 @@ baseline are both present.
 
 ## Phase 13B Implementation Status
 
-**Status:** In progress
+**Status:** Complete
 
 Phase 13B implements optional behavioural feature extraction only. It does not change scoring
 weights, reason-code emission, frontend rendering, or database schema.
@@ -114,6 +114,13 @@ weights, reason-code emission, frontend rendering, or database schema.
 - Derived ratios default to 0.0 when baselines or current values are missing.
 - Derived boolean indicators default to false when behavioural history is absent.
 - Scoring weights and behavioural reason codes remain unchanged in Phase 13B.
+
+**Phase 13B Validation:**
+- Behavioural extraction implemented in feature generation.
+- No-history rows remain neutral for derived behavioural features.
+- Scoring weights unchanged.
+- Behavioural reason-code emission unchanged.
+- Local validation script passed: `python scripts/verify_behavioural_features.py`.
 
 ---
 
