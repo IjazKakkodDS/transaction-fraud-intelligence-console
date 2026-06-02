@@ -124,6 +124,96 @@ weights, reason-code emission, frontend rendering, or database schema.
 
 ---
 
+## Phase 13C - Behavioural Scoring Integration Design
+
+### Purpose
+
+Phase 13C defines how behavioural features may influence scoring before any code changes are
+made. This phase is design-only.
+
+### Current Behavioural Inputs
+
+Derived behavioural features available from Phase 13B:
+- `amount_deviation_ratio`
+- `velocity_deviation_ratio`
+- `balance_drop_ratio`
+- `new_device_for_customer`
+- `new_country_for_customer`
+- `new_counterparty_for_account`
+- `unusual_channel_for_customer`
+- `unusual_merchant_for_customer`
+
+### Activation Conditions
+
+Behavioural scoring can only activate when behavioural baseline fields are present and valid.
+No-history rows must produce a behavioural boost of 0.0.
+
+### Proposed Behavioural Boost Design (Design Only)
+
+Behavioural scoring is intended to be bounded and additive, without changing existing model,
+rule, or rich signal weights.
+
+Proposed components:
+- `amount_deviation_ratio` above a threshold contributes a small boost.
+- `velocity_deviation_ratio` above a threshold contributes a small boost.
+- `balance_drop_ratio` above a threshold contributes a small boost.
+- `new_device_for_customer` contributes a small boost.
+- `new_country_for_customer` contributes a small boost.
+- `new_counterparty_for_account` contributes a small boost.
+- `unusual_channel_for_customer` contributes a small boost.
+- `unusual_merchant_for_customer` contributes a small boost.
+- Total behavioural boost is capped.
+
+### Score Composition Boundary
+
+Intended future formula (conceptual):
+
+```
+risk_score = base_score + rich_signal_boost + behavioural_boost
+risk_score = min(risk_score, 1.0)
+```
+
+Boundaries:
+- The existing 0.6 model / 0.4 rule base remains unchanged.
+- Existing rich signal boost remains unchanged.
+- Behavioural boost is optional and additive only when behavioural history exists.
+- Risk score cap remains 1.0.
+
+### Priority and Decision Compatibility
+
+- P0/P1/P2/P3 thresholds remain unchanged unless explicitly reviewed later.
+- APPROVE/REVIEW/BLOCK thresholds remain unchanged.
+- Behavioural boost may move a transaction across tiers only when behavioural evidence exists.
+- No-history rows remain identical to current scoring.
+
+### Guardrails for Phase 13D Implementation
+
+- No scoring change for rows without behavioural fields.
+- No behavioural boost for legacy 10k rows.
+- No behavioural boost for rich 10k rows unless behavioural history columns exist.
+- No behavioural reason-code emission until Phase 13E.
+- No frontend behavioural section until Phase 13F.
+- No DB migration in 13D unless explicitly approved.
+
+### Validation Requirements Before/For Phase 13D
+
+- Legacy 10k regression unchanged.
+- Rich 10k without behavioural history unchanged.
+- No-history row produces behavioural_boost = 0.
+- Behavioural row produces bounded boost.
+- `risk_score` never exceeds 1.0.
+- Priority mapping remains based on final capped score.
+- `py_compile` passes.
+- No large scans required.
+
+### Calibration Boundary
+
+Behavioural scoring is deterministic synthetic triage logic, not a calibrated probability.
+Future real-world deployment would require labelled validation, monitoring, governance, and
+model-risk review.
+
+---
+
 ## Behavioural Reason Codes - Proposed Only
 
 These reason codes are proposed vocabulary for a later implementation phase. They are not
