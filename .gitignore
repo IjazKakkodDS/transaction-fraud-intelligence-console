@@ -179,6 +179,7 @@ scripts/verify_*.mjs
 !scripts/verify_behavioural_fraud_quality.py
 !scripts/verify_dirty_data_handling.py
 !scripts/verify_stream_resilience.py
+!scripts/verify_graph_features.py
 verify_header.js
 
 # =============================================================================
