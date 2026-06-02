@@ -545,17 +545,38 @@ and stored for future use; they do not cause errors.
 - Compatibility strategy documented
 - No code changes required
 
-### Phase 12F-2 -- Rich Generator Implementation
+### Phase 12F-2 -- Rich Generator Implementation (complete)
 
-- Build `scripts/generate_rich_transactions.py`
-- Parameterisable: `--rows`, `--fraud-rate`, `--scenario-mix`, `--seed`, `--output`
-- Generates all 38 schema columns
-- Scenario mix: configurable proportions for each of the 12 families
-- Legitimate transaction baseline: draws from realistic banking distributions
-- Fraud rows: generated per-scenario using defined field signatures
-- Verifiable: `expected_priority` and `synthetic_fraud_label` enable automated result verification
-- Output: UTF-8 CSV, no BOM, Unix line endings
-- Target scale: 10k (test), 100k (demo), up to 1M (stress test)
+**Script:** `scripts/generate_rich_banking_csv.py`
+**Verify:** `scripts/verify_rich_banking_csv.py`
+
+**Generate a dataset:**
+
+```sh
+python scripts/generate_rich_banking_csv.py --rows 10000 --output C:\tmp\rich-10k.csv --seed 42
+python scripts/generate_rich_banking_csv.py --rows 1000  --seed 42
+python scripts/generate_rich_banking_csv.py --rows 100000 --output C:\tmp\rich-100k.csv
+```
+
+**Verify a dataset:**
+
+```sh
+python scripts/verify_rich_banking_csv.py C:\tmp\rich-10k.csv
+```
+
+**CLI arguments:**
+
+| Argument | Default | Description |
+|---|---|---|
+| `--rows` | 10000 | Number of rows to generate |
+| `--output` | `scripts/test_rich_<rows>.csv` | Output CSV path |
+| `--seed` | 42 | Random seed for reproducibility |
+| `--scenario-mix` | Default mix | JSON dict overriding scenario proportions |
+
+**Output:** 42-column CSV (38 rich schema fields + 4 legacy compatibility aliases)
+**Default mix:** 70% normal, 30% fraud across 12 scenario families
+**Reproducibility:** fixed seed produces identical output across runs
+**Generated CSVs:** gitignored — never committed to version control
 
 ### Phase 12F-3 -- Scenario-Aware Scoring and Reason Mapping
 
