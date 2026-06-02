@@ -18,6 +18,7 @@ from src.config.config import (
 # Absent from legacy CSVs; safe to ignore when scenario_family not present.
 # ---------------------------------------------------------------------------
 _SCENARIO_REASON_LABELS: dict = {
+
     "account_takeover":             "Account takeover pattern detected",
     "card_testing":                 "Card testing velocity pattern",
     "high_velocity_spend":          "High-velocity spend pattern",
@@ -31,6 +32,16 @@ _SCENARIO_REASON_LABELS: dict = {
     "device_mismatch":              "Device mismatch detected",
     "suspicious_repeated_attempts": "Suspicious repeated attempts detected",
 }
+
+# ---------------------------------------------------------------------------
+# Graph indicator thresholds (Phase 15C)
+# Provisional values validated in Phase 15B. To be reviewed and calibrated
+# during Phase 15D when graph_boost is integrated into the scoring formula.
+# These thresholds do not affect risk_score in Phase 15C.
+# ---------------------------------------------------------------------------
+_GRAPH_SHARED_DEVICE_THRESHOLD: int = 2   # >= N distinct accounts per device
+_GRAPH_FAN_IN_THRESHOLD: int        = 3   # > N distinct accounts per counterparty
+_GRAPH_FAN_OUT_THRESHOLD: int       = 3   # > N distinct counterparties per account
 
 
 def _coerce_numeric(series: pd.Series) -> pd.Series:
@@ -65,6 +76,115 @@ def _safe_truthy(value) -> bool:
     if isinstance(value, str):
         return value.strip().lower() in {"true", "1", "yes", "y"}
     return False
+
+
+def _clean_entity_id(series: pd.Series) -> pd.Series:
+    """
+    Normalise an entity ID column for graph groupby operations.
+
+    Strips whitespace and converts absent values (NaN, None, empty string,
+    "nan", "NaN", "None", "null") to pd.NA so that groupby drops them rather
+    than grouping absent IDs together. Rows with absent entity IDs contribute
+    0 / False to all graph indicators.
+    """
+    s = series.fillna("").astype(str).str.strip()
+    return s.replace({"": pd.NA, "nan": pd.NA, "NaN": pd.NA, "None": pd.NA, "null": pd.NA})
+
+
+def extract_graph_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compute first-slice graph / mule-network indicators for a transaction batch.
+
+    Indicators are computed across ALL rows in df using entity-level groupby
+    aggregations. Each row receives the indicator value for its own entity
+    neighborhood within the batch -- e.g. a row's accounts_per_device reflects
+    how many distinct accounts share that row's device_id across the full batch.
+
+    Phase 15C: these 9 columns are added to df but do not yet affect risk_score.
+    investigator.py does not reference them. Phase 15D will integrate them into
+    the graph_boost formula. Thresholds are provisional -- see _GRAPH_* constants.
+
+    All indicators default to 0 / False when required entity fields
+    (device_id, account_id, customer_id, merchant_id) are absent or contain
+    empty / null values, preserving neutral behavior for legacy 9-field CSVs,
+    rich CSVs without entity IDs, and rows with partial entity context.
+
+    Operates in-place on the passed DataFrame and returns it.
+    """
+    has_device   = "device_id"   in df.columns
+    has_account  = "account_id"  in df.columns
+    has_customer = "customer_id" in df.columns
+    has_merchant = "merchant_id" in df.columns
+
+    # -----------------------------------------------------------------------
+    # Device-based indicators
+    # -----------------------------------------------------------------------
+    if has_device and has_account:
+        dev_col  = _clean_entity_id(df["device_id"])
+        acct_col = _clean_entity_id(df["account_id"])
+
+        # accounts_per_device -- distinct accounts per device
+        tmp = pd.DataFrame({"_dev": dev_col, "_acct": acct_col})
+        apd = tmp.groupby("_dev")["_acct"].nunique()
+        df["accounts_per_device"] = dev_col.map(apd).fillna(0).astype(int)
+        df["shared_device_flag"]  = df["accounts_per_device"] >= _GRAPH_SHARED_DEVICE_THRESHOLD
+
+        if has_customer:
+            cust_col = _clean_entity_id(df["customer_id"])
+            tmp_c    = pd.DataFrame({"_dev": dev_col, "_cust": cust_col})
+            cpd      = tmp_c.groupby("_dev")["_cust"].nunique()
+            df["customers_per_device"] = dev_col.map(cpd).fillna(0).astype(int)
+            # cross_account_device_reuse -- device shared across DIFFERENT customer entities.
+            # Rows where device_id is absent are always False so device absence is never
+            # misread as a shared-device signal.
+            df["cross_account_device_reuse"] = (
+                (df["customers_per_device"] > 1) & dev_col.notna()
+            )
+        else:
+            df["customers_per_device"]       = 0
+            df["cross_account_device_reuse"] = False
+
+        df["device_cluster_size"] = (
+            df["customers_per_device"].astype(int) + df["accounts_per_device"].astype(int)
+        )
+    else:
+        df["accounts_per_device"]        = 0
+        df["shared_device_flag"]         = False
+        df["customers_per_device"]       = 0
+        df["cross_account_device_reuse"] = False
+        df["device_cluster_size"]        = 0
+
+    # -----------------------------------------------------------------------
+    # Counterparty fan-in -- accounts per counterparty
+    # -----------------------------------------------------------------------
+    if has_merchant and has_account:
+        merch_col = _clean_entity_id(df["merchant_id"])
+        acct_col  = _clean_entity_id(df["account_id"])
+
+        tmp = pd.DataFrame({"_merch": merch_col, "_acct": acct_col})
+        apc = tmp.groupby("_merch")["_acct"].nunique()
+        df["accounts_per_counterparty"] = merch_col.map(apc).fillna(0).astype(int)
+        df["counterparty_fan_in_flag"]  = df["accounts_per_counterparty"] > _GRAPH_FAN_IN_THRESHOLD
+    else:
+        df["accounts_per_counterparty"] = 0
+        df["counterparty_fan_in_flag"]  = False
+
+    # -----------------------------------------------------------------------
+    # Account fan-out -- counterparties per account
+    # -----------------------------------------------------------------------
+    if has_account and has_merchant:
+        acct_col  = _clean_entity_id(df["account_id"])
+        merch_col = _clean_entity_id(df["merchant_id"])
+
+        tmp = pd.DataFrame({"_acct": acct_col, "_merch": merch_col})
+        cpa = tmp.groupby("_acct")["_merch"].nunique()
+        df["counterparties_per_account"] = acct_col.map(cpa).fillna(0).astype(int)
+        df["counterparty_fan_out_flag"]  = df["counterparties_per_account"] > _GRAPH_FAN_OUT_THRESHOLD
+    else:
+        df["counterparties_per_account"] = 0
+        df["counterparty_fan_out_flag"]  = False
+
+    return df
 
 
 def extract_behavioural_reason_codes(row: pd.Series) -> list:
@@ -409,5 +529,12 @@ def generate_basic_features(df: pd.DataFrame) -> pd.DataFrame:
         ).astype(int)
     else:
         df["unusual_merchant_for_customer"] = 0
+
+    # --- Graph features (Phase 15C) ---
+    # Adds 9 relationship-level indicator columns derived from entity adjacency
+    # within the batch. These columns have no effect on risk_score in Phase 15C --
+    # investigator.py does not reference them yet. Phase 15D will integrate them
+    # into the graph_boost formula when scoring is extended.
+    df = extract_graph_features(df)
 
     return df

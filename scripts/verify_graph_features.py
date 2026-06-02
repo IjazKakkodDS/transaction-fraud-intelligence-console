@@ -1,29 +1,28 @@
 """
-Phase 15B -- In-memory graph indicator verification.
+Phase 15C -- Production graph feature extraction verification.
 
-Computes and validates first-slice graph indicators using controlled
-in-memory Pandas DataFrames. No database, no API, no Redpanda, no NetworkX.
+Validates that extract_graph_features() in src/features/transaction_features.py
+produces the expected indicator values for all 7 controlled scenarios defined
+in Phase 15B. The production function replaces the local compute_graph_indicators()
+that was used for in-memory validation in Phase 15B.
 
-compute_graph_indicators() is defined locally in this script. It will move
-to src/features/transaction_features.py in Phase 15C once the logic here
-is confirmed correct. This mirrors the Phase 13B pattern: behavioural
-feature extraction was validated in a standalone script before being
-integrated into production feature generation.
+This mirrors the Phase 13 pattern: behavioural feature logic was validated in a
+standalone script, then moved to transaction_features.py, and the standalone script
+was updated to import and test the production function.
 
-Indicators validated (8):
+Indicators validated (9) -- from src.features.transaction_features.extract_graph_features:
   accounts_per_device           -- distinct account_id count per device_id
-  shared_device_flag            -- accounts_per_device >= shared_device_threshold (2)
+  shared_device_flag            -- accounts_per_device >= _GRAPH_SHARED_DEVICE_THRESHOLD (2)
   customers_per_device          -- distinct customer_id count per device_id
   cross_account_device_reuse    -- device shared across DIFFERENT customer_ids
   device_cluster_size           -- customers_per_device + accounts_per_device
   accounts_per_counterparty     -- distinct account_id count per merchant_id
-  counterparty_fan_in_flag      -- accounts_per_counterparty > fan_in_threshold (3)
+  counterparty_fan_in_flag      -- accounts_per_counterparty > _GRAPH_FAN_IN_THRESHOLD (3)
   counterparties_per_account    -- distinct merchant_id count per account_id
-  counterparty_fan_out_flag     -- counterparties_per_account > fan_out_threshold (3)
+  counterparty_fan_out_flag     -- counterparties_per_account > _GRAPH_FAN_OUT_THRESHOLD (3)
 
-Thresholds used here are VALIDATION THRESHOLDS ONLY.
-They are NOT production-calibrated values. Production thresholds are
-to be defined and reviewed in Phase 15D (graph boost integration).
+Thresholds are provisional values from _GRAPH_* constants in transaction_features.py.
+They are NOT production-calibrated and will be reviewed in Phase 15D.
 
 Scenarios (7):
   N1 -- No entity fields present          -> all indicators neutral
@@ -35,7 +34,7 @@ Scenarios (7):
   G5 -- Mixed scan                        -> risky rows flagged, clean rows neutral
 
 Exit codes: 0 on full pass, 1 on any failure.
-graph_boost: NOT implemented in this slice.
+graph_boost: NOT implemented in this slice (Phase 15D).
 """
 
 import sys
@@ -46,12 +45,12 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-# ---------------------------------------------------------------------------
-# Validation thresholds (NOT production-tuned values)
-# ---------------------------------------------------------------------------
-_SHARED_DEVICE_THRESHOLD = 2   # >= 2 distinct accounts per device triggers shared flag
-_FAN_IN_THRESHOLD        = 3   # > 3 distinct accounts per counterparty triggers fan-in
-_FAN_OUT_THRESHOLD       = 3   # > 3 distinct counterparties per account triggers fan-out
+from src.features.transaction_features import (
+    _GRAPH_FAN_IN_THRESHOLD,
+    _GRAPH_FAN_OUT_THRESHOLD,
+    _GRAPH_SHARED_DEVICE_THRESHOLD,
+    extract_graph_features,
+)
 
 # ---------------------------------------------------------------------------
 # Reporting state
@@ -75,122 +74,6 @@ def _fail(label: str, reason: str) -> None:
 def _assert(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
-
-
-# ---------------------------------------------------------------------------
-# Graph indicator computation (local to this verification script)
-# This function moves to src/features/transaction_features.py in Phase 15C.
-# ---------------------------------------------------------------------------
-
-def _clean(series: pd.Series) -> pd.Series:
-    """
-    Normalise a string column for groupby operations.
-
-    Converts NaN / None / empty strings / literal "nan" / "None" values to
-    pd.NA so that groupby drops them (rather than creating a shared NA group).
-    Rows with absent entity IDs receive no graph signal.
-    """
-    s = series.fillna("").astype(str).str.strip()
-    return s.replace({"": pd.NA, "nan": pd.NA, "NaN": pd.NA, "None": pd.NA})
-
-
-def compute_graph_indicators(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Compute first-slice graph indicators for a batch of transactions.
-
-    All indicators default to 0 / False when required entity fields are
-    absent from the DataFrame or contain empty / NaN values. This preserves
-    neutral scoring for legacy CSVs, rich CSVs without entity IDs, and any
-    row with missing entity context.
-
-    Indicators are computed across ALL rows in df (the full scan window).
-    Each row receives the indicator value for its own entity -- for example,
-    a row's accounts_per_device reflects how many distinct accounts share
-    THAT row's device_id within the batch.
-
-    Parameters
-    ----------
-    df : DataFrame representing a complete transaction batch (scan or mini-scan).
-
-    Returns
-    -------
-    A copy of df with 9 added indicator columns.
-    """
-    df = df.copy()
-
-    has_device   = "device_id"   in df.columns
-    has_account  = "account_id"  in df.columns
-    has_customer = "customer_id" in df.columns
-    has_merchant = "merchant_id" in df.columns
-
-    # -----------------------------------------------------------------------
-    # Device-based indicators
-    # -----------------------------------------------------------------------
-    if has_device and has_account:
-        dev_col  = _clean(df["device_id"])
-        acct_col = _clean(df["account_id"])
-
-        # accounts_per_device -- distinct accounts per device
-        tmp = pd.DataFrame({"_dev": dev_col, "_acct": acct_col})
-        apd = tmp.groupby("_dev")["_acct"].nunique()
-        df["accounts_per_device"] = dev_col.map(apd).fillna(0).astype(int)
-        df["shared_device_flag"]  = df["accounts_per_device"] >= _SHARED_DEVICE_THRESHOLD
-
-        if has_customer:
-            cust_col = _clean(df["customer_id"])
-            tmp_c    = pd.DataFrame({"_dev": dev_col, "_cust": cust_col})
-            cpd      = tmp_c.groupby("_dev")["_cust"].nunique()
-            df["customers_per_device"] = dev_col.map(cpd).fillna(0).astype(int)
-            # cross_account_device_reuse -- device shared across DIFFERENT customers
-            # Rows where the device is absent (NA) are always False.
-            df["cross_account_device_reuse"] = (
-                (df["customers_per_device"] > 1) & dev_col.notna()
-            )
-        else:
-            df["customers_per_device"]       = 0
-            df["cross_account_device_reuse"] = False
-
-        df["device_cluster_size"] = (
-            df["customers_per_device"].astype(int) + df["accounts_per_device"].astype(int)
-        )
-    else:
-        df["accounts_per_device"]        = 0
-        df["shared_device_flag"]         = False
-        df["customers_per_device"]       = 0
-        df["cross_account_device_reuse"] = False
-        df["device_cluster_size"]        = 0
-
-    # -----------------------------------------------------------------------
-    # Counterparty fan-in -- accounts per counterparty
-    # -----------------------------------------------------------------------
-    if has_merchant and has_account:
-        merch_col = _clean(df["merchant_id"])
-        acct_col  = _clean(df["account_id"])
-
-        tmp = pd.DataFrame({"_merch": merch_col, "_acct": acct_col})
-        apc = tmp.groupby("_merch")["_acct"].nunique()
-        df["accounts_per_counterparty"] = merch_col.map(apc).fillna(0).astype(int)
-        df["counterparty_fan_in_flag"]  = df["accounts_per_counterparty"] > _FAN_IN_THRESHOLD
-    else:
-        df["accounts_per_counterparty"] = 0
-        df["counterparty_fan_in_flag"]  = False
-
-    # -----------------------------------------------------------------------
-    # Account fan-out -- counterparties per account
-    # -----------------------------------------------------------------------
-    if has_account and has_merchant:
-        acct_col  = _clean(df["account_id"])
-        merch_col = _clean(df["merchant_id"])
-
-        tmp = pd.DataFrame({"_acct": acct_col, "_merch": merch_col})
-        cpa = tmp.groupby("_acct")["_merch"].nunique()
-        df["counterparties_per_account"] = acct_col.map(cpa).fillna(0).astype(int)
-        df["counterparty_fan_out_flag"]  = df["counterparties_per_account"] > _FAN_OUT_THRESHOLD
-    else:
-        df["counterparties_per_account"] = 0
-        df["counterparty_fan_out_flag"]  = False
-
-    return df
 
 
 # ---------------------------------------------------------------------------
@@ -226,7 +109,7 @@ def test_n1_no_entity_fields() -> None:
             "country":        ["US", "GB", "DE"],
             "payment_method": ["debit_card", "credit_card", "bank_transfer"],
         })
-        r = compute_graph_indicators(df)
+        r = extract_graph_features(df)
 
         _assert(r["accounts_per_device"].sum() == 0,
                 "accounts_per_device not zero without device/account fields")
@@ -258,7 +141,7 @@ def test_n2_all_unique_entities() -> None:
     try:
         rows = [_row(f"t{i}", f"dev_{i}", f"acct_{i}", f"cust_{i}", f"merch_{i}")
                 for i in range(1, 6)]
-        r = compute_graph_indicators(pd.DataFrame(rows))
+        r = extract_graph_features(pd.DataFrame(rows))
 
         _assert((r["accounts_per_device"] == 1).all(),
                 f"accounts_per_device != 1 for unique devices: {r['accounts_per_device'].tolist()}")
@@ -292,7 +175,7 @@ def test_g1_device_cluster() -> None:
             _row("t3", "dev_X", "acct_C", "cust_2", "merch_3"),  # cust_2, acct_C  <-- 2nd customer
             _row("t4", "dev_Y", "acct_D", "cust_3", "merch_4"),  # clean row
         ]
-        r = compute_graph_indicators(pd.DataFrame(rows))
+        r = extract_graph_features(pd.DataFrame(rows))
 
         x = r[r["device_id"] == "dev_X"]
         y = r[r["device_id"] == "dev_Y"]
@@ -338,7 +221,7 @@ def test_g2_fan_in_counterparty() -> None:
             _row("t6", "dev_6", "acct_6", "cust_5", "merch_N"),
             _row("t7", "dev_7", "acct_7", "cust_6", "merch_P"),
         ]
-        r = compute_graph_indicators(pd.DataFrame(rows))
+        r = extract_graph_features(pd.DataFrame(rows))
 
         m_rows  = r[r["merchant_id"] == "merch_M"]
         cln_cps = r[r["merchant_id"].isin(["merch_N", "merch_P"])]
@@ -346,7 +229,7 @@ def test_g2_fan_in_counterparty() -> None:
         _assert((m_rows["accounts_per_counterparty"] == 5).all(),
                 f"merch_M accounts_per_counterparty: expected 5, got {m_rows['accounts_per_counterparty'].tolist()}")
         _assert((m_rows["counterparty_fan_in_flag"] == True).all(),
-                "counterparty_fan_in_flag not True for merch_M (5 accounts > threshold 3)")
+                f"counterparty_fan_in_flag not True for merch_M (5 accounts > threshold {_GRAPH_FAN_IN_THRESHOLD})")
         _assert((cln_cps["counterparty_fan_in_flag"] == False).all(),
                 "fan_in_flag leaked to clean counterparties merch_N / merch_P")
         _pass(label)
@@ -371,19 +254,19 @@ def test_g3_fan_out_account() -> None:
             _row("t5", "dev_2", "acct_B", "cust_2", "merch_5"),
             _row("t6", "dev_2", "acct_B", "cust_2", "merch_6"),
         ]
-        r = compute_graph_indicators(pd.DataFrame(rows))
+        r = extract_graph_features(pd.DataFrame(rows))
 
-        a_rows  = r[r["account_id"] == "acct_A"]
-        b_rows  = r[r["account_id"] == "acct_B"]
+        a_rows = r[r["account_id"] == "acct_A"]
+        b_rows = r[r["account_id"] == "acct_B"]
 
         _assert((a_rows["counterparties_per_account"] == 4).all(),
                 f"acct_A counterparties_per_account: expected 4, got {a_rows['counterparties_per_account'].tolist()}")
         _assert((a_rows["counterparty_fan_out_flag"] == True).all(),
-                "counterparty_fan_out_flag not True for acct_A (4 > threshold 3)")
+                f"counterparty_fan_out_flag not True for acct_A (4 > threshold {_GRAPH_FAN_OUT_THRESHOLD})")
         _assert((b_rows["counterparties_per_account"] == 2).all(),
                 f"acct_B counterparties_per_account: expected 2, got {b_rows['counterparties_per_account'].tolist()}")
         _assert((b_rows["counterparty_fan_out_flag"] == False).all(),
-                "counterparty_fan_out_flag triggered for acct_B (2 counterparties, threshold 3)")
+                f"counterparty_fan_out_flag triggered for acct_B (2 counterparties, threshold {_GRAPH_FAN_OUT_THRESHOLD})")
         _pass(label)
     except AssertionError as exc:
         _fail(label, str(exc))
@@ -403,7 +286,7 @@ def test_g4_same_customer_device_guardrail() -> None:
             _row("t3", "dev_X", "acct_R", "cust_1", "merch_3"),
             _row("t4", "dev_X", "acct_P", "cust_1", "merch_4"),  # repeat of acct_P
         ]
-        r = compute_graph_indicators(pd.DataFrame(rows))
+        r = extract_graph_features(pd.DataFrame(rows))
 
         x = r[r["device_id"] == "dev_X"]
 
@@ -444,7 +327,7 @@ def test_g5_mixed_scan() -> None:
             _row("fan_3", "dev_F3", "acct_F3", "cust_F3", "merch_M"),
             _row("fan_4", "dev_F4", "acct_F4", "cust_F4", "merch_M"),
         ]
-        r = compute_graph_indicators(pd.DataFrame(rows))
+        r = extract_graph_features(pd.DataFrame(rows))
 
         clean = r[r["transaction_id"].str.startswith("clean")]
         dev_x = r[r["device_id"] == "dev_X"]
@@ -476,7 +359,7 @@ def test_g5_mixed_scan() -> None:
         _assert((fan_m["accounts_per_counterparty"] == 4).all(),
                 f"merch_M accounts_per_counterparty: expected 4, got {fan_m['accounts_per_counterparty'].tolist()}")
         _assert((fan_m["counterparty_fan_in_flag"] == True).all(),
-                "merch_M: counterparty_fan_in_flag not True (4 accounts > threshold 3)")
+                f"merch_M: counterparty_fan_in_flag not True (4 accounts > threshold {_GRAPH_FAN_IN_THRESHOLD})")
 
         _pass(label)
     except AssertionError as exc:
@@ -490,12 +373,13 @@ def test_g5_mixed_scan() -> None:
 def main() -> int:
     print()
     print("=" * 65)
-    print("Phase 15B -- Graph Feature Verification Report")
+    print("Phase 15C -- Graph Feature Verification Report")
     print("=" * 65)
-    print("Thresholds (VALIDATION ONLY -- not production-calibrated):")
-    print(f"  shared_device_threshold : >= {_SHARED_DEVICE_THRESHOLD} distinct accounts per device")
-    print(f"  fan_in_threshold        : >  {_FAN_IN_THRESHOLD} distinct accounts per counterparty")
-    print(f"  fan_out_threshold       : >  {_FAN_OUT_THRESHOLD} distinct counterparties per account")
+    print("Source: src.features.transaction_features.extract_graph_features")
+    print(f"Thresholds (provisional -- NOT production-calibrated):")
+    print(f"  _GRAPH_SHARED_DEVICE_THRESHOLD : >= {_GRAPH_SHARED_DEVICE_THRESHOLD} distinct accounts per device")
+    print(f"  _GRAPH_FAN_IN_THRESHOLD        : >  {_GRAPH_FAN_IN_THRESHOLD} distinct accounts per counterparty")
+    print(f"  _GRAPH_FAN_OUT_THRESHOLD       : >  {_GRAPH_FAN_OUT_THRESHOLD} distinct counterparties per account")
     print()
 
     print("-- Section 1: Neutral / no-context scenarios --")
@@ -522,16 +406,16 @@ def main() -> int:
     print("-" * 65)
     print(f"Total scenarios tested   : {total}")
     print()
-    print("Indicators validated (9):")
+    print("Indicators validated (9) -- production extract_graph_features():")
     print("  accounts_per_device           distinct accounts per device")
-    print("  shared_device_flag            accounts_per_device >= 2")
+    print(f"  shared_device_flag            accounts_per_device >= {_GRAPH_SHARED_DEVICE_THRESHOLD}")
     print("  customers_per_device          distinct customers per device")
     print("  cross_account_device_reuse    device shared across different customers")
     print("  device_cluster_size           customers_per_device + accounts_per_device")
     print("  accounts_per_counterparty     distinct accounts per counterparty")
-    print("  counterparty_fan_in_flag      accounts_per_counterparty > 3")
+    print(f"  counterparty_fan_in_flag      accounts_per_counterparty > {_GRAPH_FAN_IN_THRESHOLD}")
     print("  counterparties_per_account    distinct counterparties per account")
-    print("  counterparty_fan_out_flag     counterparties_per_account > 3")
+    print(f"  counterparty_fan_out_flag     counterparties_per_account > {_GRAPH_FAN_OUT_THRESHOLD}")
     print()
     print("Candidate reason codes demonstrated:")
     print("  SHARED_DEVICE_CLUSTER     G1 (dev_X: 3 accounts, 2 customers), G5")
@@ -543,11 +427,12 @@ def main() -> int:
     print("  Same customer (cust_1) uses dev_X across 3 personal accounts.")
     print("  cross_account_device_reuse MUST be False -- single-customer device reuse")
     print("  must not trigger the cross-customer coordination signal.")
-    g4_status = "[PASS]" if _FAIL_COUNT == 0 else "[SEE FAILURES ABOVE]"
-    print(f"  Result: {g4_status}")
+    g4_note = "[confirmed PASS]" if _FAIL_COUNT == 0 else "[SEE FAILURES ABOVE]"
+    print(f"  Result: {g4_note}")
     print()
     print("graph_boost implementation : NOT included in this slice (Phase 15D)")
-    print("Production source changes  : None")
+    print("Thresholds                 : provisional -- to be calibrated in Phase 15D")
+    print("Production source changes  : src/features/transaction_features.py")
     print("No DB, no API, no NetworkX : Confirmed")
     print("-" * 65)
 
