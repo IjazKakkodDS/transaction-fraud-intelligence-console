@@ -805,6 +805,95 @@ Future production calibration would require institution-specific labelled fraud 
 analysis, false-positive and false-negative review, segment-level fairness and stability checks,
 and governance approval. Phase 12G-4 does not tune weights to improve synthetic distributions.
 
+### Phase 12G-5 -- Reason-Code Taxonomy Lock (complete)
+
+**Purpose:** Lock the active reason-code vocabulary emitted by `generate_reasons()` and rendered
+by the risk scan drawer. Earlier schema sections may describe broader design vocabulary; the
+active taxonomy below is the current backend/frontend contract.
+
+#### Taxonomy Groups
+
+Reason strings are stored as a pipe-delimited `reasons` value. The drawer splits that value into
+three groups:
+
+| Group | Backend source | Drawer rendering | Meaning |
+|---|---|---|---|
+| Legacy/base signals | Baseline amount, time, model, country, rail, merchant category, and device checks | Red chips | Core scoring evidence available on legacy and rich rows |
+| Rich signal reasons | Optional Phase 12F fields when thresholds trigger | Amber chips | Additive scenario-aware risk evidence |
+| Scenario labels | `scenario_family` when present and not `normal` | Dedicated cyan Scenario section | Synthetic pattern context, not a real fraud label |
+
+#### Legacy/Base Reason Codes
+
+These codes remain stable for legacy benchmark rows and rich rows. They should not be renamed
+without updating historical interpretation guidance and any UI mapping that depends on exact
+phrases.
+
+| Canonical reason phrase | Source signal | Analyst-facing meaning |
+|---|---|---|
+| High transaction amount | Amount exceeds the configured high-amount threshold | Transaction value is materially elevated |
+| Unusual transaction time | Transaction hour is before 06:00 or after 22:00 | Activity occurred outside normal operating hours |
+| Model flagged as suspicious | `model_prediction` equals 1 | Baseline model contributed a suspicious signal |
+| International transaction from elevated-risk region | International flag plus high-risk country | Cross-border or elevated-region exposure is present |
+| High-risk payment method | Payment method is `credit_card` or `digital_wallet` | Payment rail has higher fraud exposure in the baseline rules |
+| High-risk merchant category | Merchant category is `electronics`, `gaming`, or `travel` | Merchant category is elevated in the baseline rules |
+| No device identifier present | `device_id` is absent or empty | Device attribution is missing |
+
+#### Rich Signal Reason Codes
+
+These codes are emitted only when optional rich fields are present and their thresholds trigger.
+Missing rich columns default to non-triggering values, so legacy rows do not receive these codes.
+
+| Canonical reason phrase | Source signal | Analyst-facing meaning |
+|---|---|---|
+| Unrecognised device with low trust score | `device_trust_score` < 0.4 | Device trust is low or unfamiliar |
+| Geographic location inconsistent with registered address | `geo_distance_km` > 500 | Transaction geography differs materially from registered context |
+| Transaction velocity exceeds 1-hour baseline | `txn_count_1h` > 5 | Recent transaction volume is unusually high |
+| Multiple failed attempts preceding this transaction | `failed_attempts_1h` >= 4 | Recent failed authorization attempts preceded the transaction |
+| High-risk merchant | `merchant_risk_score` >= 0.7 | Receiving merchant has elevated institution-assigned risk |
+| First-time payment to unknown payee | `new_payee_flag` true and amount > 500 | High-value payment is going to a new payee |
+| High chargeback history | `chargeback_count_90d` >= 2 | Customer or account has elevated recent chargeback history |
+| Transaction amount significantly above 30-day average | Amount is more than 3x `avg_transaction_amount_30d` when baseline > 0 | Amount is anomalous relative to recent customer behaviour |
+
+#### Scenario Labels
+
+Scenario labels are appended as analyst context for synthetic rich fraud rows. They are not
+ground-truth production fraud labels and should not be treated as calibrated model outputs.
+
+| Internal `scenario_family` | Canonical backend phrase | Drawer label |
+|---|---|---|
+| `account_takeover` | Account takeover pattern detected | Account Takeover |
+| `card_testing` | Card testing velocity pattern | Card Testing |
+| `high_velocity_spend` | High-velocity spend pattern | High-Velocity Spend |
+| `unusual_geography` | Unusual geographic pattern | Unusual Geography |
+| `new_payee_transfer` | New payee transfer risk | New Payee Transfer |
+| `merchant_risk_spike` | Merchant risk spike | Merchant Risk Spike |
+| `mule_account_behaviour` | Mule account behaviour pattern | Mule Account |
+| `refund_chargeback_abuse` | Refund and chargeback abuse pattern | Refund / Chargeback Abuse |
+| `dormant_account_reactivation` | Dormant account reactivation detected | Dormant Account Reactivation |
+| `cross_border_high_value` | Cross-border high-value transaction | Cross-Border High-Value |
+| `device_mismatch` | Device mismatch detected | Device Mismatch |
+| `suspicious_repeated_attempts` | Suspicious repeated attempts detected | Suspicious Repeated Attempts |
+
+#### UI Rendering Rules
+
+- The drawer identifies scenario labels first using the scenario label map.
+- Rich signal reasons are identified by exact phrase membership in the rich signal set.
+- Remaining reason strings render as legacy/base red chips.
+- Scenario labels render in the separate Scenario section and are not duplicated as signal chips.
+- Unknown future reason strings currently fall back to legacy/base red chips until the backend,
+  frontend mapping, and this taxonomy are updated together.
+
+#### Compatibility Rules
+
+- Preserve exact canonical phrases for existing rows and documented verification evidence.
+- New rich signal codes require a backend trigger, threshold documentation, drawer grouping, and
+  verification evidence.
+- New scenario labels require generator coverage, backend scenario mapping, drawer display
+  mapping, and synthetic validation evidence.
+- Reason codes describe risk evidence and operational context; they are not legal conclusions.
+- Future AI Investigation Brief work should align generated explanations to this locked
+  taxonomy before expanding reason-code language.
+
 ### Phase 12F-4 -- UI Support for Richer Fields (complete)
 
 **Approach:** Rich individual fields are not persisted in `portfolio_scan_results`. The
