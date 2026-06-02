@@ -47,8 +47,8 @@ no velocity signals, and no customer behavioural context.
 
 ## New Schema Design
 
-The rich schema adds 28 fields across 7 categories, all optional, preserving the 5-column
-required minimum. The full 37-column record supports scenario-aware generation, velocity
+The rich schema adds 33 optional fields across 7 categories, preserving the 5-column
+required minimum. The full 38-field record supports scenario-aware generation, velocity
 signals, entity relationships, device trust, geographic anomaly detection, and analyst-facing
 operational context.
 

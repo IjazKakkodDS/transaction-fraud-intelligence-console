@@ -322,7 +322,7 @@ and FFmpeg merge are fully automated via npm run demo:edge-narrated.
 | Full export duration (10M, 1.64 GiB) | ~113.63s |
 | API RestartCount post-export | 0 |
 | OOMKilled | false |
-| Demo video duration | 106.9s |
+| Demo video duration | ~148.8s |
 | E2E Playwright checks | 7 / 7 passed |
 
 This profile captures the local benchmark operating envelope used for product validation
@@ -438,12 +438,12 @@ local-only and intentionally gitignored.
 
 | Capability | Status |
 |---|---|
-| Risk Scan result detail drawer | Planned |
-| Scan history browsing | Planned |
-| Filtered export UX | Planned |
-| Scan report generator | Planned |
-| Schema mapping and data quality layer | Planned |
-| Rich synthetic fraud scenario generator | Planned |
+| Risk Scan result detail drawer | Complete |
+| Scan history browsing | Complete |
+| Filtered export UX | Complete |
+| Scan report generator | Complete |
+| Schema mapping and data quality layer | Complete |
+| Rich synthetic fraud scenario generator | Complete |
 | Fraud decision engine upgrade (per-dimension scoring) | Planned |
 | Case dossier 2.0 | Planned |
 | AI investigation brief hardening | Planned |
