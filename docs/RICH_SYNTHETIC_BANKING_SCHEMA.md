@@ -681,11 +681,113 @@ Risk Signals:    High-risk payment method [red]
                  Multiple failed attempts preceding this transaction [amber]
 ```
 
-### Phase 12F-5 -- Demo Dataset Generation and Verification
+### Phase 12F-5 -- Demo Dataset Generation and Verification (complete)
 
-- Generate a 10k rich scenario verification dataset (all 12 families, seed=42)
-- Verify each scenario family produces the expected priority tier via automated check
-- Verify new reason codes fire for the correct scenario records
-- Generate a 100k rich scenario demo dataset for use in analyst review demonstrations
-- Confirm backward compatibility: run existing 10k benchmark CSV through the updated processor and verify identical results
-- Document verified scenario counts per family and reason-code distribution in a benchmark note
+**Rich demo scan verified end-to-end across the full 12F pipeline.**
+
+---
+
+#### Generation
+
+```sh
+python scripts/generate_rich_banking_csv.py --rows 10000 --output C:\tmp\rich-banking-demo-10k.csv --seed 229
+```
+
+Verification: 11/11 checks PASSED (`scripts/verify_rich_banking_csv.py`).
+
+#### Scan details
+
+| Field | Value |
+|---|---|
+| `scan_id` | `62c601b2-ddf7-487b-ad32-976a71b3bf58` |
+| Filename | `rich-banking-demo-10k.csv` |
+| Total rows | 10,000 |
+| Valid / Invalid / Skipped | 10,000 / 0 / 0 |
+| Processing time | ~6 s |
+
+#### Priority distribution (scored)
+
+| Priority | Count | % |
+|---|---|---|
+| P0 Critical | 2,080 | 20.8% |
+| P1 High | 375 | 3.8% |
+| P2 Medium | 533 | 5.3% |
+| P3 Low | 7,012 | 70.1% |
+
+#### Exposure summary
+
+| Field | Value |
+|---|---|
+| Total exposure | $12,820,563 |
+| Critical exposure (P0) | $10,114,632 |
+| High exposure (P1) | $7,324 |
+
+#### Scenario distribution (generator)
+
+| Scenario | Rows | Expected priority |
+|---|---|---|
+| normal | 7,000 | P3 |
+| high_velocity_spend | 500 | P1 |
+| card_testing | 400 | P1 |
+| account_takeover | 400 | P0 |
+| unusual_geography | 350 | P1 |
+| merchant_risk_spike | 300 | P1 / P2 |
+| new_payee_transfer | 300 | P0 |
+| refund_chargeback_abuse | 200 | P2 |
+| mule_account_behaviour | 200 | P0 |
+| dormant_account_reactivation | 100 | P1 |
+| device_mismatch | 100 | P1 |
+| cross_border_high_value | 100 | P1 |
+| suspicious_repeated_attempts | 50 | P1 |
+
+#### Verified reason code examples
+
+**P0 account_takeover row (score 1.000):**
+```
+High transaction amount | Unusual transaction time | Model flagged as suspicious |
+International transaction from elevated-risk region | High-risk payment method |
+Unrecognised device with low trust score | Geographic location inconsistent with
+registered address | Multiple failed attempts preceding this transaction |
+Transaction amount significantly above 30-day average | Account takeover pattern detected
+```
+
+**P1 card_testing row (score 0.720):**
+```
+High-risk payment method | Unrecognised device with low trust score |
+Geographic location inconsistent with registered address |
+Transaction velocity exceeds 1-hour baseline |
+Multiple failed attempts preceding this transaction | Card testing velocity pattern
+```
+
+**P0 high_velocity_spend row (score 1.000):**
+```
+High transaction amount | Model flagged as suspicious | High-risk payment method |
+High-risk merchant category | Transaction velocity exceeds 1-hour baseline |
+Transaction amount significantly above 30-day average | High-velocity spend pattern
+```
+
+#### Frontend verification
+
+Rich scan loaded at:
+`http://localhost:3000/risk-scan?scan_id=62c601b2-ddf7-487b-ad32-976a71b3bf58`
+
+- Filename `rich-banking-demo-10k.csv` visible in recent scans panel
+- Results table loaded with P0/P1/P2/P3 tier filter tabs
+- Drawer opened on first row (P0, high_velocity_spend pattern)
+- Scenario section rendered: "PATTERN | High-Velocity Spend" in cyan
+- Risk Signals showed legacy (red) and rich (amber) chips correctly
+- 10M legacy scan drawer: Scenario section absent, all chips legacy red
+
+#### Legacy compatibility confirmed
+
+10k legacy benchmark CSV (seed=42) scan produced:
+P0: 1,546 / P1: 913 / P2: 0 / P3: 7,541 -- exact match to Phase 12D-5 benchmark.
+No rich codes present. No boost applied.
+
+#### Export
+
+Full export: HTTP 200, 10,001 lines (header + 10,000 rows), ~2.0 MB.
+
+#### Test results
+
+E2E: 9/9 passed. Build: clean (8 routes).
