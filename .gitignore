@@ -181,6 +181,7 @@ scripts/verify_*.mjs
 !scripts/verify_stream_resilience.py
 !scripts/verify_graph_features.py
 !scripts/verify_graph_scoring.py
+!scripts/verify_graph_reason_codes.py
 verify_header.js
 
 # =============================================================================

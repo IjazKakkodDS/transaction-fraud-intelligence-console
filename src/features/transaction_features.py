@@ -78,6 +78,13 @@ def _safe_truthy(value) -> bool:
     return False
 
 
+def _as_bool(value) -> bool:
+    try:
+        return bool(value)
+    except Exception:
+        return False
+
+
 def _clean_entity_id(series: pd.Series) -> pd.Series:
     """
     Normalise an entity ID column for graph groupby operations.
@@ -211,6 +218,19 @@ def extract_behavioural_reason_codes(row: pd.Series) -> list:
     return codes
 
 
+def extract_graph_reason_codes(row) -> list:
+    codes = []
+    if _as_bool(row.get("shared_device_flag", False)):
+        codes.append("SHARED_DEVICE_CLUSTER")
+    if _as_bool(row.get("cross_account_device_reuse", False)):
+        codes.append("DEVICE_ACCOUNT_REUSE")
+    if _as_bool(row.get("counterparty_fan_in_flag", False)):
+        codes.append("MULE_FAN_IN_PATTERN")
+    if _as_bool(row.get("counterparty_fan_out_flag", False)):
+        codes.append("MULE_FAN_OUT_PATTERN")
+    return codes
+
+
 def generate_reasons(df: pd.DataFrame) -> pd.Series:
     """
     Return a pipe-delimited reasons string for each row in a fully scored DataFrame.
@@ -266,6 +286,9 @@ def generate_reasons(df: pd.DataFrame) -> pd.Series:
 
         # --- Behavioural reason codes (Phase 13E) ---
         parts.extend(extract_behavioural_reason_codes(row))
+
+        # --- Graph reason codes (Phase 15E) ---
+        parts.extend(extract_graph_reason_codes(row))
 
         # --- Scenario-family contextual label ---
         # Appended last so it reads as analyst context, not a primary signal.
