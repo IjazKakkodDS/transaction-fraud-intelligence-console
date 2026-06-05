@@ -76,6 +76,27 @@ const BEHAVIOURAL_LABELS: Record<string, string> = {
   "BEHAVIOURAL_PROFILE_SHIFT": "Behavioural profile shift",
 };
 
+// ── Graph reason-code classification (Phase 15F) ─────────────────────────────
+//
+// Graph intelligence codes are emitted by extract_graph_reason_codes() via the
+// same pipe-delimited reasons field. They are excluded from the legacy fallback
+// group and rendered in a dedicated "Graph Intelligence" section when present.
+// Raw graph count fields are not displayed in this slice (deferred).
+
+const GRAPH_REASON_SET = new Set([
+  "SHARED_DEVICE_CLUSTER",
+  "DEVICE_ACCOUNT_REUSE",
+  "MULE_FAN_IN_PATTERN",
+  "MULE_FAN_OUT_PATTERN",
+]);
+
+const GRAPH_LABELS: Record<string, string> = {
+  "SHARED_DEVICE_CLUSTER": "Shared device cluster",
+  "DEVICE_ACCOUNT_REUSE":  "Device reuse across accounts",
+  "MULE_FAN_IN_PATTERN":   "Mule fan-in pattern",
+  "MULE_FAN_OUT_PATTERN":  "Mule fan-out pattern",
+};
+
 // ── Format helpers ───────────────────────────────────────────────────────────
 
 function fmtCurrency(n: number | null): string {
@@ -177,23 +198,27 @@ export function ScanResultDrawer({
     ? row.reasons.split("|").map((r) => r.trim()).filter(Boolean)
     : [];
 
-  // Classify reasons into three groups.
-  // scenarioLabel  — last entry matching a known scenario family label
-  // richSignals    — entries matching Phase 12F-3 rich signal codes
-  // legacyReasons  — everything else (the original 7 legacy codes)
-  // Legacy scans produce no rich signals and no scenario label; those groups
-  // remain empty and their UI sections are not rendered.
-  const scenarioLabel   = allReasons.find((r) => r in SCENARIO_LABEL_MAP) ?? null;
-  const richSignals     = allReasons.filter((r) => RICH_SIGNAL_SET.has(r));
+  // Classify reasons into four groups.
+  // scenarioLabel       — entry matching a known scenario family label
+  // richSignals         — Phase 12F-3 rich signal codes (amber chips)
+  // behaviouralReasons  — Phase 13 behavioural codes (blue chips)
+  // graphReasons        — Phase 15 graph intelligence codes (violet chips)
+  // legacyReasons       — everything else: the original 7 legacy codes (red chips)
+  // Sections for non-legacy groups are hidden when empty.
+  const scenarioLabel      = allReasons.find((r) => r in SCENARIO_LABEL_MAP) ?? null;
+  const richSignals        = allReasons.filter((r) => RICH_SIGNAL_SET.has(r));
   const behaviouralReasons = allReasons.filter((r) => BEHAVIOURAL_REASON_SET.has(r));
-  const legacyReasons   = allReasons.filter(
+  const graphReasons       = allReasons.filter((r) => GRAPH_REASON_SET.has(r));
+  const legacyReasons      = allReasons.filter(
     (r) =>
       !RICH_SIGNAL_SET.has(r) &&
       !BEHAVIOURAL_REASON_SET.has(r) &&
+      !GRAPH_REASON_SET.has(r) &&
       !(r in SCENARIO_LABEL_MAP)
   );
-  const hasAnyReasons   = allReasons.length > 0;
+  const hasAnyReasons         = allReasons.length > 0;
   const hasBehaviouralSignals = behaviouralReasons.length > 0;
+  const hasGraphSignals       = graphReasons.length > 0;
 
   const deviceId = normalizeDeviceId(row.device_id);
 
@@ -437,6 +462,28 @@ export function ScanResultDrawer({
                     }}
                   >
                     {BEHAVIOURAL_LABELS[r] ?? r}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ─ Graph Intelligence ─ */}
+          {hasGraphSignals && (
+            <div className="pt-5">
+              <SectionHead label="Graph Intelligence" />
+              <div className="flex flex-wrap gap-1.5 px-5 pb-1">
+                {graphReasons.map((r) => (
+                  <span
+                    key={r}
+                    className="rounded px-2 py-1 text-[11px] font-medium leading-none"
+                    style={{
+                      background: "rgba(167,139,250,0.08)",
+                      border: "1px solid rgba(167,139,250,0.20)",
+                      color: "#A78BFA",
+                    }}
+                  >
+                    {GRAPH_LABELS[r] ?? r}
                   </span>
                 ))}
               </div>
