@@ -294,6 +294,19 @@ def verify(path: str) -> bool:
             _ok(f"graph_evasion_fan_in_detected cluster structure valid ({len(fam_rows)} rows, "
                 f"{len(fam_rows)//4} clusters of 4)")
 
+    # -- cross-family entity isolation (Phase 16D) --
+    fi_rows = by_family.get("graph_evasion_fan_in", [])
+    fd_rows = by_family.get("graph_evasion_fan_in_detected", [])
+    if fi_rows and fd_rows:
+        violations = _check_graph_cross_family_isolation(fi_rows, fd_rows)
+        if violations:
+            _fail(f"graph cross-family isolation: {len(violations)} overlap(s)")
+            for msg in violations[:5]:
+                _info(msg)
+            passed = False
+        else:
+            _ok("Graph family entity isolation confirmed: no merchant/account/device overlap")
+
     # -----------------------------------------------------------------------
     # Distributions
     # -----------------------------------------------------------------------
@@ -437,6 +450,45 @@ def _check_graph_evasion(rows: list, expected_accounts: int, family: str) -> lis
             violations.append(
                 f"merchant {merch_id}: {dup_devices} duplicate device_id(s) in cluster"
             )
+
+    return violations
+
+
+def _check_graph_cross_family_isolation(fi_rows: list, fd_rows: list) -> list:
+    """
+    Confirm that graph_evasion_fan_in and graph_evasion_fan_in_detected share
+    no merchant_id, account_id, or device_id values. Overlap would cause
+    extract_graph_features() to compute incorrect accounts_per_counterparty
+    counts across both families when scored together (Phase 16D correction check).
+    """
+    violations = []
+
+    fi_merchants = {r.get("merchant_id", "") for r in fi_rows}
+    fd_merchants = {r.get("merchant_id", "") for r in fd_rows}
+    overlap_m    = fi_merchants & fd_merchants
+    if overlap_m:
+        violations.append(
+            f"Shared merchant_id values across families ({len(overlap_m)}): "
+            f"{sorted(overlap_m)[:3]}"
+        )
+
+    fi_accounts = {r.get("account_id", "") for r in fi_rows}
+    fd_accounts = {r.get("account_id", "") for r in fd_rows}
+    overlap_a   = fi_accounts & fd_accounts
+    if overlap_a:
+        violations.append(
+            f"Shared account_id values across families ({len(overlap_a)}): "
+            f"{sorted(overlap_a)[:3]}"
+        )
+
+    fi_devices = {r.get("device_id", "") for r in fi_rows}
+    fd_devices = {r.get("device_id", "") for r in fd_rows}
+    overlap_d  = fi_devices & fd_devices
+    if overlap_d:
+        violations.append(
+            f"Shared device_id values across families ({len(overlap_d)}): "
+            f"{sorted(overlap_d)[:3]}"
+        )
 
     return violations
 

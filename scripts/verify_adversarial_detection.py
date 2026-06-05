@@ -154,15 +154,14 @@ def _auto_notes(fam: str, verdict: str, graph_boost_max: float,
     if fam == "graph_evasion_fan_in":
         if graph_rows > 0:
             return (
-                f"CLUSTER ID NOTE: {graph_rows}/{n} rows show MULE_FAN_IN_PATTERN because "
-                f"their merchant_id overlaps with graph_evasion_fan_in_detected clusters "
-                f"(both use cluster_id 0-14 with merch_adv_XXXXXX format). "
-                f"The remaining {n - graph_rows}/{n} rows correctly show no graph signal. "
-                f"Risk score stayed below P1 for all rows. Boundary documented."
+                f"Unexpected: {graph_rows}/{n} rows still show a graph signal. "
+                f"Verify cross-family entity isolation with verify_adversarial_csv.py."
             )
         return ("Graph boost = 0.0; counterparty_fan_in_flag does not fire at exactly "
-                "3 accounts (threshold is > 3). Structural boundary confirmed. "
-                "All adversarial constraints successfully evaded.")
+                "3 accounts per merchant (threshold is > 3). "
+                "Structural boundary confirmed. Family entity namespace isolation verified. "
+                "Note: is_rich_fraud_scenario (+0.25) fires on all rows because "
+                "scenario_family is non-empty and non-normal.")
     if fam == "graph_evasion_fan_in_detected":
         if graph_rows > 0 or graph_boost_max > 0:
             return (

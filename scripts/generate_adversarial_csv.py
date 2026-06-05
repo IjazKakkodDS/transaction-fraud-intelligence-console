@@ -351,12 +351,18 @@ def gen_graph_evasion_cluster(idx_start: int, cluster_id: int, family: str) -> l
     Each cluster uses:
     - One shared merchant_id (guarantees accounts_per_counterparty = cluster_size)
     - Distinct account_id, customer_id, device_id per row (no shared device signals)
+
+    Family-specific ID namespaces (Phase 16D correction):
+    - graph_evasion_fan_in:          merch_adv_fi_, acct_adv_fi_, dev_adv_fi_
+    - graph_evasion_fan_in_detected: merch_adv_fd_, acct_adv_fd_, dev_adv_fd_
+    This prevents cross-family entity overlap that would contaminate graph indicators.
     """
     cluster_size = GRAPH_CLUSTER_SIZES[family]
     home         = random.choice(LOW_RISK_COUNTRIES)
     currency     = HOME_CURRENCIES.get(home, "USD")
-    shared_merch = f"merch_adv_{cluster_id:06d}"
     is_detected  = (family == "graph_evasion_fan_in_detected")
+    ns           = "fd" if is_detected else "fi"
+    shared_merch = f"merch_adv_{ns}_{cluster_id:06d}"
 
     primary_reason = (
         "GRAPH_FAN_IN_ABOVE_THRESHOLD"
@@ -385,8 +391,8 @@ def gen_graph_evasion_cluster(idx_start: int, cluster_id: int, family: str) -> l
             "country":                   home,
             "payment_method":            random.choice(["debit_card", "bank_transfer"]),
             "event_timestamp":           ts,
-            "account_id":                f"acct_adv_{cluster_id:06d}_{i}",
-            "customer_id":               f"cust_adv_{cluster_id:06d}_{i}",
+            "account_id":                f"acct_adv_{ns}_{cluster_id:06d}_{i}",
+            "customer_id":               f"cust_adv_{ns}_{cluster_id:06d}_{i}",
             "merchant_id":               shared_merch,
             "currency":                  currency,
             "account_balance_before":    bal_bef,
@@ -394,7 +400,7 @@ def gen_graph_evasion_cluster(idx_start: int, cluster_id: int, family: str) -> l
             "daily_spend_to_date":       round(random.uniform(50, 400), 2),
             "available_limit":           round(random.uniform(3000, 12000), 2),
             "channel":                   random.choice(["web", "mobile_app"]),
-            "device_id":                 f"dev_adv_{cluster_id:06d}_{i}",
+            "device_id":                 f"dev_adv_{ns}_{cluster_id:06d}_{i}",
             "device_type":               random.choice(["desktop", "mobile"]),
             "device_trust_score":        round(random.uniform(0.50, 0.90), 3),
             "ip_country":                home,
