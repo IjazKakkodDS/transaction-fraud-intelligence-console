@@ -182,6 +182,9 @@ scripts/verify_*.mjs
 !scripts/verify_graph_features.py
 !scripts/verify_graph_scoring.py
 !scripts/verify_graph_reason_codes.py
+!scripts/generate_adversarial_csv.py
+!scripts/verify_adversarial_csv.py
+scripts/test_adversarial_*.csv
 verify_header.js
 
 # =============================================================================
