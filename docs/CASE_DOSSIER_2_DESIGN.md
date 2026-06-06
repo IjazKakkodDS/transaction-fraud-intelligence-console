@@ -196,6 +196,119 @@ assemble the context from existing APIs.
 
 ---
 
+## Phase 17B API Readiness Audit
+
+Phase 17B confirms that the first Case Dossier 2.0 frontend upgrade can proceed using existing
+APIs. A new read-only dossier endpoint is deferred until promotion provenance or enriched source
+context is explicitly needed.
+
+### Existing Backend Endpoints Available
+
+| Endpoint | Evidence provided | Supports Case Dossier 2.0 now? | Limitations |
+|---|---|---:|---|
+| `GET /case/{case_id}` | Case core fields: ID, transaction ID, amount, timestamp, rule flag, model prediction, risk score, decision, reasons, analyst status, analyst notes, reviewed timestamp. | Yes | Returns a single prediction row only; no grouped evidence, promotion provenance, workflow events, or AI report included. |
+| `POST /review-case/{case_id}` | Persists current analyst verdict, notes, and reviewed timestamp. | Yes | Stores current verdict only; does not provide multi-verdict history. |
+| `GET /cases/{case_id}/investigation` | Latest AI investigation state or completed investigation report. | Yes | Separate fetch; no prompt/schema hardening in Phase 17. Missing report returns 404 through the client path. |
+| `POST /cases/{case_id}/investigate` | Triggers or re-runs an AI investigation. | Yes | Mutating action already exists; Phase 17B does not change investigation behavior. |
+| `GET /workflow/events?case_id=...` | Case-scoped workflow audit events with action, status, source, priority, message, payload, and created timestamp. | Yes | Separate fetch; timeline composition remains frontend work. |
+| `POST /workflow/notify-case/{case_id}` | Dispatches the case workflow notification using existing case and investigation evidence. | Yes | Mutating action already exists; not part of score or dossier enrichment. |
+
+### Existing Frontend Support
+
+The frontend already has the API clients, hooks, and components needed for a frontend-first
+Case Dossier 2.0 slice:
+
+| Support | Current role |
+|---|---|
+| `getCase` / `useCase` | Fetches the case core prediction row. |
+| `reviewCase` / `useReviewCase` | Submits the analyst verdict and invalidates the case query. |
+| `getInvestigation` / `useInvestigation` | Fetches and polls the latest AI investigation state. |
+| `triggerInvestigation` / `useTriggerInvestigation` | Starts or retries the investigation workflow. |
+| `getWorkflowEvents` / `useWorkflowEvents` | Fetches case-scoped workflow events. |
+| `notifyCase` / `useNotifyCase` | Dispatches workflow notification and refreshes workflow evidence. |
+| `CaseHeader` | Displays case overview and top-level status. |
+| `CaseMetadataPanel` | Displays deterministic rule status, risk reasons, notes, and reviewed timestamp. |
+| `InvestigationPanel` | Displays existing AI investigation report and state handling. |
+| `AnalystActionPanel` | Displays and captures analyst decision fields. |
+| `WorkflowNotifyButton` | Exposes workflow notification action. |
+| `CaseWorkflowEvents` | Displays case-scoped automation audit trail. |
+
+### Evidence Available Without Backend Changes
+
+Phase 17C can display the following evidence without backend changes:
+
+- Case ID.
+- Transaction ID.
+- Amount.
+- Transaction timestamp.
+- Final `risk_score`.
+- Scoring-time `decision`.
+- `model_prediction`.
+- `rule_flag`.
+- Grouped reason codes.
+- AI investigation report.
+- Workflow event timeline.
+- Current analyst status.
+- Analyst notes.
+- `reviewed_at`.
+
+### Evidence Gaps
+
+The following evidence cannot currently be displayed cleanly from the case page alone:
+
+- Promotion provenance by `case_id`.
+- Source `scan_id`, source row number, and original scan tier for promoted cases.
+- Exact component boost values for rich, behavioural, and graph layers.
+- Enriched transaction attributes that were not copied into `predictions`.
+- Case creation timestamp if it is not exposed separately.
+
+### Decision: No New Endpoint in 17B
+
+Do not add `GET /cases/{case_id}/dossier` in Phase 17B. The first implementation slice should
+proceed as a frontend-first Case Dossier 2.0 upgrade using existing APIs.
+
+A read-only dossier endpoint should be revisited in Phase 17D only if promotion provenance or
+timeline composition becomes awkward enough to justify backend consolidation.
+
+### Future Optional Endpoint Contract
+
+The following endpoint is optional and not implemented in Phase 17B:
+
+`GET /cases/{case_id}/dossier`
+
+Possible response fields:
+
+- `case`
+- `score_summary`
+- `grouped_reasons`
+- `latest_investigation`
+- `workflow_events`
+- `analyst_decision`
+- `promotion_provenance`, if found
+- `timeline_items`
+
+Guardrails for any future endpoint:
+
+- Read-only.
+- Join existing tables only.
+- No mutation.
+- No scoring changes.
+- No database migrations.
+- No AI investigation prompt/schema changes.
+
+### Phase 17C Readiness
+
+Phase 17C can proceed frontend-first:
+
+- Grouped evidence display.
+- Score and decision summary.
+- Existing AI panel repositioning if needed.
+- Existing workflow events and timeline display.
+- Analyst action panel retained.
+- No backend changes required initially.
+
+---
+
 ## Frontend Information Architecture
 
 Case Dossier 2.0 should be organized around the analyst's review flow:
