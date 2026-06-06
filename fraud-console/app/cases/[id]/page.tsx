@@ -1,9 +1,11 @@
 "use client";
 
 import { use } from "react";
+import Link from "next/link";
 import { useCase } from "@/lib/hooks/useCase";
 import { CaseHeader } from "@/components/cases/CaseHeader";
-import { CaseMetadataPanel } from "@/components/cases/CaseMetadataPanel";
+import { CaseScoreSummary } from "@/components/cases/CaseScoreSummary";
+import { CaseEvidenceGroups } from "@/components/cases/CaseEvidenceGroups";
 import { InvestigationPanel } from "@/components/cases/InvestigationPanel";
 import { AnalystActionPanel } from "@/components/cases/AnalystActionPanel";
 import { WorkflowNotifyButton } from "@/components/cases/WorkflowNotifyButton";
@@ -50,10 +52,10 @@ export default function CasePage({ params }: CasePageProps) {
         className="pb-4"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
       >
-        <p className="route-label mb-1">Investigation Workspace</p>
+        <p className="route-label mb-1">Case Dossier 2.0</p>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="page-hero-title">Case #{caseId}</h1>
-          <a
+          <Link
             href="/queue"
             className="text-[13px] font-medium"
             style={{ color: "#4B5563" }}
@@ -61,7 +63,7 @@ export default function CasePage({ params }: CasePageProps) {
             onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "#4B5563")}
           >
             Back to Review Queue
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -69,11 +71,12 @@ export default function CasePage({ params }: CasePageProps) {
         <>
           <Skeleton className="h-24" />
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-9">
-            <div className="space-y-4 lg:col-span-5">
+            <div className="space-y-4 lg:col-span-6">
+              <Skeleton className="h-64" />
               <Skeleton className="h-52" />
               <Skeleton className="h-48" />
             </div>
-            <div className="space-y-4 lg:col-span-4">
+            <div className="space-y-4 lg:col-span-3">
               <Skeleton className="h-52" />
               <Skeleton className="h-44" />
             </div>
@@ -96,14 +99,15 @@ export default function CasePage({ params }: CasePageProps) {
           <CaseHeader caseData={data} />
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-9">
 
-            {/* Left column: risk evidence + AI investigation */}
-            <div className="space-y-4 lg:col-span-5">
-              <CaseMetadataPanel caseData={data} />
+            {/* Main dossier evidence */}
+            <div className="space-y-4 lg:col-span-6">
+              <CaseScoreSummary caseData={data} />
+              <CaseEvidenceGroups reasons={data.reasons} />
               <InvestigationPanel caseId={caseId} />
             </div>
 
-            {/* Right column: analyst verdict + workflow automation */}
-            <div className="space-y-4 lg:col-span-4">
+            {/* Analyst decision and workflow */}
+            <aside className="space-y-4 lg:col-span-3">
               <AnalystActionPanel
                 caseId={caseId}
                 currentAnalystStatus={data.analyst_status}
@@ -121,7 +125,7 @@ export default function CasePage({ params }: CasePageProps) {
                   <CaseWorkflowEvents caseId={caseId} />
                 </div>
               </div>
-            </div>
+            </aside>
 
           </div>
         </>

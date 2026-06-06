@@ -90,7 +90,7 @@ export function CaseHeader({ caseData }: CaseHeaderProps) {
           </p>
         </div>
         <div>
-          <p className="metric-label mb-1">ML Risk Score</p>
+          <p className="metric-label mb-1">Final Risk Score</p>
           <p
             className="text-[22px] font-bold tabular-nums"
             style={{
