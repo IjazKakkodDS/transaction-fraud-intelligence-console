@@ -10,6 +10,9 @@ test("Case Dossier 2.0 renders evidence and preserves analyst workflow", async (
   await expect(page.getByText("Case Dossier 2.0", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Score and decision summary" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Intelligence evidence" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Case Timeline" })).toBeVisible();
+  await expect(page.getByText("Transaction recorded", { exact: true })).toBeVisible();
+  await expect(page.getByText("Analyst verdict recorded", { exact: true })).toBeVisible();
   await expect(page.getByText("AI Investigation", { exact: true })).toBeVisible();
   await expect(page.getByText("Analyst Verdict", { exact: true })).toBeVisible();
   await expect(page.getByText("Workflow Automation", { exact: true })).toBeVisible();
@@ -24,6 +27,7 @@ test("Case Dossier 2.0 stacks cleanly on mobile", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "Score and decision summary" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Intelligence evidence" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Case Timeline" })).toBeVisible();
   await expect(page.getByText("Analyst Verdict", { exact: true })).toBeVisible();
 
   const hasHorizontalOverflow = await page.evaluate(

@@ -401,3 +401,18 @@ For later implementation slices:
 - GitHub push was not performed.
 
 ---
+
+## Phase 17D Implementation Note
+
+The lifecycle timeline described above was implemented frontend-only in `CaseTimeline`, sourced
+entirely from existing `useCase`, `useInvestigation`, and `useWorkflowEvents` data -- no new
+endpoint was added. It supports transaction recorded, investigation completed, workflow action
+recorded, and analyst verdict recorded events, hiding any event whose timestamp is not persisted,
+consistent with the "make missing timestamps explicit" principle above. The detailed
+`CaseWorkflowEvents` audit trail remains the source of truth for automation history.
+
+Promotion provenance remains deferred: case APIs still do not expose source scan_id, row number,
+original scan tier, or promotion timestamp by case_id, so it would require a new endpoint or
+schema change, both out of scope for a frontend-only slice.
+
+---

@@ -10,6 +10,7 @@ import { InvestigationPanel } from "@/components/cases/InvestigationPanel";
 import { AnalystActionPanel } from "@/components/cases/AnalystActionPanel";
 import { WorkflowNotifyButton } from "@/components/cases/WorkflowNotifyButton";
 import { CaseWorkflowEvents } from "@/components/cases/CaseWorkflowEvents";
+import { CaseTimeline } from "@/components/cases/CaseTimeline";
 
 function Skeleton({ className }: { className?: string }) {
   return (
@@ -108,6 +109,7 @@ export default function CasePage({ params }: CasePageProps) {
 
             {/* Analyst decision and workflow */}
             <aside className="space-y-4 lg:col-span-3">
+              <CaseTimeline caseData={data} caseId={caseId} />
               <AnalystActionPanel
                 caseId={caseId}
                 currentAnalystStatus={data.analyst_status}
