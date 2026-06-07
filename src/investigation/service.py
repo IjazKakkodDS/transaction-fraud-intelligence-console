@@ -33,6 +33,7 @@ from src.investigation.retriever import (
     retrieve_knowledge,
 )
 from src.investigation.tools import (
+    get_evidence_groups,
     get_feature_breakdown,
     get_rule_explanations,
 )
@@ -41,7 +42,7 @@ logger = logging.getLogger("investigation-service")
 
 # Increment this whenever a change affects the meaning of report output
 # (prompt revision, tool change, model version change).
-AGENT_VERSION = "0.1.0"
+AGENT_VERSION = "0.2.0"
 
 
 def process_case(request: InvestigationRequest) -> InvestigationReport:
@@ -100,11 +101,14 @@ def process_case(request: InvestigationRequest) -> InvestigationReport:
     )
 
     feature_breakdown = get_feature_breakdown(case)
+    evidence_groups = get_evidence_groups(case.get("reasons", ""))
 
     logger.info(
-        "gather_evidence | investigation_id=%s rules_triggered=%d feature_keys=%s",
+        "gather_evidence | investigation_id=%s rules_triggered=%d "
+        "evidence_groups=%s feature_keys=%s",
         request.investigation_id,
         len(rule_explanations),
+        {k: len(v) for k, v in evidence_groups.items() if v},
         list(feature_breakdown.keys()),
     )
 
@@ -127,7 +131,7 @@ def process_case(request: InvestigationRequest) -> InvestigationReport:
     try:
         reasoning = generate_summary(
             case=case,
-            rules_triggered=rule_explanations,
+            evidence_groups=evidence_groups,
             feature_breakdown=feature_breakdown,
             knowledge=knowledge,
         )

@@ -20,7 +20,6 @@ from datetime import datetime, timezone
 from typing import Any
 
 from src.config.config import HIGH_AMOUNT_THRESHOLD
-from src.db.postgres_logger import predictions
 
 logger = logging.getLogger("investigation-tools")
 
@@ -30,6 +29,7 @@ logger = logging.getLogger("investigation-tools")
 
 def _prediction_columns() -> set[str]:
     """Return the set of column names present in the predictions table."""
+    from src.db.postgres_logger import predictions  # lazy — avoids DB connect at import time
     return {col.name for col in predictions.columns}
 
 
@@ -338,3 +338,114 @@ def get_feature_breakdown(case: dict) -> dict:
     )
 
     return breakdown
+
+
+# ---------------------------------------------------------------------------
+# Evidence grouping — mirrors caseEvidence.ts / classifyCaseEvidence()
+# ---------------------------------------------------------------------------
+#
+# Classification priority (matches frontend order):
+#   scenario > rich (by code) > rich (by text label) > behavioural > graph > base
+
+_RICH_LABELS: dict[str, str] = {
+    "LOW_TRUST_DEVICE":          "Unrecognised device with low trust score",
+    "GEO_ANOMALY_DISTANCE":      "Geographic location inconsistent with registered address",
+    "HIGH_1H_VELOCITY":          "Transaction velocity exceeds 1-hour baseline",
+    "MULTIPLE_FAILED_ATTEMPTS":  "Multiple failed attempts preceding this transaction",
+    "HIGH_RISK_MERCHANT":        "High-risk merchant",
+    "NEW_PAYEE_TRANSFER":        "First-time payment to unknown payee",
+    "PRIOR_CHARGEBACK_HISTORY":  "High chargeback history",
+    "AMOUNT_ANOMALY_VS_30D":     "Transaction amount significantly above 30-day average",
+}
+
+_RICH_LABEL_TEXT: frozenset[str] = frozenset(_RICH_LABELS.values())
+
+_BEHAVIOURAL_LABELS: dict[str, str] = {
+    "BEHAVIOURAL_AMOUNT_DEVIATION":   "Amount deviation",
+    "BEHAVIOURAL_VELOCITY_DEVIATION": "Velocity deviation",
+    "BALANCE_DROP_ANOMALY":           "Balance drop anomaly",
+    "NEW_DEVICE_FOR_CUSTOMER":        "New device for customer",
+    "NEW_COUNTRY_FOR_CUSTOMER":       "New country for customer",
+    "NEW_COUNTERPARTY_FOR_ACCOUNT":   "New counterparty for account",
+    "UNUSUAL_CHANNEL_FOR_CUSTOMER":   "Unusual channel",
+    "BEHAVIOURAL_PROFILE_SHIFT":      "Behavioural profile shift",
+}
+
+_GRAPH_LABELS: dict[str, str] = {
+    "SHARED_DEVICE_CLUSTER": "Shared device cluster",
+    "DEVICE_ACCOUNT_REUSE":  "Device reuse across accounts",
+    "MULE_FAN_IN_PATTERN":   "Mule fan-in pattern",
+    "MULE_FAN_OUT_PATTERN":  "Mule fan-out pattern",
+}
+
+_SCENARIO_LABELS: dict[str, str] = {
+    "Account takeover pattern detected":     "Account Takeover",
+    "Card testing velocity pattern":         "Card Testing",
+    "High-velocity spend pattern":           "High-Velocity Spend",
+    "Unusual geographic pattern":            "Unusual Geography",
+    "New payee transfer risk":               "New Payee Transfer",
+    "Merchant risk spike":                   "Merchant Risk Spike",
+    "Mule account behaviour pattern":        "Mule Account",
+    "Refund and chargeback abuse pattern":   "Refund / Chargeback Abuse",
+    "Dormant account reactivation detected": "Dormant Account Reactivation",
+    "Cross-border high-value transaction":   "Cross-Border High-Value",
+    "Device mismatch detected":              "Device Mismatch",
+    "Suspicious repeated attempts detected": "Suspicious Repeated Attempts",
+}
+
+
+def get_evidence_groups(reasons: str) -> dict:
+    """
+    Classify a pipe-delimited reasons string into 5 evidence groups that mirror
+    the frontend caseEvidence.ts / classifyCaseEvidence() taxonomy.
+
+    Groups (in classification priority order):
+      scenario     — Scenario-context strings from rich / adversarial CSV runs
+      rich         — Phase 12 rich-signal codes (by code or by existing text label)
+      behavioural  — Phase 13 behavioural reason codes
+      graph        — Phase 15 graph / mule-network reason codes
+      base         — Legacy / transaction signals and any unmapped codes
+
+    Unknown tokens are preserved in base so no evidence is silently discarded.
+
+    Args:
+        reasons: Pipe-delimited reasons string from the predictions row
+                 (e.g. "SHARED_DEVICE_CLUSTER|High transaction amount").
+
+    Returns:
+        Dict with keys base/rich/behavioural/graph/scenario, each a list of
+        {"code": str, "label": str} dicts where label is the analyst-facing
+        human-readable string.
+    """
+    tokens = [t.strip() for t in reasons.split("|") if t.strip()]
+
+    groups: dict[str, list[dict[str, str]]] = {
+        "base": [], "rich": [], "behavioural": [], "graph": [], "scenario": [],
+    }
+
+    for token in tokens:
+        if token in _SCENARIO_LABELS:
+            groups["scenario"].append({"code": token, "label": _SCENARIO_LABELS[token]})
+        elif token in _RICH_LABELS:
+            groups["rich"].append({"code": token, "label": _RICH_LABELS[token]})
+        elif token in _RICH_LABEL_TEXT:
+            # Raw reason IS the human-readable rich label (emitted directly by some paths)
+            groups["rich"].append({"code": token, "label": token})
+        elif token in _BEHAVIOURAL_LABELS:
+            groups["behavioural"].append({"code": token, "label": _BEHAVIOURAL_LABELS[token]})
+        elif token in _GRAPH_LABELS:
+            groups["graph"].append({"code": token, "label": _GRAPH_LABELS[token]})
+        else:
+            groups["base"].append({"code": token, "label": _reason_explanation(token)})
+
+    logger.info(
+        "get_evidence_groups: total=%d base=%d rich=%d behavioural=%d graph=%d scenario=%d",
+        len(tokens),
+        len(groups["base"]),
+        len(groups["rich"]),
+        len(groups["behavioural"]),
+        len(groups["graph"]),
+        len(groups["scenario"]),
+    )
+
+    return groups

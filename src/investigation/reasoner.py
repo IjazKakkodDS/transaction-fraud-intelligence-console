@@ -65,6 +65,14 @@ _OLLAMA_OPTIONS = {
 # Prompt assembly
 # ---------------------------------------------------------------------------
 
+_GROUP_ORDER: list[tuple[str, str]] = [
+    ("base",        "Base / Transaction Signals"),
+    ("rich",        "Rich Signals"),
+    ("behavioural", "Behavioural Signals"),
+    ("graph",       "Graph Intelligence"),
+    ("scenario",    "Scenario Context"),
+]
+
 _PROMPT_TEMPLATE = """\
 You are a fraud analyst. Analyze the evidence below and respond with ONLY a \
 valid JSON object — no markdown, no code fences, no extra text.
@@ -88,30 +96,37 @@ amount: {amount}
 risk_score: {risk_score}
 decision: {decision}
 
-## RULES TRIGGERED
-{rules_section}
+## EVIDENCE GROUPS
+{evidence_groups_section}
 
 ## FEATURES
 {features_section}
 
 ## PLAYBOOK KNOWLEDGE
 {knowledge_section}
+
+## POLICY CONTEXT
+{policy_section}
 {extra_instruction}
 Respond with the JSON object only:"""
 
 
 def _build_prompt(
     case: dict,
-    rules_triggered: list[str],
+    evidence_groups: dict,
     feature_breakdown: dict,
     knowledge: list[dict],
     extra_instruction: str = "",
 ) -> str:
-    rules_section = (
-        "\n".join(f"- {r}" for r in rules_triggered)
-        if rules_triggered
-        else "None"
-    )
+    # Build evidence groups section — only include groups that have items
+    group_lines: list[str] = []
+    for key, header in _GROUP_ORDER:
+        items = evidence_groups.get(key, [])
+        if items:
+            group_lines.append(f"{header}:")
+            for item in items:
+                group_lines.append(f"  - {item['label']}")
+    evidence_groups_section = "\n".join(group_lines) if group_lines else "None"
 
     features_section = "\n".join(
         f"  {k}: {float(v) if isinstance(v, Decimal) else v}"
@@ -128,6 +143,11 @@ def _build_prompt(
     else:
         knowledge_section = "None"
 
+    policy_section = (
+        "No policy documents are available for this investigation. "
+        "Base your analysis on the playbook guidance above."
+    )
+
     extra = f"\nNote: {extra_instruction}" if extra_instruction else ""
 
     return _PROMPT_TEMPLATE.format(
@@ -135,9 +155,10 @@ def _build_prompt(
         amount=case.get("amount", "N/A"),
         risk_score=case.get("risk_score", "N/A"),
         decision=case.get("decision", "N/A"),
-        rules_section=rules_section,
+        evidence_groups_section=evidence_groups_section,
         features_section=features_section,
         knowledge_section=knowledge_section,
+        policy_section=policy_section,
         extra_instruction=extra,
     )
 
@@ -234,20 +255,21 @@ def _call_ollama(prompt: str) -> str:
 
 def generate_summary(
     case: dict,
-    rules_triggered: list[str],
+    evidence_groups: dict,
     feature_breakdown: dict,
     knowledge: list[dict],
 ) -> dict:
     """
-    Call the local Ollama LLM with a compact case evidence prompt and return a
-    structured investigation summary.
+    Call the local Ollama LLM with a structured evidence-grouped prompt and
+    return a structured investigation summary.
 
     Retries up to MAX_RETRIES times on JSON parse or validation failure,
     appending the previous error to the prompt so the model can self-correct.
 
     Args:
         case:              Predictions row dict from Postgres.
-        rules_triggered:   Rule explanation strings from get_rule_explanations.
+        evidence_groups:   Grouped evidence dict from get_evidence_groups
+                           (keys: base/rich/behavioural/graph/scenario).
         feature_breakdown: Feature dict from get_feature_breakdown.
         knowledge:         Retrieved playbook docs from retrieve_knowledge.
 
@@ -281,7 +303,7 @@ def generate_summary(
 
         prompt = _build_prompt(
             case,
-            rules_triggered,
+            evidence_groups,
             feature_breakdown,
             knowledge,
             extra_instruction=extra_instruction,
