@@ -141,7 +141,7 @@ def _build_prompt(
             parts.append(f"[{doc.get('source', 'unknown')}] {content}")
         knowledge_section = "\n\n".join(parts)
     else:
-        knowledge_section = "None"
+        knowledge_section = "No matching playbook guidance found for this case."
 
     policy_section = (
         "No policy documents are available for this investigation. "

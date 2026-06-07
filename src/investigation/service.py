@@ -20,18 +20,14 @@ is returned with deterministic fields preserved so the analyst has partial conte
 """
 
 import logging
+import urllib.error
 
-from src.db.postgres_logger import get_prediction_by_id
 from src.investigation.schemas import (
     InvestigationReport,
     InvestigationRequest,
     InvestigationStatus,
 )
 from src.investigation.reasoner import generate_summary
-from src.investigation.retriever import (
-    build_query,
-    retrieve_knowledge,
-)
 from src.investigation.tools import (
     get_evidence_groups,
     get_feature_breakdown,
@@ -42,7 +38,22 @@ logger = logging.getLogger("investigation-service")
 
 # Increment this whenever a change affects the meaning of report output
 # (prompt revision, tool change, model version change).
-AGENT_VERSION = "0.2.0"
+AGENT_VERSION = "0.3.0"
+
+
+def _classify_investigation_error(exc: Exception) -> str:
+    """
+    Return a bounded, analyst-readable error message for a pipeline failure.
+    Never exposes internal URLs, host names, stack traces, or exception class reprs.
+    """
+    if isinstance(exc, (urllib.error.URLError, OSError)):
+        return "LLM service unreachable -- check Ollama connectivity and retry."
+    if isinstance(exc, RuntimeError):
+        return (
+            "LLM reasoning failed after configured retries -- "
+            "model could not produce a valid structured response."
+        )
+    return "Investigation pipeline error -- see server logs for details."
 
 
 def process_case(request: InvestigationRequest) -> InvestigationReport:
@@ -55,6 +66,10 @@ def process_case(request: InvestigationRequest) -> InvestigationReport:
     fields (rules_triggered, feature_breakdown, playbooks_referenced)
     preserved so the analyst retains partial context.
     """
+    # Lazy imports — avoid DB and vectorizer connections at module load time.
+    from src.db.postgres_logger import get_prediction_by_id
+    from src.investigation.retriever import build_query, retrieve_knowledge
+
     logger.info(
         "Investigation started | investigation_id=%s case_id=%d",
         request.investigation_id,
@@ -149,7 +164,7 @@ def process_case(request: InvestigationRequest) -> InvestigationReport:
             rules_triggered=rule_explanations,
             feature_breakdown=feature_breakdown,
             playbooks_referenced=playbooks_referenced,
-            error_message=str(exc),
+            error_message=_classify_investigation_error(exc),
         )
 
     logger.info(
