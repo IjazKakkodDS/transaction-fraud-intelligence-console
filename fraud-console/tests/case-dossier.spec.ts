@@ -18,6 +18,7 @@ test("Case Dossier 2.0 renders evidence and preserves analyst workflow", async (
   await expect(page.getByText("Workflow Automation", { exact: true })).toBeVisible();
   await expect(page.getByText("Automation Audit Trail", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Dispatch Workflow Automation" })).toBeVisible();
+  await expect(page.getByText(/Pipeline v\d/, { exact: false })).toBeVisible();
   expect(errors).toHaveLength(0);
 });
 

@@ -170,7 +170,26 @@ function DeterministicContext({ report }: { report: InvestigationReport }) {
   );
 }
 
-function CompleteReport({ report, caseId }: { report: InvestigationReport; caseId: number }) {
+function CompleteReport({
+  report,
+  caseId,
+  reviewedAt,
+}: {
+  report: InvestigationReport;
+  caseId: number;
+  reviewedAt?: string | null;
+}) {
+  // Show a timing notice when the investigation was generated after the analyst
+  // verdict was already recorded — the verdict was made without AI input.
+  const isPostVerdictInvestigation = (() => {
+    if (!reviewedAt || !report.investigated_at) return false;
+    try {
+      return new Date(reviewedAt) < new Date(report.investigated_at);
+    } catch {
+      return false;
+    }
+  })();
+
   return (
     <div className="space-y-4">
       <div>
@@ -178,9 +197,24 @@ function CompleteReport({ report, caseId }: { report: InvestigationReport; caseI
           <RecBadge value={report.recommendation} />
           <ConfBadge value={report.confidence} />
         </div>
-        {report.investigated_at && (
-          <p className="mt-1.5 text-[11px]" style={{ color: "#6B7280" }}>
-            Investigated {formatDateShort(report.investigated_at)}
+
+        <div
+          className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px]"
+          style={{ color: "#6B7280" }}
+        >
+          {report.investigated_at && (
+            <span>Investigated {formatDateShort(report.investigated_at)}</span>
+          )}
+          {report.agent_version && (
+            <span style={{ color: "#4B5563" }}>
+              Pipeline v{report.agent_version}
+            </span>
+          )}
+        </div>
+
+        {isPostVerdictInvestigation && (
+          <p className="mt-1 text-[11px]" style={{ color: "#6B7280" }}>
+            Note: This investigation was generated after the analyst verdict was recorded.
           </p>
         )}
       </div>
@@ -234,9 +268,10 @@ function CompleteReport({ report, caseId }: { report: InvestigationReport; caseI
 
 interface InvestigationPanelProps {
   caseId: number;
+  reviewedAt?: string | null;
 }
 
-export function InvestigationPanel({ caseId }: InvestigationPanelProps) {
+export function InvestigationPanel({ caseId, reviewedAt }: InvestigationPanelProps) {
   const [pollingUntil, setPollingUntil] = useState<number | null>(null);
   const { data, isLoading } = useInvestigation(caseId, pollingUntil);
   const { mutate, isPending, isError, error } = useTriggerInvestigation(caseId);
@@ -360,7 +395,11 @@ export function InvestigationPanel({ caseId }: InvestigationPanelProps) {
       )}
 
       {data && data.status === "COMPLETE" && (
-        <CompleteReport report={data as InvestigationReport} caseId={caseId} />
+        <CompleteReport
+          report={data as InvestigationReport}
+          caseId={caseId}
+          reviewedAt={reviewedAt}
+        />
       )}
     </div>
   );

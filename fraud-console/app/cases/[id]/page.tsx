@@ -104,7 +104,7 @@ export default function CasePage({ params }: CasePageProps) {
             <div className="space-y-4 lg:col-span-6">
               <CaseScoreSummary caseData={data} />
               <CaseEvidenceGroups reasons={data.reasons} />
-              <InvestigationPanel caseId={caseId} />
+              <InvestigationPanel caseId={caseId} reviewedAt={data.reviewed_at} />
             </div>
 
             {/* Analyst decision and workflow */}
