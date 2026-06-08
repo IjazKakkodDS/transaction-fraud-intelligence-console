@@ -200,6 +200,87 @@ def health_check():
     return {"status": "ok"}
 
 
+# ---------------------------------------------------------------------------
+# Operational health — Phase 19A
+# Reports per-component reachability for Postgres, Kafka/Redpanda, and Ollama.
+# Always returns HTTP 200; status "degraded" signals one or more dependencies
+# are down without preventing the endpoint itself from responding. Short
+# timeouts (3 s) keep the probe fast under partial outage conditions.
+# No internal URLs, stack traces, credentials, or exception class names are
+# exposed in the response under any failure condition.
+# ---------------------------------------------------------------------------
+
+def _check_postgres() -> str:
+    """SELECT 1 probe — confirms Postgres is reachable and accepting queries."""
+    try:
+        import psycopg2
+        database_url = os.getenv("DATABASE_URL", "")
+        if not database_url:
+            return "unreachable"
+        conn = psycopg2.connect(database_url, connect_timeout=3)
+        cur = conn.cursor()
+        cur.execute("SELECT 1")
+        cur.close()
+        conn.close()
+        return "healthy"
+    except Exception:
+        return "unreachable"
+
+
+def _check_kafka() -> str:
+    """TCP connect probe — confirms the first Kafka/Redpanda broker is reachable."""
+    try:
+        import socket as _socket
+        bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "")
+        if not bootstrap_servers:
+            return "unreachable"
+        server = bootstrap_servers.split(",")[0].strip()
+        try:
+            host, port_str = server.rsplit(":", 1)
+            port = int(port_str)
+        except ValueError:
+            host, port = server, 9092
+        with _socket.create_connection((host, port), timeout=3):
+            return "healthy"
+    except Exception:
+        return "unreachable"
+
+
+def _check_ollama() -> str:
+    """GET /api/tags probe — read-only metadata fetch, no generation triggered."""
+    try:
+        ollama_base = os.getenv("OLLAMA_BASE_URL", "").rstrip("/")
+        if not ollama_base:
+            return "unreachable"
+        req = urllib.request.Request(f"{ollama_base}/api/tags", method="GET")
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            if resp.status < 500:
+                return "healthy"
+        return "unreachable"
+    except Exception:
+        return "unreachable"
+
+
+@app.get("/health/detailed")
+def health_detailed():
+    """
+    Per-component dependency health check.
+
+    Probes Postgres (SELECT 1), Kafka/Redpanda (TCP connect to first broker),
+    and Ollama (/api/tags read-only metadata). Always returns HTTP 200 so
+    load balancers and monitoring systems distinguish app-up/dependency-down
+    from app-down. Overall status is 'healthy' only when all three components
+    report healthy.
+    """
+    components = {
+        "postgres": _check_postgres(),
+        "kafka":    _check_kafka(),
+        "ollama":   _check_ollama(),
+    }
+    overall = "healthy" if all(v == "healthy" for v in components.values()) else "degraded"
+    return {"status": overall, "components": components}
+
+
 @app.post("/predict")
 def predict_transaction(transaction: dict):
     # Always publish to transactions.raw so the scoring consumer processes
