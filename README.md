@@ -32,6 +32,7 @@ evidence, frontend E2E coverage, and documented governance boundaries.
 | 10M Risk Scan Demo | http://localhost:3000/risk-scan?scan_id=aa0971d2-bdb6-49c7-bac3-fa355aa161ad |
 | Backend Health | http://localhost:8000/health |
 | Detailed Health Check | http://localhost:8000/health/detailed |
+| API Documentation | http://localhost:8000/docs |
 | Demo Video Pipeline | [fraud-console/demo/README.md](fraud-console/demo/README.md) |
 | Demo Storyboard | [docs/DEMO_STORYBOARD.md](docs/DEMO_STORYBOARD.md) |
 | Portfolio Case Study | [docs/PORTFOLIO_CASE_STUDY.md](docs/PORTFOLIO_CASE_STUDY.md) |
@@ -598,6 +599,22 @@ real-time-fraud-triage-system/
 
 ---
 
+## Deployment Profiles
+
+Three deployment profiles are documented in [docs/DEPLOYMENT_PLAN.md](docs/DEPLOYMENT_PLAN.md):
+
+| Profile | Description |
+|---|---|
+| A — Full Local | Docker Compose 7-service stack, recommended for technical review and E2E evaluation |
+| B — Cloud Demo | Vercel frontend + Render/Railway backend + managed Postgres; `SYNC_SCORING_ENABLED=true`, Kafka disabled |
+| C — Enterprise / AWS | ECS/Fargate, RDS, MSK, hosted LLM; implementation-ready blueprint, not provisioned |
+
+Runtime is environment-driven: `ALLOWED_ORIGINS` configures CORS for deployed frontends,
+`NEXT_PUBLIC_API_BASE_URL` points the Next.js console at the deployed API. Both are documented
+in `.env.example` with local defaults that work out of the box.
+
+---
+
 ## Run Locally
 
 **Prerequisites:** Docker Desktop, Node.js 18+, Python 3.11+. Ollama on host for AI investigations.
@@ -722,6 +739,7 @@ canary deployment are identified enterprise expansion controls, documented in
 | [docs/DEMO_STORYBOARD.md](docs/DEMO_STORYBOARD.md) | Scene-by-scene demo guide with narration angles and scope wording |
 | [docs/RISK_SCAN_BENCHMARKS.md](docs/RISK_SCAN_BENCHMARKS.md) | Verified 10M benchmark evidence with full metric tables |
 | [docs/PRODUCT_STAGES.md](docs/PRODUCT_STAGES.md) | Complete build history, phase completion log, and product roadmap |
+| [docs/DEPLOYMENT_PLAN.md](docs/DEPLOYMENT_PLAN.md) | Deployment profiles (Local/Cloud Demo/Enterprise), environment variable reference, reviewer run path |
 | [docs/CONSUMER_DURABILITY.md](docs/CONSUMER_DURABILITY.md) | Consumer offset management, idempotency design, and production gap matrix |
 | [docs/AUTH_RBAC_DESIGN.md](docs/AUTH_RBAC_DESIGN.md) | Authentication and RBAC architecture design |
 | [docs/SECURITY_POSTURE.md](docs/SECURITY_POSTURE.md) | Security posture, governance boundaries, and production hardening controls |
