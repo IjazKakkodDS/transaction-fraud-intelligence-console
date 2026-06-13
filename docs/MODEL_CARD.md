@@ -133,7 +133,45 @@ This artifact is appropriate for: local development and integration testing, por
 
 ---
 
-## 8. Governance and Reproducibility Record
+## 8. Model Explainability
+
+The Fraud Intelligence Console exposes per-case model attribution via `GET /cases/{case_id}/explain`.
+
+| Property | Value |
+|---|---|
+| Method | XGBoost native TreeSHAP (`Booster.predict(DMatrix, pred_contribs=True)`) |
+| Dependency | None — built into XGBoost; no `shap` library required |
+| Output space | Log-odds (logit) — not probability |
+| Scope | Baseline XGBoost model only |
+
+**What it shows:**
+
+For each of the 9 input features, the endpoint returns a `contribution_logit` value indicating
+how much that feature pushed the model's fraud probability estimate up (positive) or down
+(negative) for that specific case. Features are ranked by absolute contribution magnitude.
+
+**What it does not show:**
+
+The attribution covers the baseline ML model only. The final `risk_score` and `decision` also
+incorporate deterministic rule signals, rich-feature boosts, behavioural intelligence boosts,
+and graph mule-network boosts. Those layers produce the hybrid reason codes visible in the
+Case Dossier evidence groups.
+
+**Feature reconstruction note:**
+
+The prediction table does not store raw transaction fields. Binary features are inferred from
+stored reason codes where possible; `is_mobile_device` defaults to 0 when device_type is not
+stored. The response's `inferred_fields` list names every feature that was inferred or
+defaulted, allowing reviewers to assess attribution accuracy for each case.
+
+**Governance boundary:**
+
+The attribution endpoint is read-only. It does not modify the model, the risk_score,
+the decision, or any database record. It is a diagnostic surface, not a scoring path.
+
+---
+
+## 9. Governance and Reproducibility Record
 
 | Item | Status |
 |---|---|

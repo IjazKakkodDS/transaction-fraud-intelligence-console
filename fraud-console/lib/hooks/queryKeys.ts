@@ -31,6 +31,9 @@ export const queryKeys = {
   workflowMetrics: () =>
     ["workflowMetrics"] as const,
 
+  caseExplanation: (caseId: number) =>
+    ["caseExplanation", caseId] as const,
+
   // Phase 12 — Portfolio Risk Scan
   riskScanStatus: (scanId: string) =>
     ["riskScan", scanId, "status"] as const,

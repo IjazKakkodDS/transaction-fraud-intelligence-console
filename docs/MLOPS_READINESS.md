@@ -62,6 +62,22 @@ monitoring) is explicitly deferred and documented as a future roadmap — not a 
 - **Generator source tracked**: `data/synthetic/generate_transactions.py` tracked via
   `.gitignore` exception; generated CSV gitignored
 
+### Model Explainability
+- **Per-case model attribution**: `GET /cases/{case_id}/explain` returns per-feature
+  contribution values using XGBoost's built-in TreeSHAP (`pred_contribs=True`) — no
+  external `shap` library required; XGBoost is already a required dependency
+- **Attribution scope**: baseline XGBoost model only; contributions are in log-odds space
+- **Case Dossier integration**: "Model Attribution" panel displays all 9 feature contributions
+  ranked by magnitude, with direction (increases/decreases risk) and the feature value used
+- **Governance boundary**: read-only diagnostic surface; does not modify the model, scoring
+  formula, risk_score, decision, or any stored record
+- **Honest reconstruction disclosure**: features not stored in the prediction table are
+  inferred from reason codes or defaulted to 0; the response `inferred_fields` list names
+  each such field so reviewers can assess per-case attribution accuracy
+- **Separation from hybrid reason codes**: attribution explains the base ML model; the hybrid
+  reason codes in the Case Dossier evidence groups explain the full 4-layer decision (rules,
+  rich signals, behavioural, graph) — these are distinct explainability surfaces
+
 ### Audit and Traceability
 - **AGENT_VERSION traceability**: every AI investigation record tagged with the agent
   configuration version — immutable AI audit trail in PostgreSQL

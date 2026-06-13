@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from typing import Literal
 
 import pandas as pd
+import xgboost as xgb
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
@@ -52,7 +53,7 @@ from src.config.config import SYNC_SCORING_ENABLED
 from src.events.producer import send_transaction_raw_event
 from src.events.schemas import TransactionRawEvent
 from src.features.transaction_features import generate_basic_features, generate_reasons
-from src.models.predict import predict
+from src.models.predict import FEATURES as MODEL_FEATURES, _get_model, predict
 from src.risk_scan.exporter import csv_header, results_to_csv, rows_to_csv_chunk
 from src.risk_scan.processor import (
     ASYNC_RISK_SCAN_MAX_ROWS,
@@ -538,6 +539,167 @@ def get_investigation(case_id: int):
         }
 
     return investigation
+
+
+# ---------------------------------------------------------------------------
+# Model attribution — Phase 20H
+# ---------------------------------------------------------------------------
+
+def _reconstruct_features_for_explain(case: dict) -> tuple[dict, list]:
+    """
+    Reconstruct the 9-feature model input vector from a stored case record.
+
+    The prediction table stores amount, timestamp, and pipe-delimited reasons.
+    Raw transaction fields (country, payment_method, etc.) are not persisted,
+    so binary features are inferred from reason code presence. Deterministic
+    features (amount, is_high_amount, is_night_transaction) are exact; inferred
+    ones are listed in the returned inferred_fields list.
+
+    Returns (feature_dict, inferred_fields).
+    """
+    from src.config.config import HIGH_AMOUNT_THRESHOLD
+
+    reasons_set = set((case.get("reasons") or "").split("|"))
+
+    amount = float(case.get("amount") or 0)
+    is_high_amount = 1.0 if amount > HIGH_AMOUNT_THRESHOLD else 0.0
+
+    inferred: list[str] = []
+
+    # is_night_transaction — reconstruct from stored timestamp (exact)
+    try:
+        ts_str = str(case.get("timestamp") or "").replace("Z", "+00:00")
+        hour = datetime.fromisoformat(ts_str).hour
+        is_night_transaction = 1.0 if (hour < 6 or hour > 22) else 0.0
+    except (ValueError, TypeError):
+        is_night_transaction = 0.0
+        inferred.append("is_night_transaction")
+
+    # has_device_id — "No device identifier present" reason → 0
+    has_device_id = 0.0 if "No device identifier present" in reasons_set else 1.0
+
+    # is_high_risk_payment_method
+    if "High-risk payment method" in reasons_set:
+        is_high_risk_payment_method = 1.0
+    else:
+        is_high_risk_payment_method = 0.0
+        inferred.append("is_high_risk_payment_method")
+
+    # is_high_risk_merchant_category
+    if "High-risk merchant category" in reasons_set:
+        is_high_risk_merchant_category = 1.0
+    else:
+        is_high_risk_merchant_category = 0.0
+        inferred.append("is_high_risk_merchant_category")
+
+    # is_international and is_high_risk_country share a combined reason code
+    if "International transaction from elevated-risk region" in reasons_set:
+        is_international = 1.0
+        is_high_risk_country = 1.0
+    else:
+        is_international = 0.0
+        is_high_risk_country = 0.0
+        inferred.extend(["is_international", "is_high_risk_country"])
+
+    # is_mobile_device — device_type not stored; defaults to 0
+    is_mobile_device = 0.0
+    inferred.append("is_mobile_device")
+
+    return {
+        "amount": amount,
+        "is_high_amount": is_high_amount,
+        "is_night_transaction": is_night_transaction,
+        "is_international": is_international,
+        "is_high_risk_payment_method": is_high_risk_payment_method,
+        "is_high_risk_country": is_high_risk_country,
+        "is_high_risk_merchant_category": is_high_risk_merchant_category,
+        "has_device_id": has_device_id,
+        "is_mobile_device": is_mobile_device,
+    }, sorted(set(inferred))
+
+
+@app.get("/cases/{case_id}/explain")
+def explain_case(case_id: int):
+    """
+    Return per-feature model attribution for the baseline XGBoost model.
+
+    Uses XGBoost's built-in TreeSHAP (pred_contribs=True) — no external
+    shap library required. Contributions are in log-odds (logit) space:
+    positive values increase the model's fraud probability estimate; negative
+    values decrease it. The bias term represents the model's base log-odds.
+
+    Attribution covers the baseline ML model only. The final fraud risk_score
+    and decision also incorporate deterministic rules, rich-feature boosts,
+    behavioural intelligence, and graph mule-network evidence that are not
+    represented here.
+    """
+    case = get_prediction_by_id(case_id)
+    if case is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No case found for case_id={case_id}.",
+        )
+
+    features_dict, inferred_fields = _reconstruct_features_for_explain(case)
+
+    try:
+        booster = _get_model().get_booster()
+        feature_df = pd.DataFrame([features_dict])[MODEL_FEATURES]
+        dm = xgb.DMatrix(feature_df, feature_names=MODEL_FEATURES)
+        raw_contribs = booster.predict(dm, pred_contribs=True)
+
+        row = raw_contribs[0]
+        bias_logit = float(row[-1])
+
+        entries = []
+        for i, feat in enumerate(MODEL_FEATURES):
+            c = float(row[i])
+            entries.append({
+                "feature": feat,
+                "value": features_dict[feat],
+                "contribution_logit": round(c, 6),
+                "direction": (
+                    "increases_risk" if c > 0
+                    else "decreases_risk" if c < 0
+                    else "neutral"
+                ),
+                "rank": 0,
+            })
+
+        entries.sort(key=lambda x: abs(x["contribution_logit"]), reverse=True)
+        for i, e in enumerate(entries):
+            e["rank"] = i + 1
+
+        notes = [
+            "Contribution values are in log-odds (logit) space, not probabilities.",
+            "Attribution covers the baseline XGBoost model only.",
+            "Final risk score and decision also include rules, rich signals, behavioural, and graph evidence.",
+        ]
+        if inferred_fields:
+            notes.append(
+                "The following features could not be retrieved from stored case data and were "
+                f"inferred from reason codes or defaulted to 0: {', '.join(inferred_fields)}."
+            )
+
+        return {
+            "case_id": case_id,
+            "model_type": type(_get_model()).__name__,
+            "explanation_method": "xgboost_pred_contribs",
+            "bias_logit": round(bias_logit, 6),
+            "features": entries,
+            "top_positive": [e for e in entries if e["contribution_logit"] > 0][:5],
+            "top_negative": [e for e in entries if e["contribution_logit"] < 0][:5],
+            "reconstructed_features": features_dict,
+            "inferred_fields": inferred_fields,
+            "notes": notes,
+        }
+
+    except Exception as exc:
+        logger.error("Model attribution failed for case_id=%s: %s", case_id, exc)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Model attribution computation failed: {exc}",
+        )
 
 
 @app.get("/case/{case_id}")

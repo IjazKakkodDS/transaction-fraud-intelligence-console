@@ -7,6 +7,7 @@ import { CaseHeader } from "@/components/cases/CaseHeader";
 import { CaseScoreSummary } from "@/components/cases/CaseScoreSummary";
 import { CaseEvidenceGroups } from "@/components/cases/CaseEvidenceGroups";
 import { InvestigationPanel } from "@/components/cases/InvestigationPanel";
+import { ModelAttributionPanel } from "@/components/cases/ModelAttributionPanel";
 import { AnalystActionPanel } from "@/components/cases/AnalystActionPanel";
 import { WorkflowNotifyButton } from "@/components/cases/WorkflowNotifyButton";
 import { CaseWorkflowEvents } from "@/components/cases/CaseWorkflowEvents";
@@ -104,6 +105,7 @@ export default function CasePage({ params }: CasePageProps) {
             <div className="space-y-4 lg:col-span-6">
               <CaseScoreSummary caseData={data} />
               <CaseEvidenceGroups reasons={data.reasons} />
+              <ModelAttributionPanel caseId={caseId} />
               <InvestigationPanel caseId={caseId} reviewedAt={data.reviewed_at} />
             </div>
 

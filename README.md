@@ -89,7 +89,7 @@ automated, locally reproducible, no API key required.
 | Demo media pipeline | Playwright + Edge TTS + FFmpeg |
 | Docker Compose services | 7 |
 | Frontend routes | 8 |
-| Backend API endpoints | 25 |
+| Backend API endpoints | 27 |
 
 ---
 
@@ -154,7 +154,7 @@ device rotation, and mule-network coordination. Detection evidence matrices conf
 alone. Simulation design is documented in
 [docs/ADVERSARIAL_FRAUD_DESIGN.md](docs/ADVERSARIAL_FRAUD_DESIGN.md).
 
-### Case Dossier 2.0 (Phase 17)
+### Case Dossier 2.0 (Phase 17) and Model Attribution (Phase 20H)
 
 The Case Dossier workspace organises all risk evidence, investigation context, and
 analyst actions into a structured lifecycle view:
@@ -164,6 +164,10 @@ analyst actions into a structured lifecycle view:
 - Lifecycle timeline: creation, investigation, verdict, and workflow dispatch events
   with timestamps
 - Score summary with per-layer contribution and reason codes
+- **Model Attribution panel**: per-case XGBoost feature contributions computed via
+  `GET /cases/{case_id}/explain` using XGBoost's built-in TreeSHAP (`pred_contribs=True`).
+  All 9 baseline model features ranked by contribution magnitude. Separates base ML model
+  attribution from the 4-layer hybrid reason codes.
 - Full analyst verdict capture integrated with workflow dispatch
 
 ### AI Investigation Brief Hardening (Phase 18)
@@ -246,7 +250,8 @@ transaction features.
 | Indexed Server-Side Pagination | Composite ordered indexes; deep pagination (page 1,000) returns at 0.379s on 10M result set |
 | Promote-to-Case | Individual scan results promote to full Case Dossiers, connecting bulk scan and single-case review |
 | Analyst Queue | Priority-ordered queue with P0--P3 tier labels, risk score bars, and surgical status filters |
-| Case Dossier 2.0 | Grouped evidence display, lifecycle timeline, score summary, verdict capture, and case-scoped workflow audit |
+| Case Dossier 2.0 | Grouped evidence display, lifecycle timeline, score summary, model attribution panel, verdict capture, and case-scoped workflow audit |
+| Model Attribution | Per-case XGBoost feature contributions (TreeSHAP via `GET /cases/{id}/explain`) ranked by magnitude; separates base ML model attribution from hybrid reason codes |
 | AI Investigation Brief | Evidence-grouped prompting, AGENT_VERSION traceability, bounded failure handling, structured LLM report persisted per case |
 | Workflow Events | Every automation dispatch and callback produces a durable, queryable audit event with case linkage |
 | Reliability Metrics | Health verdict (Healthy / Degraded / Critical) computed from actual event records; SLO-style targets |
