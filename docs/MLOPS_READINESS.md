@@ -21,7 +21,7 @@ monitoring) is explicitly deferred and documented as a future roadmap — not a 
 
 | Domain | Maturity | Notes |
 |---|---|---|
-| Product and Application Engineering | L2+ | 4-layer scoring engine, 7-service Docker Compose runtime, 25 API endpoints, 11/11 E2E Playwright checks |
+| Product and Application Engineering | L2+ | 4-layer scoring engine, 7-service Docker Compose runtime, 27 API endpoints, 11/11 E2E Playwright checks |
 | Release Engineering | L2+ | GitHub Actions CI (compile, 41 release checks, model load, evidence smoke checks, frontend build), local E2E gate |
 | Model Artifact Governance | L2+ | Artifact tracked in git, MD5 checksum documented, MODEL_CARD.md, deterministic rebuild path, feature schema validation at CI |
 | Model Lifecycle Automation | L2 | Manual retrain path documented and tested (deterministic, seed 42); no automated retraining trigger or drift-detection gate |

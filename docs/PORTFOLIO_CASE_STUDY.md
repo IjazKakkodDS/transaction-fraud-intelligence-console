@@ -22,7 +22,7 @@ portfolio-scale bulk risk scanning.
 The platform runs on a production-style Docker Compose stack with a representative
 service topology: FastAPI backend, PostgreSQL persistence, Redpanda event stream, Redis
 cache, scoring consumer, investigation consumer, n8n workflow automation, and a Next.js
-analyst interface. Twenty-five API endpoints cover the full operational surface from
+analyst interface. Twenty-seven API endpoints cover the full operational surface from
 transaction intake to governance-ready health monitoring.
 
 The scoring engine implements four independently-computed intelligence layers -- hybrid
@@ -91,7 +91,7 @@ pagination, and server-side streaming export.
 
 | Service | Role |
 |---|---|
-| FastAPI (Python) | REST API -- 25 endpoints covering scoring, case management, investigation, workflow, metrics, risk scan, and health monitoring |
+| FastAPI (Python) | REST API -- 27 endpoints covering scoring, case management, investigation, workflow, metrics, risk scan, model attribution, and health monitoring |
 | PostgreSQL 16 | Persistence -- cases, predictions, investigations, workflow events, portfolio scans, scan results |
 | Redpanda (Kafka-compatible) | Event stream -- transaction events, scored case events, 4 topics |
 | Redis | Cache |
@@ -244,6 +244,21 @@ adversarial patterns do not contaminate training-distribution validation. Archit
 | P1 High | BLOCK or REVIEW decision, risk_score >= 0.70 |
 | P2 Medium | REVIEW decision, risk_score >= 0.50 |
 | P3 Low | APPROVE or low-risk REVIEW |
+
+### Guided Investigation Command Panel
+
+The Fraud Intelligence Command Center (Overview page) presents the Guided Investigation
+Command Panel as the structured reviewer entry point. Clicking "Launch Guided
+Investigation" calls `POST /demo/seed`, which idempotently provisions two canonical
+fraud cases covering the showcase (BLOCK / CONFIRM_FRAUD verdict) and review
+(REVIEW / FALSE_POSITIVE verdict) paths, then navigates directly to the Case Dossier
+for the high-priority showcase case.
+
+The panel surfaces six capability dimensions — 4-layer scoring, evidence-led case
+dossier, model attribution, AI investigation brief, analyst decision loop, and
+reliability and scale — with a nine-step workflow path strip mapping the end-to-end
+reviewer journey. Three secondary action links provide direct access to the Review
+Queue, the verified 10M Portfolio Risk Scan, and the live API documentation.
 
 ---
 
@@ -415,6 +430,16 @@ with timestamps -- full traceability across the case lifecycle.
 mitigating factors, triggered rules, referenced playbooks, rationale -- produced by the
 hardened AI investigation pipeline.
 
+**Model Attribution panel:** positioned between the grouped evidence and the AI
+investigation brief, the Model Attribution panel surfaces per-feature XGBoost
+contributions via `GET /cases/{case_id}/explain`, which uses XGBoost's built-in
+TreeSHAP (`pred_contribs=True`) — no external library required. All 9 feature
+contributions are ranked by magnitude with direction (increases or decreases risk)
+and the feature value used at scoring time. This is an explainability surface for the
+baseline XGBoost model specifically; it is distinct from the hybrid reason codes in
+the grouped evidence, which explain the full 4-layer decision including rules, rich
+signals, behavioural profiling, and graph topology.
+
 **Verdict capture:** analyst submits a formal verdict with notes; verdict persists
 against the case record and triggers the workflow dispatch path.
 
@@ -570,7 +595,9 @@ controls in place.
 | Async Portfolio Risk Scan | Score portfolios of millions of transactions without blocking real-time case operations |
 | Indexed pagination at 10M scale | Analysts can review, filter, and export large result sets without system degradation |
 | Server-side streaming export | 1.64 GiB CSV exported without API restart or memory pressure |
-| Case Dossier 2.0 | Grouped evidence, lifecycle timeline, behavioural and graph chips, AI brief, verdict capture -- full analyst context in one workspace |
+| Guided Investigation Command Panel | Structured reviewer entry point: `POST /demo/seed` provisions canonical cases; six capability cards and nine-step workflow path orient reviewers to each intelligence surface |
+| Case Dossier 2.0 | Grouped evidence, lifecycle timeline, behavioural and graph chips, model attribution, AI brief, verdict capture -- full analyst context in one workspace |
+| Model Attribution | `GET /cases/{case_id}/explain` via XGBoost native TreeSHAP (`pred_contribs=True`) -- 9 feature contributions ranked by magnitude; separates base ML model attribution from hybrid reason codes |
 | AI Investigation Brief | Evidence-grouped prompting, AGENT_VERSION traceability, bounded failure handling, structured LLM report persisted per case |
 | End-to-end audit trail | Every automation dispatch produces a durable, queryable event record |
 | Reliability monitoring | The system surfaces its own automation health with SLO-style targets |
@@ -601,6 +628,9 @@ Analyst-in-the-loop enforcement: AI generates investigation briefs, analysts dec
 verdicts. Every investigation record tagged with AGENT_VERSION for full traceability.
 Bounded failure handling ensures every pipeline failure produces a durable, structured
 outcome. Honest RAG fallback prevents confabulation when no playbook guidance exists.
+Model Attribution (`GET /cases/{case_id}/explain`, XGBoost native TreeSHAP) provides a
+per-case explainability record for the baseline ML model, distinct from the hybrid
+reason codes that reflect the full 4-layer decision.
 
 ---
 
