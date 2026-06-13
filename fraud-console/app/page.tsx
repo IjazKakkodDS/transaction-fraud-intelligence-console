@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Activity,
   ArrowRight,
@@ -11,6 +13,7 @@ import {
 import { useDailySummary } from "@/lib/hooks/useDailySummary";
 import { useStaleCases } from "@/lib/hooks/useStaleCases";
 import { type DailySummary } from "@/types/workflow";
+import { seedDemoState } from "@/lib/api/demo";
 
 const COLORS = {
   red: "#FB7185",
@@ -600,6 +603,111 @@ function ProductModules() {
   );
 }
 
+const DEMO_FLOW_STEPS = [
+  "Overview",
+  "Intake",
+  "Queue",
+  "Case Dossier",
+  "Workflow Events",
+  "Reliability",
+  "Risk Scan",
+];
+
+function DemoLauncher() {
+  const router = useRouter();
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  async function handleRunDemo() {
+    setStatus("loading");
+    setErrorMsg("");
+    try {
+      const result = await seedDemoState();
+      router.push(result.case_url ?? "/queue");
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg(
+        err instanceof Error
+          ? err.message
+          : "Demo seed failed. Check API connectivity.",
+      );
+    }
+  }
+
+  return (
+    <section className="overflow-hidden rounded-lg" style={panelStyle("rgba(34,211,238,0.15)")}>
+      <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-3.5">
+        <div className="min-w-0">
+          <p
+            className="font-sans text-[11px] font-semibold uppercase tracking-[0.16em]"
+            style={{ color: COLORS.muted }}
+          >
+            Guided Demo
+          </p>
+          <p className="mt-1 text-[13px] font-medium" style={{ color: COLORS.slate }}>
+            Seed canonical demo cases and open the fraud evidence dossier in one click.
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1">
+            {DEMO_FLOW_STEPS.map((step, i) => (
+              <span key={step} className="flex items-center gap-1">
+                <span
+                  className="font-sans text-[10px] font-semibold uppercase tracking-[0.1em]"
+                  style={{ color: COLORS.quiet }}
+                >
+                  {step}
+                </span>
+                {i < DEMO_FLOW_STEPS.length - 1 && (
+                  <span style={{ color: COLORS.quiet, fontSize: "10px" }}>›</span>
+                )}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <button
+            onClick={handleRunDemo}
+            disabled={status === "loading"}
+            className="flex items-center gap-2 rounded border px-4 py-2 font-sans text-[12px] font-semibold uppercase tracking-[0.12em] transition hover:opacity-80 disabled:cursor-wait disabled:opacity-50"
+            style={{
+              color: COLORS.cyan,
+              borderColor: `${COLORS.cyan}55`,
+              background: `${COLORS.cyan}10`,
+            }}
+          >
+            {status === "loading" ? (
+              <>
+                <span className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
+                Seeding...
+              </>
+            ) : (
+              <>
+                Run Demo
+                <ArrowRight className="h-3.5 w-3.5" />
+              </>
+            )}
+          </button>
+
+          {status === "error" && (
+            <p
+              className="max-w-[300px] text-right text-[11px] leading-snug"
+              style={{ color: COLORS.red }}
+            >
+              {errorMsg}
+              <span className="mt-0.5 block" style={{ color: COLORS.muted }}>
+                Fallback:{" "}
+                <span style={{ fontFamily: "monospace" }}>
+                  python scripts/demo_seed.py
+                </span>
+              </span>
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function OverviewPage() {
   const summary = useDailySummary();
   const stale = useStaleCases(120);
@@ -635,6 +743,8 @@ export default function OverviewPage() {
           </div>
         </div>
       </header>
+
+      <DemoLauncher />
 
       {summary.isLoading && (
         <div className="h-[142px] animate-pulse rounded-lg" style={panelStyle("rgba(148,163,184,0.14)")} />

@@ -371,6 +371,139 @@ def get_prediction(transaction_id: str):
     return prediction
 
 
+# ---------------------------------------------------------------------------
+# Demo seed — Phase 20G
+# Idempotent endpoint that creates canonical demo transactions using the
+# inline sync scoring path. No Ollama, no Kafka publish, no schema change.
+# ---------------------------------------------------------------------------
+
+_DEMO_SHOWCASE_TXN: dict = {
+    "transaction_id": "demo_intake_showcase_001",
+    "user_id": "demo_user_ru_002",
+    "merchant_id": "demo_merchant_elec_002",
+    "amount": 8500,
+    "timestamp": "2026-05-14T02:30:00Z",
+    "currency": "USD",
+    "country": "RU",
+    "city": "Moscow",
+    "payment_method": "credit_card",
+    "merchant_category": "electronics",
+    "is_international": True,
+    "device_id": None,
+    "device_type": "mobile",
+    "ip_address": "185.220.101.42",
+}
+
+_DEMO_REVIEW_TXN: dict = {
+    "transaction_id": "demo_review_false_positive_001_a750",
+    "user_id": "demo_user_ru_001",
+    "merchant_id": "demo_merchant_elec_001",
+    "amount": 750,
+    "timestamp": "2026-05-14T02:00:00Z",
+    "currency": "USD",
+    "country": "RU",
+    "city": "Moscow",
+    "payment_method": "credit_card",
+    "merchant_category": "electronics",
+    "is_international": True,
+    "device_id": None,
+    "device_type": "mobile",
+    "ip_address": "185.220.101.42",
+}
+
+
+def _score_demo_transaction(txn: dict) -> dict | None:
+    """Score one transaction inline using the sync path. Returns the stored row."""
+    df = pd.DataFrame([txn])
+    df = generate_basic_features(df)
+    df["model_prediction"] = predict(df)
+    df = apply_fraud_rules(df)
+    df = triage_decision(df)
+
+    row = df.iloc[0]
+    reasons_str = generate_reasons(df).iloc[0]
+
+    case_id = log_prediction({
+        "transaction_id": txn["transaction_id"],
+        "amount": txn["amount"],
+        "timestamp": txn["timestamp"],
+        "rule_flag": int(row["rule_flag"]),
+        "model_prediction": int(row["model_prediction"]),
+        "risk_score": float(row["risk_score"]),
+        "decision": str(row["decision"]),
+        "reasons": reasons_str,
+    })
+
+    if case_id is None:
+        return get_prediction_by_transaction_id(txn["transaction_id"])
+    return get_prediction_by_id(case_id)
+
+
+@app.post("/demo/seed")
+def seed_demo_state():
+    """
+    Idempotent demo state seeder.
+
+    Creates two canonical demo transactions via inline sync scoring:
+    - showcase: high-risk BLOCK candidate for evidence inspection
+    - review:   lower-risk transaction with FALSE_POSITIVE verdict applied
+
+    Does not publish to Kafka, does not call Ollama, does not modify schema.
+    Returns both case IDs and the recommended 7-step reviewer walkthrough route.
+    """
+    seeded_any = False
+
+    showcase = get_prediction_by_transaction_id("demo_intake_showcase_001")
+    if showcase is None:
+        showcase = _score_demo_transaction(_DEMO_SHOWCASE_TXN)
+        seeded_any = True
+
+    review = get_prediction_by_transaction_id("demo_review_false_positive_001_a750")
+    if review is None:
+        review = _score_demo_transaction(_DEMO_REVIEW_TXN)
+        seeded_any = True
+
+    if review and review.get("analyst_status") is None:
+        update_review(
+            review["id"],
+            "FALSE_POSITIVE",
+            "Low-value international transaction. Fraud signal insufficient. Marked false positive.",
+            datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        )
+
+    primary_case_id = showcase["id"] if showcase else None
+
+    return {
+        "status": "seeded" if seeded_any else "already_exists",
+        "message": "Demo state ready. Open the Case Dossier to inspect fraud evidence.",
+        "case_id": primary_case_id,
+        "case_url": f"/cases/{primary_case_id}" if primary_case_id else None,
+        "recommended_flow": [
+            "/",
+            "/intake",
+            "/queue",
+            f"/cases/{primary_case_id}" if primary_case_id else "/queue",
+            "/workflow/events",
+            "/workflow/metrics",
+            "/risk-scan",
+        ],
+        "cases": {
+            "showcase": {
+                "case_id": showcase["id"] if showcase else None,
+                "decision": showcase.get("decision") if showcase else None,
+                "risk_score": showcase.get("risk_score") if showcase else None,
+                "description": "Primary demo case — high-risk BLOCK decision, evidence inspection.",
+            },
+            "review": {
+                "case_id": review["id"] if review else None,
+                "decision": review.get("decision") if review else None,
+                "analyst_status": "FALSE_POSITIVE",
+                "description": "Secondary demo case — FALSE_POSITIVE verdict applied.",
+            },
+        },
+    }
+
+
 @app.get("/cases/{case_id}/investigation")
 def get_investigation(case_id: int):
     """
