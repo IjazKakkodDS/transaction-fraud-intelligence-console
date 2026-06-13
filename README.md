@@ -597,6 +597,25 @@ real-time-fraud-triage-system/
 
 **Prerequisites:** Docker Desktop, Node.js 18+, Python 3.11+. Ollama on host for AI investigations.
 
+**Model artifact**
+
+`saved_models/fraud_model.pkl` is tracked in this repository. It is a small (≈106 KB), fully
+deterministic XGBoost artifact required by the Docker image at runtime — `docker compose build`
+copies it into the container. No separate download or training step is needed for a fresh clone.
+
+The artifact is one component of the broader 4-layer hybrid scoring engine. It is not an autonomous
+decision system; analyst verdict is required before any operational action.
+
+To rebuild the artifact from source (optional — for retraining or checksum verification):
+```
+python data/synthetic/generate_transactions.py   # produces data/synthetic/transactions.csv
+python -m src.models.train_model                 # produces saved_models/fraud_model.pkl
+```
+
+`data/synthetic/transactions.csv` is generated and gitignored. The generator and trainer both use
+deterministic seed 42. See [docs/MODEL_CARD.md](docs/MODEL_CARD.md) for the full artifact contract,
+feature schema, and checksum.
+
 **Backend**
 ```
 cd C:\ml_projects\real-time-fraud-triage-system

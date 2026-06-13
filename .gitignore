@@ -49,6 +49,8 @@ data/synthetic/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/synthetic/.gitkeep
+# Generator source is tracked; the CSV it produces is intentionally ignored.
+!data/synthetic/generate_transactions.py
 
 # =============================================================================
 # Database files
@@ -68,6 +70,9 @@ database/
 # =============================================================================
 saved_models/*
 !saved_models/.gitkeep
+# Baseline model artifact — small (≈106 KB), deterministic, required for fresh-clone runtime.
+# Rebuild: python data/synthetic/generate_transactions.py && python -m src.models.train_model
+!saved_models/fraud_model.pkl
 
 # =============================================================================
 # Reports and figures
@@ -187,6 +192,7 @@ scripts/verify_*.mjs
 !scripts/verify_adversarial_detection.py
 !scripts/verify_investigation_evidence.py
 !scripts/verify_investigation_failure.py
+!scripts/verify_release_readiness.py
 scripts/test_adversarial_*.csv
 verify_header.js
 
