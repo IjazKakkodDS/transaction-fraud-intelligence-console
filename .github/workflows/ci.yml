@@ -1,0 +1,97 @@
+name: Fraud Console CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+# -------------------------------------------------------------------------
+# What this CI covers
+# -------------------------------------------------------------------------
+# Job 1 — backend-release-readiness
+#   - Python 3.11 compile check across src/
+#   - 41-check release readiness validator (files, model artifact, checksums,
+#     screenshots, secret hygiene, stale phrase scan)
+#   - Model artifact load and type verification via joblib
+#   - Investigation failure classification smoke check (no Ollama, no DB)
+#   - Investigation evidence grouping smoke check (no Ollama, no DB)
+#
+# Job 2 — frontend-build
+#   - npm ci (clean install against package-lock.json)
+#   - ESLint via npm run lint
+#   - Next.js production build via npm run build
+#
+# What is NOT in CI (by design — see docs/MLOPS_READINESS.md)
+# -------------------------------------------------------------------------
+# - Docker / PostgreSQL / Redpanda / Redis / n8n services
+# - Ollama LLM inference
+# - Playwright E2E tests (require the full live stack)
+#
+# E2E tests are a local release gate: run `npm run test:e2e` from
+# fraud-console/ against the live Docker Compose stack before every push.
+# -------------------------------------------------------------------------
+
+jobs:
+  backend-release-readiness:
+    name: Backend — Release Readiness
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Python compile check (src/)
+        run: python -m compileall src/ -q
+
+      - name: Release readiness — 41 checks
+        run: python scripts/verify_release_readiness.py
+
+      - name: Model artifact load check
+        run: |
+          python -c "
+          import joblib
+          m = joblib.load('saved_models/fraud_model.pkl')
+          print('OK:', type(m).__name__)
+          "
+
+      - name: Investigation failure classification smoke check
+        run: python scripts/verify_investigation_failure.py
+
+      - name: Investigation evidence grouping smoke check
+        run: python scripts/verify_investigation_evidence.py
+
+  frontend-build:
+    name: Frontend — Production Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: fraud-console/package-lock.json
+
+      - name: Install dependencies
+        working-directory: fraud-console
+        run: npm ci
+
+      - name: Lint
+        working-directory: fraud-console
+        run: npm run lint
+
+      - name: Build production bundle
+        working-directory: fraud-console
+        run: npm run build

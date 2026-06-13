@@ -669,6 +669,26 @@ local-only and intentionally gitignored.
 
 ---
 
+## CI and MLOps Readiness
+
+GitHub Actions CI runs on every push and pull request to `master`/`main`:
+
+| Job | Steps |
+|---|---|
+| `backend-release-readiness` | Python 3.11 compile check, 41-check release readiness validator, model artifact load and checksum verification, investigation smoke checks |
+| `frontend-build` | `npm ci`, ESLint, `next build --webpack` (Node.js LTS) |
+
+**What CI does not run:** Docker / PostgreSQL / Redpanda / Redis / Ollama services.
+E2E Playwright tests (`npm run test:e2e`, 11 checks) require the full live stack
+and are the **local pre-push gate** — run them from `fraud-console/` before every push.
+
+MLOps maturity: **L2+** — release engineering, artifact governance, and CI validation
+are implemented. MLflow, feature store, automated retraining, drift monitoring, and
+canary deployment are identified enterprise expansion controls, documented in
+[docs/MLOPS_READINESS.md](docs/MLOPS_READINESS.md) as the future L3 roadmap.
+
+---
+
 ## Key Documents
 
 | Document | Purpose |
