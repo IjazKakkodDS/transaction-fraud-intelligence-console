@@ -8,6 +8,7 @@ import {
   ArrowRight,
   BarChart2,
   ClipboardList,
+  ExternalLink,
   LayoutDashboard,
 } from "lucide-react";
 import { useDailySummary } from "@/lib/hooks/useDailySummary";
@@ -603,22 +604,50 @@ function ProductModules() {
   );
 }
 
-const DEMO_FLOW_STEPS = [
-  "Overview",
-  "Intake",
-  "Queue",
-  "Case Dossier",
-  "Workflow Events",
-  "Reliability",
-  "Risk Scan",
+const INVESTIGATION_CAPABILITIES = [
+  {
+    label: "4-Layer Fraud Scoring",
+    detail: "Hybrid ML/rule base, enriched signals, behavioural profiling, and graph mule-network detection",
+    color: COLORS.cyan,
+  },
+  {
+    label: "Evidence-Led Case Dossier",
+    detail: "Grouped evidence by intelligence layer — behavioural anomalies, graph indicators, reason codes, lifecycle timeline",
+    color: COLORS.amber,
+  },
+  {
+    label: "Model Attribution",
+    detail: "XGBoost feature contributions via TreeSHAP — per-feature logit impact ranked by magnitude",
+    color: COLORS.cyan,
+  },
+  {
+    label: "AI Investigation Brief",
+    detail: "AGENT_VERSION-tagged brief with recommendation, confidence, escalation logic, and playbook retrieval evidence",
+    color: COLORS.amber,
+  },
+  {
+    label: "Analyst Decision Loop",
+    detail: "Verdict capture, false-positive classification, workflow dispatch, and case-scoped automation audit",
+    color: COLORS.green,
+  },
+  {
+    label: "Reliability and Scale",
+    detail: "SLO-style pipeline health metrics and 10M-transaction portfolio risk scan benchmark evidence",
+    color: COLORS.green,
+  },
 ];
 
-function DemoLauncher() {
+const INVESTIGATION_FLOW = [
+  "Overview", "Intake", "Queue", "Case Dossier",
+  "Attribution", "AI Brief", "Workflow Audit", "Reliability", "Risk Scan",
+];
+
+function GuidedInvestigationPanel() {
   const router = useRouter();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  async function handleRunDemo() {
+  async function handleLaunch() {
     setStatus("loading");
     setErrorMsg("");
     try {
@@ -636,72 +665,154 @@ function DemoLauncher() {
 
   return (
     <section className="overflow-hidden rounded-lg" style={panelStyle("rgba(34,211,238,0.15)")}>
-      <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-3.5">
-        <div className="min-w-0">
-          <p
-            className="font-sans text-[11px] font-semibold uppercase tracking-[0.16em]"
-            style={{ color: COLORS.muted }}
-          >
-            Guided Demo
-          </p>
-          <p className="mt-1 text-[13px] font-medium" style={{ color: COLORS.slate }}>
-            Seed canonical demo cases and open the fraud evidence dossier in one click.
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1">
-            {DEMO_FLOW_STEPS.map((step, i) => (
-              <span key={step} className="flex items-center gap-1">
-                <span
-                  className="font-sans text-[10px] font-semibold uppercase tracking-[0.1em]"
-                  style={{ color: COLORS.quiet }}
-                >
-                  {step}
-                </span>
-                {i < DEMO_FLOW_STEPS.length - 1 && (
-                  <span style={{ color: COLORS.quiet, fontSize: "10px" }}>›</span>
-                )}
+      <div className="px-5 pb-4 pt-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p
+                className="font-sans text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: COLORS.muted }}
+              >
+                Guided Investigation
+              </p>
+              <span
+                className="rounded px-1.5 py-0.5 font-sans text-[9px] font-semibold uppercase tracking-[0.14em]"
+                style={{
+                  background: "rgba(34,211,238,0.08)",
+                  color: COLORS.cyan,
+                  border: "1px solid rgba(34,211,238,0.22)",
+                }}
+              >
+                Controlled Workflow Demo
               </span>
-            ))}
+            </div>
+            <h2 className="mt-1 text-[15px] font-semibold" style={{ color: COLORS.slate }}>
+              Guided Investigation Command Panel
+            </h2>
+            <p className="mt-0.5 text-[12px]" style={{ color: COLORS.muted }}>
+              Seeds canonical demo cases and opens the fraud evidence dossier. Walk each system capability end-to-end.
+            </p>
+          </div>
+
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <button
+              onClick={handleLaunch}
+              disabled={status === "loading"}
+              className="flex items-center gap-2 rounded border px-4 py-2 font-sans text-[12px] font-semibold uppercase tracking-[0.12em] transition hover:opacity-80 disabled:cursor-wait disabled:opacity-50"
+              style={{
+                color: COLORS.cyan,
+                borderColor: `${COLORS.cyan}55`,
+                background: `${COLORS.cyan}10`,
+              }}
+            >
+              {status === "loading" ? (
+                <>
+                  <span className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
+                  Seeding...
+                </>
+              ) : (
+                <>
+                  Launch Guided Investigation
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </>
+              )}
+            </button>
+
+            {status === "error" && (
+              <p
+                className="max-w-[300px] text-right text-[11px] leading-snug"
+                style={{ color: COLORS.red }}
+              >
+                {errorMsg}
+                <span className="mt-0.5 block" style={{ color: COLORS.muted }}>
+                  Fallback:{" "}
+                  <span style={{ fontFamily: "monospace" }}>
+                    python scripts/demo_seed.py
+                  </span>
+                </span>
+              </p>
+            )}
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <button
-            onClick={handleRunDemo}
-            disabled={status === "loading"}
-            className="flex items-center gap-2 rounded border px-4 py-2 font-sans text-[12px] font-semibold uppercase tracking-[0.12em] transition hover:opacity-80 disabled:cursor-wait disabled:opacity-50"
-            style={{
-              color: COLORS.cyan,
-              borderColor: `${COLORS.cyan}55`,
-              background: `${COLORS.cyan}10`,
-            }}
-          >
-            {status === "loading" ? (
-              <>
-                <span className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
-                Seeding...
-              </>
-            ) : (
-              <>
-                Run Demo
-                <ArrowRight className="h-3.5 w-3.5" />
-              </>
-            )}
-          </button>
-
-          {status === "error" && (
-            <p
-              className="max-w-[300px] text-right text-[11px] leading-snug"
-              style={{ color: COLORS.red }}
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {INVESTIGATION_CAPABILITIES.map((cap) => (
+            <div
+              key={cap.label}
+              className="rounded-md px-3 py-2.5"
+              style={{
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.06)",
+              }}
             >
-              {errorMsg}
-              <span className="mt-0.5 block" style={{ color: COLORS.muted }}>
-                Fallback:{" "}
-                <span style={{ fontFamily: "monospace" }}>
-                  python scripts/demo_seed.py
-                </span>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
+                  style={{ background: cap.color }}
+                />
+                <p className="text-[12px] font-semibold" style={{ color: COLORS.slate }}>
+                  {cap.label}
+                </p>
+              </div>
+              <p className="mt-1 text-[11px] leading-snug" style={{ color: COLORS.muted }}>
+                {cap.detail}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-x-1 gap-y-1">
+          <span
+            className="font-sans text-[10px] font-semibold uppercase tracking-[0.1em]"
+            style={{ color: COLORS.quiet }}
+          >
+            Workflow Path:
+          </span>
+          {INVESTIGATION_FLOW.map((step, i) => (
+            <span key={step} className="flex items-center gap-1">
+              <span
+                className="font-sans text-[10px] font-semibold uppercase tracking-[0.1em]"
+                style={{ color: COLORS.quiet }}
+              >
+                {step}
               </span>
-            </p>
-          )}
+              {i < INVESTIGATION_FLOW.length - 1 && (
+                <span style={{ color: COLORS.quiet, fontSize: "10px" }}>›</span>
+              )}
+            </span>
+          ))}
+        </div>
+
+        <div
+          className="mt-3 flex flex-wrap items-center gap-4 pt-3"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+        >
+          <Link
+            href="/queue"
+            className="flex items-center gap-1 font-sans text-[11px] font-semibold uppercase tracking-[0.1em] transition hover:opacity-70"
+            style={{ color: COLORS.muted }}
+          >
+            Open Review Queue
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+          <Link
+            href="/risk-scan?scan_id=aa0971d2-bdb6-49c7-bac3-fa355aa161ad"
+            className="flex items-center gap-1 font-sans text-[11px] font-semibold uppercase tracking-[0.1em] transition hover:opacity-70"
+            style={{ color: COLORS.muted }}
+          >
+            10M Portfolio Scan
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+          <a
+            href="http://localhost:8000/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 font-sans text-[11px] font-semibold uppercase tracking-[0.1em] transition hover:opacity-70"
+            style={{ color: COLORS.muted }}
+          >
+            View API Docs
+            <ExternalLink className="h-3 w-3" />
+          </a>
         </div>
       </div>
     </section>
@@ -744,7 +855,7 @@ export default function OverviewPage() {
         </div>
       </header>
 
-      <DemoLauncher />
+      <GuidedInvestigationPanel />
 
       {summary.isLoading && (
         <div className="h-[142px] animate-pulse rounded-lg" style={panelStyle("rgba(148,163,184,0.14)")} />

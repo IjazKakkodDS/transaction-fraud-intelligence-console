@@ -676,14 +676,14 @@ See [docs/DEMO_STATE.md](docs/DEMO_STATE.md) for canonical case profiles, walkth
 With the stack running (`docker compose up -d --build`) and the frontend live (`npm run dev`):
 
 1. Open **http://localhost:3000** (Fraud Intelligence Command Center)
-2. Click **Run Demo** — seeds two canonical fraud cases via `POST /demo/seed` and navigates directly to the Case Dossier
+2. Click **Launch Guided Investigation** — seeds two canonical fraud cases via `POST /demo/seed` and navigates directly to the Case Dossier
 3. Inspect the **Case Dossier**: grouped evidence chips (base, rich, behavioural, graph layers), lifecycle timeline, risk score summary
 4. Return to **Review Queue** (`/queue`) to see both cases with decision tier labels and risk score bars
 5. Open the second case (FALSE_POSITIVE verdict already applied) to inspect the analyst review workflow
 6. Navigate to **Workflow Events** (`/workflow/events`) for the automation audit trail
 7. Navigate to **Reliability Metrics** (`/workflow/metrics`) for pipeline health
 
-**Without the Run Demo button** (fresh clone, no Docker stack yet):
+**Without the Launch Guided Investigation button** (fresh clone, no Docker stack yet):
 ```
 python scripts/demo_seed.py
 ```
