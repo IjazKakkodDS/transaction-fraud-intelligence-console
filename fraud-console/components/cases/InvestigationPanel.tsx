@@ -277,11 +277,11 @@ export function InvestigationPanel({ caseId, reviewedAt }: InvestigationPanelPro
   const { mutate, isPending, isError, error } = useTriggerInvestigation(caseId);
 
   // Reset pollingUntil when the window expires so the empty state reappears.
+  // Math.max(0, remaining) handles the already-expired case without a synchronous setState.
   useEffect(() => {
     if (pollingUntil === null) return;
     const remaining = pollingUntil - Date.now();
-    if (remaining <= 0) { setPollingUntil(null); return; }
-    const timer = setTimeout(() => setPollingUntil(null), remaining);
+    const timer = setTimeout(() => setPollingUntil(null), Math.max(0, remaining));
     return () => clearTimeout(timer);
   }, [pollingUntil]);
 
@@ -292,8 +292,7 @@ export function InvestigationPanel({ caseId, reviewedAt }: InvestigationPanelPro
   }
 
   const isComplete = data && data.status === "COMPLETE";
-  const isWithinPollingWindow =
-    data === null && pollingUntil !== null && Date.now() < pollingUntil;
+  const isWithinPollingWindow = data === null && pollingUntil !== null;
 
   return (
     <div

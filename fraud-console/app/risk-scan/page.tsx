@@ -167,51 +167,6 @@ function Skeleton({ rows = 4 }: { rows?: number }) {
   );
 }
 
-// ─── Validation strip ────────────────────────────────────────────────────────
-
-type UploadCounts = {
-  total_rows: number;
-  valid_rows: number;
-  invalid_rows: number;
-  skipped_rows: number;
-};
-
-function ValidationStrip({ data }: { data: UploadCounts }) {
-  const cells = [
-    { label: "Total Rows", value: data.total_rows,   color: "#C9D1D9" },
-    { label: "Valid",      value: data.valid_rows,   color: "#10B981" },
-    { label: "Invalid",    value: data.invalid_rows, color: data.invalid_rows > 0 ? "#FF4D4D" : "#6B7280" },
-    { label: "Skipped",    value: data.skipped_rows, color: data.skipped_rows > 0 ? "#F59E0B" : "#6B7280" },
-  ];
-  return (
-    <div className="card overflow-hidden">
-      <div
-        className="px-4 py-2.5"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
-      >
-        <p className="section-label">CSV Validation</p>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4">
-        {cells.map((c) => (
-          <div
-            key={c.label}
-            className="px-4 py-3"
-            style={{ borderRight: "1px solid rgba(255,255,255,0.05)" }}
-          >
-            <p
-              className="text-[22px] font-semibold tabular-nums leading-none"
-              style={{ color: c.color }}
-            >
-              {c.value}
-            </p>
-            <p className="mt-1.5 metric-label">{c.label}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function statusLabel(status: RiskScanStatus["status"]): string {
   switch (status) {
     case "QUEUED":
@@ -1377,19 +1332,22 @@ export default function RiskScanPage() {
     const params = new URLSearchParams(window.location.search);
     const queryScanId = params.get("scan_id")?.trim();
 
+    let timerId: ReturnType<typeof setTimeout> | undefined;
+
     if (queryScanId) {
-      activateScan(queryScanId, "query");
-      return;
+      timerId = setTimeout(() => activateScan(queryScanId, "query"), 0);
+    } else {
+      try {
+        const savedScanId = window.localStorage.getItem(LAST_SCAN_ID_KEY)?.trim();
+        if (savedScanId) {
+          timerId = setTimeout(() => activateScan(savedScanId, "storage"), 0);
+        }
+      } catch {
+        // Ignore storage failures; manual resume still works.
+      }
     }
 
-    try {
-      const savedScanId = window.localStorage.getItem(LAST_SCAN_ID_KEY)?.trim();
-      if (savedScanId) {
-        activateScan(savedScanId, "storage");
-      }
-    } catch {
-      // Ignore storage failures; manual resume still works.
-    }
+    return () => { if (timerId !== undefined) clearTimeout(timerId); };
   }, []);
 
   // Fetch recent scans once on mount

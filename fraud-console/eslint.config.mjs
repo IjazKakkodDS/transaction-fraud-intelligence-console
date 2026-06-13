@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Demo automation scripts are not product runtime code — exclude from lint.
+    "demo/**",
   ]),
 ]);
 
