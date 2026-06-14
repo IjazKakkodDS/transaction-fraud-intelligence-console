@@ -150,7 +150,7 @@ export function ModelAttributionPanel({ caseId }: ModelAttributionPanelProps) {
             {data.explanation_method}
           </span>
           <span className="text-[11px]" style={{ color: "#4B5563" }}>
-            bias {data.bias_logit.toFixed(3)}
+            baseline {data.bias_logit.toFixed(3)}
           </span>
         </div>
       </div>
@@ -170,7 +170,7 @@ export function ModelAttributionPanel({ caseId }: ModelAttributionPanelProps) {
             </span>
           </div>
           <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#4B5563" }}>
-            Logit units
+            Impact score
           </span>
         </div>
 

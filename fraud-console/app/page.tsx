@@ -607,22 +607,22 @@ function ProductModules() {
 const INVESTIGATION_CAPABILITIES = [
   {
     label: "4-Layer Fraud Scoring",
-    detail: "Hybrid ML/rule base, enriched signals, behavioural profiling, and graph mule-network detection",
+    detail: "Hybrid model and rules baseline, enriched transaction signals, behavioural profiling, and network-risk detection",
     color: COLORS.cyan,
   },
   {
     label: "Evidence-Led Case Dossier",
-    detail: "Grouped evidence by intelligence layer — behavioural anomalies, graph indicators, reason codes, lifecycle timeline",
+    detail: "Grouped evidence across intelligence layers: behavioural signals, network-risk indicators, reason codes, and case timeline",
     color: COLORS.amber,
   },
   {
     label: "Model Attribution",
-    detail: "XGBoost feature contributions via TreeSHAP — per-feature logit impact ranked by magnitude",
+    detail: "Baseline risk model feature contributions ranked by impact on the model assessment",
     color: COLORS.cyan,
   },
   {
     label: "AI Investigation Brief",
-    detail: "AGENT_VERSION-tagged brief with recommendation, confidence, escalation logic, and playbook retrieval evidence",
+    detail: "Versioned investigation brief with recommendation, confidence, escalation logic, and retrieved playbook evidence",
     color: COLORS.amber,
   },
   {
@@ -690,7 +690,7 @@ function GuidedInvestigationPanel() {
               Guided Investigation Command Panel
             </h2>
             <p className="mt-0.5 text-[12px]" style={{ color: COLORS.muted }}>
-              Seeds canonical demo cases and opens the fraud evidence dossier. Walk each system capability end-to-end.
+              Launches a controlled investigation case and opens the fraud evidence dossier. Walk each system capability end-to-end.
             </p>
           </div>
 

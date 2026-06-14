@@ -111,7 +111,7 @@ export function CaseTimeline({ caseData, caseId }: CaseTimelineProps) {
         <div className="px-5 pb-5">
           {distinctTypes <= 2 && (
             <p className="mb-3 text-[11px]" style={{ color: "#6B7280" }}>
-              Partial lifecycle evidence — only {distinctTypes} of 4 event types are available for this case.
+              Partial lifecycle evidence: only {distinctTypes} of 4 event types are available for this case.
             </p>
           )}
           <ol className="space-y-0">
