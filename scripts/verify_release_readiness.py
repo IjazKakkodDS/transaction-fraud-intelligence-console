@@ -190,9 +190,10 @@ for path in MUST_NOT_BE_TRACKED:
     tracked = git_ls_files(path)
     check(f"not tracked: {path}", len(tracked) == 0, f"tracked={tracked or 'none'}")
 
-# Check demo output folder (videos)
+# Check demo output folder (videos) — only the flagship product walkthrough MP4 is allowed
+ALLOWED_VIDEOS = {"fraud-console/demo/output/fraud-console-full-product-walkthrough.mp4"}
 demo_tracked = git_ls_files("fraud-console/demo/output")
-video_tracked = [f for f in demo_tracked if f.endswith((".mp4", ".webm"))]
+video_tracked = [f for f in demo_tracked if f.endswith((".mp4", ".webm")) and f not in ALLOWED_VIDEOS]
 check(
     "no video files tracked in fraud-console/demo/output",
     len(video_tracked) == 0,

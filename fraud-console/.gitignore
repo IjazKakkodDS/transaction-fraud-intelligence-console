@@ -45,11 +45,16 @@ next-env.d.ts
 /playwright-report/
 *.webm
 
-# Demo recording output — generated video, audio files, never committed
+# Demo recording output — generated video, audio files, not committed by default
 /demo/output/*
 !/demo/output/.gitkeep
+# Flagship product walkthrough — committed as portfolio evidence (14.65 MB)
+!/demo/output/fraud-console-full-product-walkthrough.mp4
+!/demo/output/fraud-console-full-product-walkthrough-contact-sheet.png
 /demo/audio/*
 *.mp4
+# Re-include the flagship MP4 after the blanket *.mp4 exclusion above
+!/demo/output/fraud-console-full-product-walkthrough.mp4
 *.mp3
 *.wav
 *.m4a
