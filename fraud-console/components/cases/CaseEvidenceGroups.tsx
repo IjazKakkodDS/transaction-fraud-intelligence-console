@@ -95,7 +95,7 @@ export function CaseEvidenceGroups({ reasons }: CaseEvidenceGroupsProps) {
       ) : (
         <>
           <EvidenceSection
-            title="Base / Transaction Signals"
+            title="Base Transaction Signals"
             description="Transaction-level model and deterministic rule evidence."
             items={evidence.base}
             icon={<ShieldAlert size={16} aria-hidden="true" />}

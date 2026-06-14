@@ -80,7 +80,7 @@ export function ScoreResult({ prediction, onReset }: ScoreResultProps) {
       value: prediction.model_prediction === null ? "N/A" : String(prediction.model_prediction),
       color: "#C9D1D9",
       helper:
-        "Model output from the enhanced fraud classifier. A value of 1 means the model classified the transaction as high risk.",
+        "Model output from the baseline fraud classifier. A value of 1 means the model classified the transaction as high risk.",
     },
   ];
 
@@ -254,7 +254,7 @@ export function ScoreResult({ prediction, onReset }: ScoreResultProps) {
           Next step: continue the case lifecycle from the dossier.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
-          {["Case Dossier", "AI Investigation", "Analyst Verdict"].map((step, index) => (
+          {["Case Dossier", "AI Investigation Brief", "Analyst Verdict"].map((step, index) => (
             <span
               key={step}
               className="inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-[12px] font-medium"

@@ -632,7 +632,7 @@ const INVESTIGATION_CAPABILITIES = [
   },
   {
     label: "Reliability and Scale",
-    detail: "SLO-style pipeline health metrics and 10M-transaction portfolio risk scan benchmark evidence",
+    detail: "Reliability target metrics and 10M-transaction portfolio risk scan benchmark evidence",
     color: COLORS.green,
   },
 ];

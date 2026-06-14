@@ -233,7 +233,7 @@ function ReliabilityTargetPanel({ metrics }: { metrics: WorkflowMetrics }) {
       <div className="mb-4">
         <p className="section-label">Reliability Targets</p>
         <p className="mt-1 text-[12px]" style={{ color: "#94A3B8" }}>
-          SLO-style tracking for workflow automation health.
+          Reliability target tracking for workflow automation health.
         </p>
       </div>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">

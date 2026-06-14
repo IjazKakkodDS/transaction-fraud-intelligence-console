@@ -303,7 +303,7 @@ export function InvestigationPanel({ caseId, reviewedAt }: InvestigationPanelPro
           : undefined
       }
     >
-      <p className="section-label mb-4">AI Investigation</p>
+      <p className="section-label mb-4">AI Investigation Brief</p>
 
       {isLoading && (
         <p className="text-[13px]" style={{ color: "#4B5563" }}>

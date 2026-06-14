@@ -78,7 +78,7 @@ export function CaseScoreSummary({ caseData }: CaseScoreSummaryProps) {
         <SummaryCell
           label="Final Risk Score"
           value={formatRiskScore(caseData.risk_score)}
-          detail="Final persisted score; no frontend recalculation."
+          detail="Score recorded at time of transaction assessment."
           icon={<ScanSearch size={16} aria-hidden="true" />}
           color={decisionColor(caseData.decision)}
         />
@@ -92,13 +92,13 @@ export function CaseScoreSummary({ caseData }: CaseScoreSummaryProps) {
         <SummaryCell
           label="Model Signal"
           value={signalLabel(caseData.model_prediction, "Flagged", "Not flagged")}
-          detail="Binary model signal available on the case record."
+          detail="Model risk classification from the fraud assessment."
           icon={<BrainCircuit size={16} aria-hidden="true" />}
         />
         <SummaryCell
           label="Deterministic Rule"
           value={signalLabel(caseData.rule_flag, "Triggered", "No match")}
-          detail="Rule result available on the case record."
+          detail="Deterministic rule match recorded with the case decision."
           icon={<ShieldCheck size={16} aria-hidden="true" />}
         />
       </div>

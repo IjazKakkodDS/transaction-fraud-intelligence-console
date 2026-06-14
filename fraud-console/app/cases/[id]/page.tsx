@@ -54,7 +54,7 @@ export default function CasePage({ params }: CasePageProps) {
         className="pb-4"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
       >
-        <p className="route-label mb-1">Case Dossier 2.0</p>
+        <p className="route-label mb-1">Case Dossier</p>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="page-hero-title">Case #{caseId}</h1>
           <Link
