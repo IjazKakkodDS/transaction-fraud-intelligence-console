@@ -55,6 +55,9 @@ next-env.d.ts
 *.mp4
 # Re-include the flagship MP4 after the blanket *.mp4 exclusion above
 !/demo/output/fraud-console-full-product-walkthrough.mp4
+# Portfolio evidence repair v3 (Phase 20M-PortfolioEvidenceRepair)
+!/demo/output/fraud-console-full-product-walkthrough-v3.mp4
+!/demo/output/fraud-console-full-product-walkthrough-v3-contact-sheet.png
 *.mp3
 *.wav
 *.m4a
