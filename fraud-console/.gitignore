@@ -58,6 +58,11 @@ next-env.d.ts
 # Portfolio evidence repair v3 (Phase 20M-PortfolioEvidenceRepair)
 !/demo/output/fraud-console-full-product-walkthrough-v3.mp4
 !/demo/output/fraud-console-full-product-walkthrough-v3-contact-sheet.png
+# Pitch finishing pass v4 (Phase 20M-PitchFinishingPass)
+!/demo/output/fraud-console-full-product-walkthrough-v4.mp4
+!/demo/output/fraud-console-full-product-walkthrough-v4-contact-sheet.png
+!/demo/output/pitch-title-card.png
+!/demo/output/pitch-closing-card.png
 *.mp3
 *.wav
 *.m4a
