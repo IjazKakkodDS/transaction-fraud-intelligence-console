@@ -63,6 +63,11 @@ next-env.d.ts
 !/demo/output/fraud-console-full-product-walkthrough-v4-contact-sheet.png
 !/demo/output/pitch-title-card.png
 !/demo/output/pitch-closing-card.png
+# Executive pitch cut v5 (Phase 20M-V5VoiceApprovedExecutiveCut)
+!/demo/output/fraud-console-full-product-walkthrough-v5.mp4
+!/demo/output/fraud-console-full-product-walkthrough-v5-contact-sheet.png
+!/demo/output/pitch-title-card-v5.png
+!/demo/output/pitch-closing-card-v5.png
 *.mp3
 *.wav
 *.m4a
