@@ -190,23 +190,9 @@ for path in MUST_NOT_BE_TRACKED:
     tracked = git_ls_files(path)
     check(f"not tracked: {path}", len(tracked) == 0, f"tracked={tracked or 'none'}")
 
-# Check demo output folder (videos) — only the flagship product walkthrough MP4s are allowed
-ALLOWED_VIDEOS = {
-    "fraud-console/demo/output/fraud-console-full-product-walkthrough.mp4",
-    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v1.mp4",
-    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v2.mp4",
-    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v3.mp4",
-    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v4.mp4",
-    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v5.mp4",
-    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v6.mp4",
-    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v6-subtitled.mp4",
-    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v7.mp4",
-    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v7-subtitled.mp4",
-    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v8.mp4",
-    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v8-subtitled.mp4",
-    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v9.mp4",
-    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v9-subtitled.mp4",
-}
+# Check demo output folder (videos) — no MP4s should be git-tracked
+# All video artifacts are hosted externally (Phase 20DPLY-A cleanup)
+ALLOWED_VIDEOS: set = set()
 demo_tracked = git_ls_files("fraud-console/demo/output")
 video_tracked = [f for f in demo_tracked if f.endswith((".mp4", ".webm")) and f not in ALLOWED_VIDEOS]
 check(

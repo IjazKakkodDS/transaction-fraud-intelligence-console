@@ -45,50 +45,18 @@ next-env.d.ts
 /playwright-report/
 *.webm
 
-# Demo recording output — generated video, audio files, not committed by default
+# Demo recording output — all generated video/audio artifacts are local-only
+# Final video is hosted externally (see docs/DEPLOYMENT_PLAN.md)
 /demo/output/*
 !/demo/output/.gitkeep
-# Flagship product walkthrough — committed as portfolio evidence (14.65 MB)
-!/demo/output/fraud-console-full-product-walkthrough.mp4
-!/demo/output/fraud-console-full-product-walkthrough-contact-sheet.png
-/demo/audio/*
-*.mp4
-# Re-include the flagship MP4 after the blanket *.mp4 exclusion above
-!/demo/output/fraud-console-full-product-walkthrough.mp4
-# Portfolio evidence repair v3 (Phase 20M-PortfolioEvidenceRepair)
-!/demo/output/fraud-console-full-product-walkthrough-v3.mp4
-!/demo/output/fraud-console-full-product-walkthrough-v3-contact-sheet.png
-# Pitch finishing pass v4 (Phase 20M-PitchFinishingPass)
-!/demo/output/fraud-console-full-product-walkthrough-v4.mp4
-!/demo/output/fraud-console-full-product-walkthrough-v4-contact-sheet.png
+!/demo/output/api-inspection-screen-v8.html
+# Static pitch card design assets (small PNGs used in video production, ~200 KB total)
 !/demo/output/pitch-title-card.png
 !/demo/output/pitch-closing-card.png
-# Executive pitch cut v5 (Phase 20M-V5VoiceApprovedExecutiveCut)
-!/demo/output/fraud-console-full-product-walkthrough-v5.mp4
-!/demo/output/fraud-console-full-product-walkthrough-v5-contact-sheet.png
 !/demo/output/pitch-title-card-v5.png
 !/demo/output/pitch-closing-card-v5.png
-# Claim-safe subtitled pitch polish v6 (Phase 20M-V6ClaimSafeSubtitlePolish)
-!/demo/output/fraud-console-full-product-walkthrough-v6.mp4
-!/demo/output/fraud-console-full-product-walkthrough-v6-contact-sheet.png
-!/demo/output/fraud-console-full-product-walkthrough-v6-subtitled.mp4
-!/demo/output/fraud-console-full-product-walkthrough-v6-subtitled-contact-sheet.png
-# Executive language polish v7 (Phase 20M-V7ExecutiveLanguagePatch)
-!/demo/output/fraud-console-full-product-walkthrough-v7.mp4
-!/demo/output/fraud-console-full-product-walkthrough-v7-contact-sheet.png
-!/demo/output/fraud-console-full-product-walkthrough-v7-subtitled.mp4
-!/demo/output/fraud-console-full-product-walkthrough-v7-subtitled-contact-sheet.png
-# API docs visual polish v8 (Phase 20M-V8APIDocsVisualPolish)
-!/demo/output/fraud-console-full-product-walkthrough-v8.mp4
-!/demo/output/fraud-console-full-product-walkthrough-v8-contact-sheet.png
-!/demo/output/fraud-console-full-product-walkthrough-v8-subtitled.mp4
-!/demo/output/fraud-console-full-product-walkthrough-v8-subtitled-contact-sheet.png
-!/demo/output/api-inspection-screen-v8.html
-# API narration clarity patch v9 (Phase 20M-V9APINarrationClarityPatch)
-!/demo/output/fraud-console-full-product-walkthrough-v9.mp4
-!/demo/output/fraud-console-full-product-walkthrough-v9-contact-sheet.png
-!/demo/output/fraud-console-full-product-walkthrough-v9-subtitled.mp4
-!/demo/output/fraud-console-full-product-walkthrough-v9-subtitled-contact-sheet.png
+/demo/audio/*
+*.mp4
 *.mp3
 *.wav
 *.m4a
