@@ -84,6 +84,11 @@ next-env.d.ts
 !/demo/output/fraud-console-full-product-walkthrough-v8-subtitled.mp4
 !/demo/output/fraud-console-full-product-walkthrough-v8-subtitled-contact-sheet.png
 !/demo/output/api-inspection-screen-v8.html
+# API narration clarity patch v9 (Phase 20M-V9APINarrationClarityPatch)
+!/demo/output/fraud-console-full-product-walkthrough-v9.mp4
+!/demo/output/fraud-console-full-product-walkthrough-v9-contact-sheet.png
+!/demo/output/fraud-console-full-product-walkthrough-v9-subtitled.mp4
+!/demo/output/fraud-console-full-product-walkthrough-v9-subtitled-contact-sheet.png
 *.mp3
 *.wav
 *.m4a

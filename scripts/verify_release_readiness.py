@@ -204,6 +204,8 @@ ALLOWED_VIDEOS = {
     "fraud-console/demo/output/fraud-console-full-product-walkthrough-v7-subtitled.mp4",
     "fraud-console/demo/output/fraud-console-full-product-walkthrough-v8.mp4",
     "fraud-console/demo/output/fraud-console-full-product-walkthrough-v8-subtitled.mp4",
+    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v9.mp4",
+    "fraud-console/demo/output/fraud-console-full-product-walkthrough-v9-subtitled.mp4",
 }
 demo_tracked = git_ls_files("fraud-console/demo/output")
 video_tracked = [f for f in demo_tracked if f.endswith((".mp4", ".webm")) and f not in ALLOWED_VIDEOS]
