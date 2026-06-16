@@ -73,6 +73,11 @@ next-env.d.ts
 !/demo/output/fraud-console-full-product-walkthrough-v6-contact-sheet.png
 !/demo/output/fraud-console-full-product-walkthrough-v6-subtitled.mp4
 !/demo/output/fraud-console-full-product-walkthrough-v6-subtitled-contact-sheet.png
+# Executive language polish v7 (Phase 20M-V7ExecutiveLanguagePatch)
+!/demo/output/fraud-console-full-product-walkthrough-v7.mp4
+!/demo/output/fraud-console-full-product-walkthrough-v7-contact-sheet.png
+!/demo/output/fraud-console-full-product-walkthrough-v7-subtitled.mp4
+!/demo/output/fraud-console-full-product-walkthrough-v7-subtitled-contact-sheet.png
 *.mp3
 *.wav
 *.m4a
