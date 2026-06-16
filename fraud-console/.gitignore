@@ -68,6 +68,11 @@ next-env.d.ts
 !/demo/output/fraud-console-full-product-walkthrough-v5-contact-sheet.png
 !/demo/output/pitch-title-card-v5.png
 !/demo/output/pitch-closing-card-v5.png
+# Claim-safe subtitled pitch polish v6 (Phase 20M-V6ClaimSafeSubtitlePolish)
+!/demo/output/fraud-console-full-product-walkthrough-v6.mp4
+!/demo/output/fraud-console-full-product-walkthrough-v6-contact-sheet.png
+!/demo/output/fraud-console-full-product-walkthrough-v6-subtitled.mp4
+!/demo/output/fraud-console-full-product-walkthrough-v6-subtitled-contact-sheet.png
 *.mp3
 *.wav
 *.m4a
