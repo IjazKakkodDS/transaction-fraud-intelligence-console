@@ -78,6 +78,12 @@ next-env.d.ts
 !/demo/output/fraud-console-full-product-walkthrough-v7-contact-sheet.png
 !/demo/output/fraud-console-full-product-walkthrough-v7-subtitled.mp4
 !/demo/output/fraud-console-full-product-walkthrough-v7-subtitled-contact-sheet.png
+# API docs visual polish v8 (Phase 20M-V8APIDocsVisualPolish)
+!/demo/output/fraud-console-full-product-walkthrough-v8.mp4
+!/demo/output/fraud-console-full-product-walkthrough-v8-contact-sheet.png
+!/demo/output/fraud-console-full-product-walkthrough-v8-subtitled.mp4
+!/demo/output/fraud-console-full-product-walkthrough-v8-subtitled-contact-sheet.png
+!/demo/output/api-inspection-screen-v8.html
 *.mp3
 *.wav
 *.m4a
