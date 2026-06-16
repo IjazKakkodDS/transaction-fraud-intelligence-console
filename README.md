@@ -36,11 +36,14 @@ evidence, frontend E2E coverage, and documented governance boundaries.
 | Demo Video Pipeline | [fraud-console/demo/README.md](fraud-console/demo/README.md) |
 | Demo Storyboard | [docs/DEMO_STORYBOARD.md](docs/DEMO_STORYBOARD.md) |
 | Portfolio Case Study | [docs/PORTFOLIO_CASE_STUDY.md](docs/PORTFOLIO_CASE_STUDY.md) |
+| **Product Walkthrough Video** | **[External link — to be added after upload](docs/VIDEO_ARTIFACTS.md)** |
 
 **Recommended demo flow:**
 Overview &rarr; Dashboard &rarr; 10M Portfolio Risk Scan &rarr; Risk-Tier Filtering &rarr; Paginated Review &rarr; Review Queue &rarr; Case Dossier &rarr; Workflow Events &rarr; Reliability Metrics
 
-Generated demo videos are local artefacts and are intentionally gitignored.
+The final narrated product walkthrough (v9-subtitled, ~12m 47s) is hosted externally to
+keep the repository lightweight. See [docs/VIDEO_ARTIFACTS.md](docs/VIDEO_ARTIFACTS.md)
+for the external URL, SHA256, and reassembly instructions.
 
 ---
 
@@ -406,6 +409,27 @@ reviewers.
 
 ---
 
+## Screenshots
+
+Playwright-captured screenshots from a live local run. All 12 are tracked in `docs/screenshots/`.
+
+| # | Screen | File |
+|---|---|---|
+| 1 | Fraud Intelligence Command Center | [01_overview_command_center.png](docs/screenshots/01_overview_command_center.png) |
+| 2 | Risk Command Dashboard | [02_risk_command_dashboard.png](docs/screenshots/02_risk_command_dashboard.png) |
+| 3 | Transaction Intake | [03_transaction_intake.png](docs/screenshots/03_transaction_intake.png) |
+| 4 | Scoring Result Handoff | [04_scoring_result_handoff.png](docs/screenshots/04_scoring_result_handoff.png) |
+| 5 | Review Queue Prioritization | [05_review_queue_prioritization.png](docs/screenshots/05_review_queue_prioritization.png) |
+| 6 | Case Dossier Evidence | [06_case_dossier_evidence.png](docs/screenshots/06_case_dossier_evidence.png) |
+| 7 | AI Investigation Panel | [07_ai_investigation_panel.png](docs/screenshots/07_ai_investigation_panel.png) |
+| 8 | Analyst Verdict Panel | [08_analyst_verdict_panel.png](docs/screenshots/08_analyst_verdict_panel.png) |
+| 9 | Case Workflow Audit Trail | [09_case_workflow_audit_trail.png](docs/screenshots/09_case_workflow_audit_trail.png) |
+| 10 | False Positive Review Case | [10_false_positive_review_case.png](docs/screenshots/10_false_positive_review_case.png) |
+| 11 | Workflow Events Audit Trail | [11_workflow_events_audit_trail.png](docs/screenshots/11_workflow_events_audit_trail.png) |
+| 12 | Reliability Metrics Center | [12_reliability_metrics_center.png](docs/screenshots/12_reliability_metrics_center.png) |
+
+---
+
 ## Portfolio Risk Scan Operating Envelope
 
 The Portfolio Risk Scan module is designed around bounded ingestion, persisted results,
@@ -540,7 +564,7 @@ and FFmpeg merge are fully automated via npm run demo:edge-narrated.
 | Full export duration (10M, 1.64 GiB) | ~113.63s |
 | API RestartCount post-export | 0 |
 | OOMKilled | false |
-| Demo video duration | ~148.8s |
+| Product walkthrough duration | ~12m 47s (v9-subtitled, hosted externally) |
 | E2E Playwright checks | 11 / 11 passed |
 
 This profile captures the controlled benchmark operating envelope used for product
@@ -744,6 +768,8 @@ canary deployment are identified enterprise expansion controls, documented in
 | [docs/AUTH_RBAC_DESIGN.md](docs/AUTH_RBAC_DESIGN.md) | Authentication and RBAC architecture design |
 | [docs/SECURITY_POSTURE.md](docs/SECURITY_POSTURE.md) | Security posture, governance boundaries, and production hardening controls |
 | [fraud-console/demo/README.md](fraud-console/demo/README.md) | Demo video recording and AI narration pipeline |
+| [docs/VIDEO_ARTIFACTS.md](docs/VIDEO_ARTIFACTS.md) | Video artifact policy, external hosting placeholder, SHA256, and reassembly instructions |
+| [docs/GITHUB_REPO_METADATA.md](docs/GITHUB_REPO_METADATA.md) | GitHub repository name, description, topics, and badge block for post-push configuration |
 
 ---
 
@@ -787,6 +813,34 @@ package covering consumer durability, auth/RBAC design, and security posture. De
 with a deployment-readiness boundary and a documented governance path for
 institution-specific labelled-outcome calibration, access controls, monitoring, and
 operational hardening.
+
+---
+
+## Reviewer Notes
+
+**What to run first:** `docker compose up -d` from the repo root, then `npm run dev` in `fraud-console/`. The system is live at `http://localhost:3000` within ~30 seconds.
+
+**What to inspect:**
+
+| Area | Where to look |
+|---|---|
+| 4-layer scoring engine | `api/scoring_engine.py` — base ML/rule, rich signals, behavioural, graph layers |
+| Behavioural profiling | `api/behavioral_intelligence.py` — entity norm computation, deviation scoring |
+| Graph / mule detection | `api/graph_intelligence.py` — fan-in, fan-out, shared-entity signals |
+| Scoring consumer | `consumers/scoring_consumer.py` — Redpanda event processing, offset strategy |
+| Investigation consumer | `consumers/investigation_consumer.py` — AI brief persistence, AGENT_VERSION |
+| Case Dossier 2.0 | `fraud-console/src/app/cases/[id]/page.tsx` — grouped evidence, lifecycle timeline |
+| Portfolio Risk Scan | `api/risk_scan.py` + `fraud-console/src/app/risk-scan/` — async scan, chunked ingestion, cursor export |
+| AI brief hardening | `api/ai_investigation.py` — bounded failure handling, structured report persistence |
+| Consumer durability design | [docs/CONSUMER_DURABILITY.md](docs/CONSUMER_DURABILITY.md) |
+| Auth/RBAC design | [docs/AUTH_RBAC_DESIGN.md](docs/AUTH_RBAC_DESIGN.md) |
+| Security posture | [docs/SECURITY_POSTURE.md](docs/SECURITY_POSTURE.md) |
+| Full benchmark evidence | [docs/RISK_SCAN_BENCHMARKS.md](docs/RISK_SCAN_BENCHMARKS.md) |
+| Product walkthrough video | [docs/VIDEO_ARTIFACTS.md](docs/VIDEO_ARTIFACTS.md) — external URL added post-upload |
+
+**Governance boundary:** The model is intentionally trained on synthetic data only. A documented governance path covers institution-specific labelled-outcome calibration before any production use — see [docs/MODEL_CARD.md](docs/MODEL_CARD.md) and [docs/SECURITY_POSTURE.md](docs/SECURITY_POSTURE.md).
+
+**Validation:** `python scripts/verify_release_readiness.py` runs 41 automated checks (file existence, model integrity, screenshot evidence, git hygiene, stale phrase detection). All 41 pass on this commit.
 
 ---
 
