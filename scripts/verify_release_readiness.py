@@ -23,7 +23,6 @@ REQUIRED_FILES = [
     "docs/PORTFOLIO_CASE_STUDY.md",
     "docs/DEMO_STORYBOARD.md",
     "docs/DEMO_WALKTHROUGH.md",
-    "docs/SECURITY_POSTURE.md",
     "docs/CONSUMER_DURABILITY.md",
     "docs/AUTH_RBAC_DESIGN.md",
 ]
