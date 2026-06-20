@@ -1,8 +1,8 @@
 # Authentication and Role-Based Access Control Design
 
 **Project:** Real-Time Fraud Intelligence Console
-**Phase:** Phase 19C — Auth / RBAC Architecture
-**Status:** Design document — no implementation in this phase.
+**Phase:** Phase 19C: Auth / RBAC Architecture
+**Status:** Design document. No implementation in this phase.
 
 ---
 
@@ -28,7 +28,7 @@ The console's current authentication state reflects a deliberate choice for loca
 | Dimension | Current state |
 |---|---|
 | API authentication | None. All endpoints accept requests from allowed origins without credentials. |
-| CORS policy | Restricted to `http://localhost:3000` and `http://127.0.0.1:3000` — local Next.js dev server only. |
+| CORS policy | Restricted to `http://localhost:3000` and `http://127.0.0.1:3000`. Local Next.js dev server only. |
 | `Authorization` header | Permitted by the CORS policy (`allow_headers: ["Content-Type", "Authorization"]`) but never validated by any middleware or route handler. |
 | Users table | Does not exist. No user accounts, roles, or credentials are stored. |
 | Session / token system | Does not exist. No JWT, no OAuth tokens, no session cookies. |
@@ -156,7 +156,7 @@ FastAPI's `Depends()` injection pattern provides a clean, per-route auth model w
 A reusable `require_role(*roles)` dependency is defined once and injected at each route:
 
 ```python
-# Future implementation sketch — not present in the codebase
+# Future implementation sketch (not present in the codebase)
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -184,7 +184,7 @@ def review_case(
     ...
 ```
 
-This pattern requires zero changes to the existing route bodies — the guard dependency is
+This pattern requires zero changes to the existing route bodies. The guard dependency is
 injected as an additional parameter. Routes that are unauthenticated in development gain auth by
 adding a single `Depends(require_role(...))` argument.
 
@@ -215,7 +215,7 @@ Two paths:
   token (7–30 days). Refresh tokens are stored in the `users` table as a hashed value.
 - **Service accounts:** Long-lived API keys (32-byte random tokens, stored as bcrypt hashes in
   a `service_accounts` table). Presented in the `Authorization: Bearer` header. No rotation
-  by expiry — rotation is manual and triggered by key compromise or periodic policy.
+  by expiry. Rotation is manual and triggered by key compromise or periodic policy.
 
 ### 6.4 Environment-based auth flag
 
@@ -321,7 +321,7 @@ XSS token theft.
 
 Next.js middleware (`fraud-console/middleware.ts`) intercepts all non-public routes. If no valid
 token is present in the session, the middleware redirects to `/login`. This is enforced at the
-edge — no server component or page renders for unauthenticated requests.
+edge; no server component or page renders for unauthenticated requests.
 
 ### 8.3 Token storage strategy
 
@@ -333,7 +333,7 @@ edge — no server component or page renders for unauthenticated requests.
 ### 8.4 Role-aware navigation
 
 The authenticated user's `role` claim is decoded from the access token payload (the payload is not
-sensitive — only the signature is secret) and stored in the auth context. Navigation items and
+sensitive; only the signature is secret) and stored in the auth context. Navigation items and
 action buttons are conditionally rendered based on role:
 
 - **Portfolio scan upload:** Visible only to Admin.
@@ -343,7 +343,7 @@ action buttons are conditionally rendered based on role:
 - **Admin panel link:** Visible only to Admin.
 
 Role-based rendering is a UI affordance only. The FastAPI backend is the authoritative enforcement
-point — the frontend guards are a usability improvement, not a security control.
+point; the frontend guards are a usability improvement, not a security control.
 
 ### 8.5 API client auth header
 
@@ -368,7 +368,7 @@ token in the database), and clears the cookie.
 ### 9.1 Least privilege
 
 Each role is granted only the permissions required for its defined responsibilities. The Analyst
-role — the most common operational identity — has no access to portfolio scans, workflow dispatch,
+role (the most common operational identity) has no access to portfolio scans, workflow dispatch,
 admin endpoints, or audit exports. Privilege escalation (e.g., an analyst promoting themselves to
 admin) is only possible through the `users` table, which is exclusively writable by the Admin role
 and audit-logged.
@@ -383,7 +383,7 @@ invalidation if a compromise is detected before natural expiry.
 
 ### 9.3 Service account rotation
 
-Service account API keys do not expire by design — automation pipelines (n8n) cannot handle
+Service account API keys do not expire by design; automation pipelines (n8n) cannot handle
 token refresh flows. Rotation is triggered manually on suspected compromise or as part of a
 periodic rotation policy (e.g., annually). The `service_accounts.is_active` flag enables
 immediate key invalidation without deleting the account record. A new key is issued and the old
@@ -402,7 +402,7 @@ The fraud intelligence console surfaces high-sensitivity data: transaction amoun
 investigation findings, and analyst verdicts. No sensitive case data should be stored in
 `localStorage`, `sessionStorage`, or browser caches. Next.js server components should not embed
 sensitive API responses in the static HTML. Token payloads (JWT claims) should contain only
-identity and role — no case data, no PII.
+identity and role. No case data, no PII.
 
 ### 9.6 Environment-specific CORS
 
@@ -425,7 +425,7 @@ The `POST /auth/token` login endpoint is a high-value brute-force target. In pro
 be protected by rate limiting (e.g., 5 failed attempts per IP per 5 minutes triggering a 15-minute
 lockout). FastAPI does not include rate limiting natively; `slowapi` (a FastAPI-compatible rate
 limiter backed by Redis) is the recommended integration. The `/auth/token` endpoint is the only
-one that requires aggressive rate limiting — standard API endpoints rely on token validity for
+one that requires aggressive rate limiting. Standard API endpoints rely on token validity for
 protection.
 
 ---
@@ -454,7 +454,7 @@ be implemented here or as a consequence of this document:
 ## 11. Conclusion
 
 The Real-Time Fraud Intelligence Console is purpose-built as a local fraud operations platform,
-and its current authentication posture — no enforcement, localhost CORS restriction — is a
+and its current authentication posture (no enforcement, localhost CORS restriction) is a
 deliberate and appropriate choice for that context. The system is not deployed to any shared
 infrastructure, and all data it processes is synthetic.
 
@@ -464,14 +464,14 @@ concrete FastAPI `Depends()`-based implementation path, a minimal and well-defin
 schema, a frontend session management strategy, and a set of security controls proportionate to
 the sensitivity of fraud intelligence data.
 
-The design is intentionally additive — the `AUTH_ENABLED` flag pattern means the local
+The design is intentionally additive. The `AUTH_ENABLED` flag pattern means the local
 development workflow remains unchanged when `AUTH_ENABLED=false`, and production hardening is
 activated by setting it to `true` and running the `0009_create_auth_tables.py` migration. No
 existing endpoint signatures change; role guards are injected as dependencies.
 
 Technical reviewers evaluating this console as a portfolio or institutional system can verify that
 production access control is fully designed, clearly scoped, and deferrable without introducing
-architectural debt — not missing or unconsidered.
+architectural debt, not missing or unconsidered.
 
 ---
 

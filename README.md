@@ -225,7 +225,7 @@ pagination degrades without composite index support at multi-million-row scale.
 
 Static rule-based scoring underperforms against coordinated fraud patterns. Behavioural
 deviation, mule-network topology, and adversarial structuring attacks require intelligence
-layers that profile entity norms and network relationships, not just individual
+layers that profile entity norms and network relationships, beyond individual
 transaction features.
 
 ---
