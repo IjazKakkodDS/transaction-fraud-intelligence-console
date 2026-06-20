@@ -1,6 +1,6 @@
 # Integration API Blueprint
 
-**Project:** Real-Time Fraud Intelligence Console
+**Project:** Real-Time Transaction Fraud Intelligence Console
 **Phase:** Phase 20DPLY-B3
 **Status:** Blueprint document only. The proposed facade endpoint described in this document is not yet implemented. All referenced internal components (feature extraction, 4-layer scoring, PostgreSQL persistence, workflow event logging) are implemented and operational in the current codebase.
 

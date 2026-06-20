@@ -1,4 +1,4 @@
-# Real-Time Fraud Intelligence Console
+# Real-Time Transaction Fraud Intelligence Console
 
 A fraud decision intelligence console that transforms raw transactions into prioritised,
 explainable, analyst-ready investigations using hybrid ML/rule scoring, behavioural and
@@ -14,7 +14,7 @@ Portfolio Risk Scan benchmark, adversarial simulation across five fraud pattern 
 
 ## 1. Executive Summary
 
-The Fraud Intelligence Console is a decision intelligence platform covering the complete
+The Transaction Fraud Intelligence Console is a decision intelligence platform covering the complete
 case lifecycle -- from multi-layer transaction scoring through analyst triage,
 AI-assisted investigation, workflow automation, audit trail generation, and
 portfolio-scale bulk risk scanning.
@@ -75,7 +75,7 @@ These are the operational problems this platform addresses.
 
 ## 3. Product Vision
 
-A Fraud Intelligence Console that covers the complete case lifecycle with an audit
+A Transaction Fraud Intelligence Console that covers the complete case lifecycle with an audit
 record at every step, combines multi-layer ML/rule scoring with behavioural profiling
 and graph mule-network intelligence, surfaces hardened AI investigation briefs in
 context where they add value, dispatches workflow automation and proves it executed,

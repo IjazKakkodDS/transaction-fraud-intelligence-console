@@ -1,10 +1,10 @@
-# Real-Time Fraud Intelligence Console: Experience Flow
+# Real-Time Transaction Fraud Intelligence Console: Experience Flow
 
 ---
 
 ## 1. Product Experience Thesis
 
-The Real-Time Fraud Intelligence Console is built around a single operational thesis: fraud decisioning is a workflow problem, not a scoring problem. A risk score is an input to the analyst workflow, not a replacement for it.
+The Real-Time Transaction Fraud Intelligence Console is built around a single operational thesis: fraud decisioning is a workflow problem, not a scoring problem. A risk score is an input to the analyst workflow, not a replacement for it.
 
 The console connects every stage of the fraud decisioning lifecycle into a coherent analyst experience: scoring, triage, investigation, verdict capture, automation dispatch, audit, and reliability monitoring. Each stage has a clear purpose, a clear handoff to the next stage, and a clear evidence trail connecting it to the case record in PostgreSQL.
 

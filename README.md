@@ -1,10 +1,10 @@
-# Real-Time Fraud Intelligence Console
+# Real-Time Transaction Fraud Intelligence Console
 
-Real-Time Fraud Intelligence Console is a multi-layer fraud scoring, analyst triage, and
+Real-Time Transaction Fraud Intelligence Console is a multi-layer transaction fraud scoring, analyst triage, and
 AI-assisted investigation platform built on a production-style event-driven architecture.
 It combines hybrid ML/rule scoring, behavioural profiling, graph-based mule-network
 detection, portfolio-scale risk scanning, lifecycle audit trails, and hardened AI
-investigation briefs into a single analyst-in-the-loop fraud decision environment.
+investigation briefs into a single analyst-in-the-loop transaction fraud decision environment.
 
 The system is validated through controlled synthetic scenarios, benchmark-scale scan
 evidence, frontend E2E coverage, and documented governance boundaries.
@@ -36,14 +36,14 @@ evidence, frontend E2E coverage, and documented governance boundaries.
 | Demo Video Pipeline | [fraud-console/demo/README.md](fraud-console/demo/README.md) |
 | Demo Storyboard | [docs/DEMO_STORYBOARD.md](docs/DEMO_STORYBOARD.md) |
 | Portfolio Case Study | [docs/PORTFOLIO_CASE_STUDY.md](docs/PORTFOLIO_CASE_STUDY.md) |
-| **Product Walkthrough Video** | **[External link — to be added after upload](docs/VIDEO_ARTIFACTS.md)** |
+| **Product Walkthrough Video** | **[Hosted separately on portfolio site](docs/VIDEO_ARTIFACTS.md)** |
 
 **Recommended demo flow:**
 Overview &rarr; Dashboard &rarr; 10M Portfolio Risk Scan &rarr; Risk-Tier Filtering &rarr; Paginated Review &rarr; Review Queue &rarr; Case Dossier &rarr; Workflow Events &rarr; Reliability Metrics
 
-The final narrated product walkthrough (v9-subtitled, ~12m 47s) is hosted externally to
-keep the repository lightweight. See [docs/VIDEO_ARTIFACTS.md](docs/VIDEO_ARTIFACTS.md)
-for the external URL, SHA256, and reassembly instructions.
+The final narrated product walkthrough (v9-subtitled, ~12m 47s) will be hosted separately
+on the portfolio site to keep the repository lightweight. See [docs/VIDEO_ARTIFACTS.md](docs/VIDEO_ARTIFACTS.md)
+for the SHA256, video policy, and reassembly instructions.
 
 ---
 
@@ -53,7 +53,7 @@ Fraud review operations require more than a probability score. A scored transact
 produces a risk signal, but the operational work begins where the model stops: cases must
 be prioritised against a live queue, risk evidence must be surfaced in context, analyst
 decisions must be formally recorded, and automation workflows must be verified to have
-executed as expected. The Fraud Intelligence Console is a fraud decision intelligence
+executed as expected. The Transaction Fraud Intelligence Console is a transaction fraud decision intelligence
 platform that connects all of these layers in a single operational system --
 multi-layer scoring, triage, investigation, verdict capture, workflow dispatch, audit,
 and reliability monitoring -- with every component reading from and writing to real

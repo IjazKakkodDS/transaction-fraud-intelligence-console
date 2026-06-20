@@ -1,6 +1,6 @@
 # Deployment Strategy
 
-**Project:** Real-Time Fraud Intelligence Console
+**Project:** Real-Time Transaction Fraud Intelligence Console
 **Phase:** Phase 20DPLY-B3
 **Status:** Strategy and planning document. No deployment has been performed. This document defines the current release posture and the recommended path forward.
 
@@ -291,10 +291,10 @@ The following architecture is the recommended target for Phase 21 cloud deployme
 The following phrasings are approved for public-facing descriptions of the system at its current release state:
 
 **Repository description (GitHub "About" field):**
-> Production-style fraud intelligence console: hybrid ML/rule scoring, analyst review queues, evidence-led case dossiers, AI investigation briefs, workflow audit trails, reliability monitoring, and a 10M-transaction portfolio risk scan benchmark. Docker Compose runtime.
+> Production-style transaction fraud intelligence console: hybrid ML/rule scoring, analyst review queues, evidence-led case dossiers, AI investigation briefs, workflow audit trails, reliability monitoring, and a 10M-transaction portfolio risk scan benchmark. Docker Compose runtime.
 
 **Portfolio description:**
-> Real-Time Fraud Intelligence Console. A production-style fraud decision intelligence platform built across a 7-service event-driven architecture. Features a 4-layer hybrid ML/rule scoring engine, analyst-in-the-loop case triage, AI investigation briefs with AGENT_VERSION traceability, portfolio-scale risk scan (10M-row benchmark), workflow automation audit trail, and SLO-style reliability monitoring. Reproducible Docker Compose inspection package.
+> Real-Time Transaction Fraud Intelligence Console. A production-style transaction fraud decision intelligence platform built across a 7-service event-driven architecture. Features a 4-layer hybrid ML/rule scoring engine, analyst-in-the-loop case triage, AI investigation briefs with AGENT_VERSION traceability, portfolio-scale risk scan (10M-row benchmark), workflow automation audit trail, and SLO-style reliability monitoring. Reproducible Docker Compose inspection package.
 
 **When asked about live deployment:**
 > The console runs as a local Docker Compose inspection package. Full cloud deployment is deferred until authentication, secret management, monitoring, managed infrastructure, and cost planning are complete. The system is designed for cloud extension: each service boundary maps to a separately scalable deployment unit, and the integration API blueprint documents the proposed external-facing decision endpoint.

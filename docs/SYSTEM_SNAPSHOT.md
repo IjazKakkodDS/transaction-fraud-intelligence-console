@@ -1,4 +1,4 @@
-# Real-Time Fraud Intelligence Console: System Snapshot
+# Real-Time Transaction Fraud Intelligence Console: System Snapshot
 
 ---
 
@@ -6,7 +6,7 @@
 
 | Property | Value |
 |---|---|
-| Product name | Real-Time Fraud Intelligence Console |
+| Product name | Real-Time Transaction Fraud Intelligence Console |
 | Build status | Local development build, not deployed to production |
 | Primary runtime | Docker Compose (7 persistent services) |
 | Frontend runtime | Next.js 16, port 3000 (runs on host, outside Docker) |
