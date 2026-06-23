@@ -1,13 +1,6 @@
 # Real-Time Transaction Fraud Intelligence Console
 
-Real-Time Transaction Fraud Intelligence Console is a multi-layer transaction fraud scoring, analyst triage, and
-AI-assisted investigation platform built on a production-style event-driven architecture.
-It combines hybrid ML/rule scoring, behavioural profiling, graph-based mule-network
-detection, portfolio-scale risk scanning, lifecycle audit trails, and hardened AI
-investigation briefs into a single analyst-in-the-loop transaction fraud decision environment.
-
-The system is validated through controlled synthetic scenarios, benchmark-scale scan
-evidence, frontend E2E coverage, and documented governance boundaries.
+Transaction fraud intelligence console with 4-layer ML and rule scoring, behavioural profiling, graph-based mule-network detection, AI investigation briefs, analyst review queues, portfolio-scale risk scanning, workflow audit trails, and reliability monitoring. Built on a 7-service event-driven Docker Compose architecture and validated through a 10M-transaction benchmark, adversarial simulation across five fraud pattern families, and 11/11 E2E Playwright checks.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-latest-009688?logo=fastapi&logoColor=white)
@@ -24,76 +17,142 @@ evidence, frontend E2E coverage, and documented governance boundaries.
 
 ---
 
-## Demo and Walkthrough
-
-| Surface | Access |
-|---|---|
-| Frontend Console | http://localhost:3000 |
-| 10M Risk Scan Demo | http://localhost:3000/risk-scan?scan_id=aa0971d2-bdb6-49c7-bac3-fa355aa161ad |
-| Backend Health | http://localhost:8000/health |
-| Detailed Health Check | http://localhost:8000/health/detailed |
-| API Documentation | http://localhost:8000/docs |
-| Demo Video Pipeline | [fraud-console/demo/README.md](fraud-console/demo/README.md) |
-| Demo Storyboard | [docs/DEMO_STORYBOARD.md](docs/DEMO_STORYBOARD.md) |
-| Portfolio Case Study | [docs/PORTFOLIO_CASE_STUDY.md](docs/PORTFOLIO_CASE_STUDY.md) |
-| **Product Walkthrough Video** | **[Hosted separately on portfolio site](docs/VIDEO_ARTIFACTS.md)** |
-
-**Recommended demo flow:**
-Overview &rarr; Dashboard &rarr; 10M Portfolio Risk Scan &rarr; Risk-Tier Filtering &rarr; Paginated Review &rarr; Review Queue &rarr; Case Dossier &rarr; Workflow Events &rarr; Reliability Metrics
-
-The final narrated product walkthrough (v9-subtitled, ~12m 47s) will be hosted separately
-on the portfolio site to keep the repository lightweight. See [docs/VIDEO_ARTIFACTS.md](docs/VIDEO_ARTIFACTS.md)
-for the SHA256, video policy, and reassembly instructions.
-
----
-
-## System Summary
-
-Fraud review operations require more than a probability score. A scored transaction
-produces a risk signal, but the operational work begins where the model stops: cases must
-be prioritised against a live queue, risk evidence must be surfaced in context, analyst
-decisions must be formally recorded, and automation workflows must be verified to have
-executed as expected. The Transaction Fraud Intelligence Console is a transaction fraud decision intelligence
-platform that connects all of these layers in a single operational system --
-multi-layer scoring, triage, investigation, verdict capture, workflow dispatch, audit,
-and reliability monitoring -- with every component reading from and writing to real
-PostgreSQL state.
-
-The Portfolio Risk Scan module extends the platform to bulk transaction intelligence.
-The async scan engine accepted a 720 MiB synthetic transaction file, processed 10,000,000
-rows through bounded-memory chunked ingestion, and persisted every scored result in
-PostgreSQL. Indexed composite queries returned paginated analyst review at sub-second
-response times through deep pagination. A hardened server-side cursor export streamed
-the full 1.64 GiB result set with a 6.987 ms time to first byte and no API restart.
-
-The platform also includes an automated demo generation pipeline: Playwright records
-a headed browser walkthrough, Microsoft Edge TTS synthesises a professional voiceover
-from the narration script, and FFmpeg merges them into a final narrated MP4 -- fully
-automated, locally reproducible, no API key required.
-
----
-
-## Quantitative Snapshot
+## Capability Snapshot
 
 | Metric | Verified Result |
 |---|---|
 | Portfolio Risk Scan benchmark scale | 10,000,000 transactions |
-| Processing time | ~103m 35s |
 | Average throughput | ~1,610 rows/sec |
-| Valid / invalid / skipped | 10,000,000 / 0 / 0 |
-| P1 High priority count | 8,420,051 |
-| P3 Low priority count | 1,579,949 |
-| Total synthetic exposure | $25,095,000,000 |
-| Export file | 1.64 GiB, 10,000,001 lines |
-| API RestartCount after export | 0 |
-| OOMKilled | false |
-| Retained benchmark result rows | 22,752,000 |
 | E2E Playwright checks | 11 / 11 passed |
-| Detailed health endpoint | GET /health/detailed -- all components healthy |
-| Demo media pipeline | Playwright + Edge TTS + FFmpeg |
+| Scoring intelligence layers | 4 (base ML/rule, enriched signals, behavioural, graph) |
+| Export file (10M benchmark) | 1.64 GiB, streamed with 6.987 ms time to first byte, zero API restarts |
 | Docker Compose services | 7 |
 | Frontend routes | 8 |
 | Backend API endpoints | 27 |
+| Production screenshots | 12 (Playwright-captured from live run) |
+
+---
+
+## Demo and Review Path
+
+This repository is designed to be reviewed in three passes:
+
+| Review Path | What to Inspect | Best Starting Point |
+|---|---|---|
+| Executive Review | Product value, workflow, benchmark evidence, and architecture maturity | Screenshots, portfolio case study, executive deck |
+| Technical Review | API design, scoring layers, async processing, reliability, and validation checks | System snapshot, integration blueprint, MLOps docs |
+| Local Runtime Review | Run the console, inspect cases, test health checks, and review the API surface | Docker Compose, frontend console, FastAPI docs |
+
+**Recommended product walkthrough:**
+Overview &rarr; Risk Command Center &rarr; 10M Portfolio Risk Scan &rarr; Risk-Tier Filtering &rarr; Paginated Review &rarr; Review Queue &rarr; Case Dossier &rarr; AI Investigation Brief &rarr; Workflow Events &rarr; Reliability Metrics
+
+### Local Review Surfaces
+
+| Surface | Local URL |
+|---|---|
+| Frontend Console | http://localhost:3000 |
+| Portfolio Risk Scan | http://localhost:3000/risk-scan |
+| Backend Health | http://localhost:8000/health |
+| Detailed Health Check | http://localhost:8000/health/detailed |
+| API Documentation | http://localhost:8000/docs |
+
+Product walkthrough video will be hosted separately on the portfolio site. See [docs/VIDEO_ARTIFACTS.md](docs/VIDEO_ARTIFACTS.md) for SHA256, video policy, and reassembly instructions.
+
+---
+
+## Screenshots
+
+Playwright-captured screenshots from a live local run. All 12 are tracked in `docs/screenshots/`.
+
+| # | Screen | File |
+|---|---|---|
+| 1 | Fraud Intelligence Command Center | [01_overview_command_center.png](docs/screenshots/01_overview_command_center.png) |
+| 2 | Risk Command Dashboard | [02_risk_command_dashboard.png](docs/screenshots/02_risk_command_dashboard.png) |
+| 3 | Transaction Intake | [03_transaction_intake.png](docs/screenshots/03_transaction_intake.png) |
+| 4 | Scoring Result Handoff | [04_scoring_result_handoff.png](docs/screenshots/04_scoring_result_handoff.png) |
+| 5 | Review Queue Prioritization | [05_review_queue_prioritization.png](docs/screenshots/05_review_queue_prioritization.png) |
+| 6 | Case Dossier Evidence | [06_case_dossier_evidence.png](docs/screenshots/06_case_dossier_evidence.png) |
+| 7 | AI Investigation Panel | [07_ai_investigation_panel.png](docs/screenshots/07_ai_investigation_panel.png) |
+| 8 | Analyst Verdict Panel | [08_analyst_verdict_panel.png](docs/screenshots/08_analyst_verdict_panel.png) |
+| 9 | Case Workflow Audit Trail | [09_case_workflow_audit_trail.png](docs/screenshots/09_case_workflow_audit_trail.png) |
+| 10 | False Positive Review Case | [10_false_positive_review_case.png](docs/screenshots/10_false_positive_review_case.png) |
+| 11 | Workflow Events Audit Trail | [11_workflow_events_audit_trail.png](docs/screenshots/11_workflow_events_audit_trail.png) |
+| 12 | Reliability Metrics Center | [12_reliability_metrics_center.png](docs/screenshots/12_reliability_metrics_center.png) |
+
+---
+
+## Architecture Snapshot
+
+```mermaid
+flowchart LR
+    A[Transaction Intake / Portfolio CSV] --> B[FastAPI API Layer]
+    B --> C[4-Layer Scoring Engine]
+    C --> D[(PostgreSQL)]
+    B --> E[Redpanda Event Bus]
+    E --> F[Scoring Consumer]
+    E --> G[Investigation Consumer]
+    G --> H[AI Investigation Brief]
+    B --> I[n8n Workflow Callback]
+    D --> J[Next.js Analyst Console]
+    J --> K[Queue · Cases · Risk Scan · Workflow · Metrics]
+```
+
+**FastAPI** orchestrates API request handling, async scan jobs, and workflow dispatch.
+**PostgreSQL** persists scan jobs, result rows, cases, investigations, verdicts, and all workflow state.
+**Redpanda** supports event-driven transaction scoring and investigation triggering.
+**Consumers** handle scoring and AI investigation workflows asynchronously.
+**Next.js** exposes the analyst review queue, case dossiers, risk scan surface, workflow audit trail, and reliability center.
+
+### Runtime transaction flow
+
+```
+Transaction submitted
+  -> POST /predict -> Redpanda (transactions.raw)
+  -> Scoring Consumer: feature engineering + 4-layer scoring (base + rich + behavioural + graph)
+  -> PostgreSQL: prediction + case record
+  -> Review Queue (/queue) -> Case Dossier (/cases/[id])
+  -> AI Investigation: consumer + Ollama -> evidence-grouped brief -> investigation record
+  -> Analyst Verdict: POST /review-case/{case_id}
+  -> Workflow Dispatch: POST /workflow/notify-case/{case_id} -> n8n
+  -> Audit Callback: n8n -> POST /workflow/audit-event
+  -> Workflow Events (/workflow/events) -> Reliability Metrics (/workflow/metrics)
+```
+
+### Scoring architecture
+
+**Base hybrid formula:**
+```
+base_score = (0.6 x model_output) + (0.4 x rule_flag)
+```
+
+**4-layer extended formula:**
+```
+risk_score = clip(
+    base_score
+  + rich_boost
+  + behavioural_boost
+  + graph_boost,
+  upper=1.0
+)
+```
+
+Model weights are environment-configurable. Decision thresholds: APPROVE below 0.3, REVIEW 0.3--0.7, BLOCK above 0.7.
+
+Thresholds are validated within the controlled synthetic benchmark and adversarial simulation environment. Institution-specific deployment would require calibration against labelled historical fraud outcomes, false-positive cost analysis, model-risk review, and operational approval workflows.
+
+### 9-feature base risk vector
+
+| Feature | Source |
+|---|---|
+| `amount` | Transaction amount |
+| `is_high_amount` | amount > $1,000 threshold |
+| `is_night_transaction` | Hour < 6 or > 22 UTC |
+| `is_international` | Explicit boolean field |
+| `is_high_risk_payment_method` | credit_card, digital_wallet |
+| `is_high_risk_country` | Country outside low-risk whitelist |
+| `is_high_risk_merchant_category` | electronics, gaming, travel |
+| `has_device_id` | 0 when device_id absent |
+| `is_mobile_device` | 1 when device_type is mobile |
 
 ---
 
@@ -104,16 +163,6 @@ a single bounded risk score. Each layer maps directly to analyst-visible reason 
 displayed in the Case Dossier.
 
 ### 4-Layer Scoring Architecture
-
-```
-risk_score = clip(
-    base_score
-  + rich_boost
-  + behavioural_boost
-  + graph_boost,
-  upper=1.0
-)
-```
 
 | Layer | Source | Reason code family |
 |---|---|---|
@@ -191,6 +240,30 @@ reliability controls:
 - FAILED-state persistence: investigation failures write a durable FAILED record to
   PostgreSQL; the analyst can retry from the Case Dossier UI
 
+```
+Case promoted to investigation
+  -> Evidence extraction: deterministic feature breakdown per case
+  -> Evidence grouping: base signals, enriched signals, behavioural indicators,
+     graph indicators
+  -> RAG retrieval: playbook and policy knowledge base queried for matching guidance
+  -> Prompt assembly: evidence groups + playbook context + policy context
+  -> Ollama reasoning: structured JSON investigation report generated locally
+  -> Schema validation: report validated against structured output contract
+  -> Bounded failure handling: Ollama failure, content failure, and unexpected errors
+     each produce a specific analyst-readable FAILED report (never a silent failure)
+  -> Report persistence: COMPLETE or FAILED report written to PostgreSQL
+  -> AGENT_VERSION tagged: investigation row records agent configuration version
+  -> Analyst review: brief surfaced in Case Dossier; analyst verdict required
+     before any operational decision
+```
+
+**AI assists investigation briefing. It does not autonomously enforce decisions.**
+
+Every investigation record is tagged with `AGENT_VERSION`, creating an immutable
+traceability chain between the analyst brief and the agent configuration that produced
+it. FAILED-state persistence ensures every investigation attempt has a durable outcome,
+regardless of downstream dependency availability.
+
 ---
 
 ## Technology Stack
@@ -207,6 +280,27 @@ reliability controls:
 | Workflow Automation | n8n, webhook dispatch, HTTP callback audit pattern |
 | Demo and Testing | Playwright, Microsoft Edge TTS, FFmpeg |
 | Runtime | Docker Compose (7 services) |
+
+---
+
+## System Summary
+
+Fraud review operations require more than a probability score. A scored transaction
+produces a risk signal, but the operational work begins where the model stops: cases must
+be prioritised against a live queue, risk evidence must be surfaced in context, analyst
+decisions must be formally recorded, and automation workflows must be verified to have
+executed as expected. The Transaction Fraud Intelligence Console is a transaction fraud
+decision intelligence platform that connects all of these layers in a single operational
+system -- multi-layer scoring, triage, investigation, verdict capture, workflow dispatch,
+audit, and reliability monitoring -- with every component reading from and writing to real
+PostgreSQL state.
+
+The Portfolio Risk Scan module extends the platform to bulk transaction intelligence.
+The async scan engine accepted a 720 MiB synthetic transaction file, processed 10,000,000
+rows through bounded-memory chunked ingestion, and persisted every scored result in
+PostgreSQL. Indexed composite queries returned paginated analyst review at sub-second
+response times through deep pagination. A hardened server-side cursor export streamed
+the full 1.64 GiB result set with a 6.987 ms time to first byte and no API restart.
 
 ---
 
@@ -263,132 +357,27 @@ transaction features.
 
 ---
 
-## Product Architecture
+## Quantitative Snapshot
 
-```mermaid
-flowchart LR
-    A[Transaction Intake / Portfolio CSV] --> B[FastAPI API Layer]
-    B --> C[4-Layer Scoring Engine]
-    C --> D[(PostgreSQL)]
-    B --> E[Redpanda Event Bus]
-    E --> F[Scoring Consumer]
-    E --> G[Investigation Consumer]
-    G --> H[AI Investigation Brief]
-    B --> I[n8n Workflow Callback]
-    D --> J[Next.js Analyst Console]
-    J --> K[Queue · Cases · Risk Scan · Workflow · Metrics]
-```
-
-**FastAPI** orchestrates API request handling, async scan jobs, and workflow dispatch.
-**PostgreSQL** persists scan jobs, result rows, cases, investigations, verdicts, and all workflow state.
-**Redpanda** supports event-driven transaction scoring and investigation triggering.
-**Consumers** handle scoring and AI investigation workflows asynchronously.
-**Next.js** exposes the analyst review queue, case dossiers, risk scan surface, workflow audit trail, and reliability center.
-
-### Runtime transaction flow
-
-```
-Transaction submitted
-  -> POST /predict -> Redpanda (transactions.raw)
-  -> Scoring Consumer: feature engineering + 4-layer scoring (base + rich + behavioural + graph)
-  -> PostgreSQL: prediction + case record
-  -> Review Queue (/queue) -> Case Dossier (/cases/[id])
-  -> AI Investigation: consumer + Ollama -> evidence-grouped brief -> investigation record
-  -> Analyst Verdict: POST /review-case/{case_id}
-  -> Workflow Dispatch: POST /workflow/notify-case/{case_id} -> n8n
-  -> Audit Callback: n8n -> POST /workflow/audit-event
-  -> Workflow Events (/workflow/events) -> Reliability Metrics (/workflow/metrics)
-```
-
-### Scoring architecture
-
-**Base hybrid formula:**
-```
-base_score = (0.6 x model_output) + (0.4 x rule_flag)
-```
-
-**4-layer extended formula:**
-```
-risk_score = clip(
-    base_score
-  + rich_boost
-  + behavioural_boost
-  + graph_boost,
-  upper=1.0
-)
-```
-
-Model weights are environment-configurable. Decision thresholds: APPROVE below 0.3,
-REVIEW 0.3--0.7, BLOCK above 0.7.
-
-Thresholds are validated within the controlled synthetic benchmark and adversarial
-simulation environment. Institution-specific deployment would require calibration against
-labelled historical fraud outcomes, false-positive cost analysis, model-risk review, and
-operational approval workflows.
-
-### 9-feature base risk vector
-
-| Feature | Source |
+| Metric | Verified Result |
 |---|---|
-| `amount` | Transaction amount |
-| `is_high_amount` | amount > $1,000 threshold |
-| `is_night_transaction` | Hour < 6 or > 22 UTC |
-| `is_international` | Explicit boolean field |
-| `is_high_risk_payment_method` | credit_card, digital_wallet |
-| `is_high_risk_country` | Country outside low-risk whitelist |
-| `is_high_risk_merchant_category` | electronics, gaming, travel |
-| `has_device_id` | 0 when device_id absent |
-| `is_mobile_device` | 1 when device_type is mobile |
-
----
-
-## AI Investigation Pipeline
-
-The investigation pipeline delivers per-case AI investigation briefs with
-production-grade reliability controls and a complete audit trail.
-
-```
-Case promoted to investigation
-  -> Evidence extraction: deterministic feature breakdown per case
-  -> Evidence grouping: base signals, enriched signals, behavioural indicators,
-     graph indicators
-  -> RAG retrieval: playbook and policy knowledge base queried for matching guidance
-  -> Prompt assembly: evidence groups + playbook context + policy context
-  -> Ollama reasoning: structured JSON investigation report generated locally
-  -> Schema validation: report validated against structured output contract
-  -> Bounded failure handling: Ollama failure, content failure, and unexpected errors
-     each produce a specific analyst-readable FAILED report (never a silent failure)
-  -> Report persistence: COMPLETE or FAILED report written to PostgreSQL
-  -> AGENT_VERSION tagged: investigation row records agent configuration version
-  -> Analyst review: brief surfaced in Case Dossier; analyst verdict required
-     before any operational decision
-```
-
-**AI assists investigation briefing. It does not autonomously enforce decisions.**
-
-Every investigation record is tagged with `AGENT_VERSION`, creating an immutable
-traceability chain between the analyst brief and the agent configuration that produced
-it. FAILED-state persistence ensures every investigation attempt has a durable outcome,
-regardless of downstream dependency availability.
-
----
-
-## Governance Documentation
-
-The governance documentation package covers the production-readiness boundaries,
-architecture constraints, and deployment prerequisites for the platform.
-
-| Document | Scope |
-|---|---|
-| [docs/CONSUMER_DURABILITY.md](docs/CONSUMER_DURABILITY.md) | Offset management, idempotency guarantees, crash scenarios, and production gap matrix for both event consumers |
-| [docs/AUTH_RBAC_DESIGN.md](docs/AUTH_RBAC_DESIGN.md) | Three-role RBAC design (Analyst, Senior Analyst, Admin), permission matrix, JWT architecture, and implementation prerequisites |
-| [docs/SECURITY_POSTURE.md](docs/SECURITY_POSTURE.md) | Deployment boundary, CORS posture, secrets inventory, audit trail coverage, investigation safety posture, technical debt inventory, and 18 production hardening controls |
-| [docs/AI_INVESTIGATION_BRIEF_DESIGN.md](docs/AI_INVESTIGATION_BRIEF_DESIGN.md) | Investigation brief architecture, evidence grouping design, and AI pipeline contract |
-| [docs/CASE_DOSSIER_2_DESIGN.md](docs/CASE_DOSSIER_2_DESIGN.md) | Case Dossier 2.0 layout, evidence section taxonomy, and lifecycle timeline design |
-
-These documents define the governance path for institution-specific deployment and are
-designed for review by engineering leads, compliance teams, and risk architecture
-reviewers.
+| Portfolio Risk Scan benchmark scale | 10,000,000 transactions |
+| Processing time | ~103m 35s |
+| Average throughput | ~1,610 rows/sec |
+| Valid / invalid / skipped | 10,000,000 / 0 / 0 |
+| P1 High priority count | 8,420,051 |
+| P3 Low priority count | 1,579,949 |
+| Total synthetic exposure | $25,095,000,000 |
+| Export file | 1.64 GiB, 10,000,001 lines |
+| API RestartCount after export | 0 |
+| OOMKilled | false |
+| Retained benchmark result rows | 22,752,000 |
+| E2E Playwright checks | 11 / 11 passed |
+| Detailed health endpoint | GET /health/detailed -- all components healthy |
+| Demo media pipeline | Playwright + Edge TTS + FFmpeg |
+| Docker Compose services | 7 |
+| Frontend routes | 8 |
+| Backend API endpoints | 27 |
 
 ---
 
@@ -409,24 +398,119 @@ reviewers.
 
 ---
 
-## Screenshots
+## Local Setup
 
-Playwright-captured screenshots from a live local run. All 12 are tracked in `docs/screenshots/`.
+**Prerequisites:** Docker Desktop, Node.js 18+, Python 3.11+. Ollama on host for AI investigations.
 
-| # | Screen | File |
-|---|---|---|
-| 1 | Fraud Intelligence Command Center | [01_overview_command_center.png](docs/screenshots/01_overview_command_center.png) |
-| 2 | Risk Command Dashboard | [02_risk_command_dashboard.png](docs/screenshots/02_risk_command_dashboard.png) |
-| 3 | Transaction Intake | [03_transaction_intake.png](docs/screenshots/03_transaction_intake.png) |
-| 4 | Scoring Result Handoff | [04_scoring_result_handoff.png](docs/screenshots/04_scoring_result_handoff.png) |
-| 5 | Review Queue Prioritization | [05_review_queue_prioritization.png](docs/screenshots/05_review_queue_prioritization.png) |
-| 6 | Case Dossier Evidence | [06_case_dossier_evidence.png](docs/screenshots/06_case_dossier_evidence.png) |
-| 7 | AI Investigation Panel | [07_ai_investigation_panel.png](docs/screenshots/07_ai_investigation_panel.png) |
-| 8 | Analyst Verdict Panel | [08_analyst_verdict_panel.png](docs/screenshots/08_analyst_verdict_panel.png) |
-| 9 | Case Workflow Audit Trail | [09_case_workflow_audit_trail.png](docs/screenshots/09_case_workflow_audit_trail.png) |
-| 10 | False Positive Review Case | [10_false_positive_review_case.png](docs/screenshots/10_false_positive_review_case.png) |
-| 11 | Workflow Events Audit Trail | [11_workflow_events_audit_trail.png](docs/screenshots/11_workflow_events_audit_trail.png) |
-| 12 | Reliability Metrics Center | [12_reliability_metrics_center.png](docs/screenshots/12_reliability_metrics_center.png) |
+**Model artifact**
+
+`saved_models/fraud_model.pkl` is tracked in this repository. It is a small (approx 106 KB), fully
+deterministic XGBoost artifact required by the Docker image at runtime; `docker compose build`
+copies it into the container. No separate download or training step is needed for a fresh clone.
+
+The artifact is one component of the broader 4-layer hybrid scoring engine. It is not an autonomous
+decision system; analyst verdict is required before any operational action.
+
+To rebuild the artifact from source (optional, for retraining or checksum verification):
+```
+python data/synthetic/generate_transactions.py   # produces data/synthetic/transactions.csv
+python -m src.models.train_model                 # produces saved_models/fraud_model.pkl
+```
+
+`data/synthetic/transactions.csv` is generated and gitignored. The generator and trainer both use
+deterministic seed 42. See [docs/MODEL_CARD.md](docs/MODEL_CARD.md) for the full artifact contract,
+feature schema, and checksum.
+
+**Backend**
+```
+cd C:\ml_projects\real-time-fraud-triage-system
+docker compose up -d --build
+docker compose ps
+curl.exe http://localhost:8000/health
+curl.exe http://localhost:8000/health/detailed
+```
+
+**Database migrations** (first run or after schema changes)
+```
+docker compose run --rm api alembic upgrade head
+```
+
+**Frontend**
+```
+cd C:\ml_projects\real-time-fraud-triage-system\fraud-console
+npm install
+npm run dev
+```
+
+Open http://localhost:3000.
+
+**Seed demo data**
+```
+cd C:\ml_projects\real-time-fraud-triage-system
+python scripts/demo_seed.py
+```
+
+See [docs/DEMO_WALKTHROUGH.md](docs/DEMO_WALKTHROUGH.md) for the complete walkthrough and demo flow instructions.
+
+---
+
+## Quick Demo Flow
+
+With the stack running (`docker compose up -d --build`) and the frontend live (`npm run dev`):
+
+1. Open **http://localhost:3000** (Fraud Intelligence Command Center)
+2. Click **Launch Guided Investigation** to seed two canonical fraud cases via `POST /demo/seed` and navigate directly to the Case Dossier
+3. Inspect the **Case Dossier**: grouped evidence chips (base, rich, behavioural, graph layers), lifecycle timeline, risk score summary
+4. Return to **Review Queue** (`/queue`) to see both cases with decision tier labels and risk score bars
+5. Open the second case (FALSE_POSITIVE verdict already applied) to inspect the analyst review workflow
+6. Navigate to **Workflow Events** (`/workflow/events`) for the automation audit trail
+7. Navigate to **Reliability Metrics** (`/workflow/metrics`) for pipeline health
+
+**Without the Launch Guided Investigation button** (fresh clone, no Docker stack yet):
+```
+python scripts/demo_seed.py
+```
+See [docs/DEMO_WALKTHROUGH.md](docs/DEMO_WALKTHROUGH.md) for the complete walkthrough and demo flow instructions.
+
+---
+
+## Testing and Demo Automation
+
+```
+cd C:\ml_projects\real-time-fraud-triage-system\fraud-console
+
+npm run test:e2e          # 11-check Playwright suite (navigation + Case Dossier 2.0 + 10M demo flow)
+npm run demo:visual       # Headed browser walkthrough for live review
+npm run demo:record       # Record local WebM artefact (MP4 if ffmpeg in PATH)
+npm run demo:edge-narrated  # Generate narrated MP4: Edge TTS voiceover + FFmpeg merge
+```
+
+`test:e2e` runs headless Chromium against the live stack; all 11 checks cover navigation
+correctness, Case Dossier 2.0 full render and analyst workflow, and the 10M scan surface.
+
+`demo:edge-narrated` generates a full narrated product demo locally using Microsoft Edge
+TTS (free, no API key required) and FFmpeg. Generated video and audio artefacts are
+local-only and intentionally gitignored.
+
+---
+
+## CI and MLOps Readiness
+
+GitHub Actions CI runs on every push and pull request to `master`/`main`:
+
+| Job | Steps |
+|---|---|
+| `backend-release-readiness` | Python 3.11 compile check, 40-check release readiness validator, model artifact load and checksum verification, investigation smoke checks |
+| `frontend-build` | `npm ci`, ESLint, `next build --webpack` (Node.js LTS) |
+
+**What CI does not run:** Docker / PostgreSQL / Redpanda / Redis / Ollama services.
+E2E Playwright tests (`npm run test:e2e`, 11 checks) require the full live stack
+and are the **local pre-push gate**. Run them from `fraud-console/` before every push.
+
+MLOps maturity: **L2+**: release engineering, artifact governance, and CI validation
+are implemented. MLflow, feature store, automated retraining, drift monitoring, and
+canary deployment are identified enterprise expansion controls, documented in
+[docs/MLOPS_READINESS.md](docs/MLOPS_READINESS.md) as the future L3 roadmap.
 
 ---
 
@@ -564,7 +648,7 @@ and FFmpeg merge are fully automated via npm run demo:edge-narrated.
 | Full export duration (10M, 1.64 GiB) | ~113.63s |
 | API RestartCount post-export | 0 |
 | OOMKilled | false |
-| Product walkthrough duration | ~12m 47s (v9-subtitled, hosted externally) |
+| Product walkthrough duration | ~12m 47s (v9-subtitled, hosted on portfolio site) |
 | E2E Playwright checks | 11 / 11 passed |
 
 This profile captures the controlled benchmark operating envelope used for product
@@ -587,10 +671,27 @@ operational approval workflows.
 
 The governance documentation package
 ([docs/CONSUMER_DURABILITY.md](docs/CONSUMER_DURABILITY.md),
-[docs/AUTH_RBAC_DESIGN.md](docs/AUTH_RBAC_DESIGN.md),
-[docs/SECURITY_POSTURE.md](docs/SECURITY_POSTURE.md))
+[docs/AUTH_RBAC_DESIGN.md](docs/AUTH_RBAC_DESIGN.md))
 defines the deployment-readiness boundary and documents the production hardening controls
 required before institution-grade operation.
+
+---
+
+## Governance Documentation
+
+The governance documentation package covers the production-readiness boundaries,
+architecture constraints, and deployment prerequisites for the platform.
+
+| Document | Scope |
+|---|---|
+| [docs/CONSUMER_DURABILITY.md](docs/CONSUMER_DURABILITY.md) | Offset management, idempotency guarantees, crash scenarios, and production gap matrix for both event consumers |
+| [docs/AUTH_RBAC_DESIGN.md](docs/AUTH_RBAC_DESIGN.md) | Three-role RBAC design (Analyst, Senior Analyst, Admin), permission matrix, JWT architecture, and implementation prerequisites |
+| [docs/AI_INVESTIGATION_BRIEF_DESIGN.md](docs/AI_INVESTIGATION_BRIEF_DESIGN.md) | Investigation brief architecture, evidence grouping design, and AI pipeline contract |
+| [docs/CASE_DOSSIER_2_DESIGN.md](docs/CASE_DOSSIER_2_DESIGN.md) | Case Dossier 2.0 layout, evidence section taxonomy, and lifecycle timeline design |
+
+These documents define the governance path for institution-specific deployment and are
+designed for review by engineering leads, compliance teams, and risk architecture
+reviewers.
 
 ---
 
@@ -629,147 +730,13 @@ Three deployment profiles are documented in [docs/DEPLOYMENT_PLAN.md](docs/DEPLO
 
 | Profile | Description |
 |---|---|
-| A — Full Local | Docker Compose 7-service stack, recommended for technical review and E2E evaluation |
-| B — Cloud Demo | Vercel frontend + Render/Railway backend + managed Postgres; `SYNC_SCORING_ENABLED=true`, Kafka disabled |
-| C — Enterprise / AWS | ECS/Fargate, RDS, MSK, hosted LLM; implementation-ready blueprint, not provisioned |
+| A: Full Local | Docker Compose 7-service stack, recommended for technical review and E2E evaluation |
+| B: Cloud Demo | Vercel frontend + Render/Railway backend + managed Postgres; `SYNC_SCORING_ENABLED=true`, Kafka disabled |
+| C: Enterprise / AWS | ECS/Fargate, RDS, MSK, hosted LLM; implementation-ready blueprint, not provisioned |
 
 Runtime is environment-driven: `ALLOWED_ORIGINS` configures CORS for deployed frontends,
 `NEXT_PUBLIC_API_BASE_URL` points the Next.js console at the deployed API. Both are documented
 in `.env.example` with local defaults that work out of the box.
-
----
-
-## Run Locally
-
-**Prerequisites:** Docker Desktop, Node.js 18+, Python 3.11+. Ollama on host for AI investigations.
-
-**Model artifact**
-
-`saved_models/fraud_model.pkl` is tracked in this repository. It is a small (≈106 KB), fully
-deterministic XGBoost artifact required by the Docker image at runtime — `docker compose build`
-copies it into the container. No separate download or training step is needed for a fresh clone.
-
-The artifact is one component of the broader 4-layer hybrid scoring engine. It is not an autonomous
-decision system; analyst verdict is required before any operational action.
-
-To rebuild the artifact from source (optional — for retraining or checksum verification):
-```
-python data/synthetic/generate_transactions.py   # produces data/synthetic/transactions.csv
-python -m src.models.train_model                 # produces saved_models/fraud_model.pkl
-```
-
-`data/synthetic/transactions.csv` is generated and gitignored. The generator and trainer both use
-deterministic seed 42. See [docs/MODEL_CARD.md](docs/MODEL_CARD.md) for the full artifact contract,
-feature schema, and checksum.
-
-**Backend**
-```
-cd C:\ml_projects\real-time-fraud-triage-system
-docker compose up -d --build
-docker compose ps
-curl.exe http://localhost:8000/health
-curl.exe http://localhost:8000/health/detailed
-```
-
-**Database migrations** (first run or after schema changes)
-```
-docker compose run --rm api alembic upgrade head
-```
-
-**Frontend**
-```
-cd C:\ml_projects\real-time-fraud-triage-system\fraud-console
-npm install
-npm run dev
-```
-
-Open http://localhost:3000.
-
-**Seed demo data**
-```
-cd C:\ml_projects\real-time-fraud-triage-system
-python scripts/demo_seed.py
-```
-
-See [docs/DEMO_STATE.md](docs/DEMO_STATE.md) for canonical case profiles, walkthrough instructions, and reseed procedures.
-
----
-
-## Quick Demo Flow
-
-With the stack running (`docker compose up -d --build`) and the frontend live (`npm run dev`):
-
-1. Open **http://localhost:3000** (Fraud Intelligence Command Center)
-2. Click **Launch Guided Investigation** — seeds two canonical fraud cases via `POST /demo/seed` and navigates directly to the Case Dossier
-3. Inspect the **Case Dossier**: grouped evidence chips (base, rich, behavioural, graph layers), lifecycle timeline, risk score summary
-4. Return to **Review Queue** (`/queue`) to see both cases with decision tier labels and risk score bars
-5. Open the second case (FALSE_POSITIVE verdict already applied) to inspect the analyst review workflow
-6. Navigate to **Workflow Events** (`/workflow/events`) for the automation audit trail
-7. Navigate to **Reliability Metrics** (`/workflow/metrics`) for pipeline health
-
-**Without the Launch Guided Investigation button** (fresh clone, no Docker stack yet):
-```
-python scripts/demo_seed.py
-```
-See [docs/DEMO_STATE.md](docs/DEMO_STATE.md) for canonical case profiles and reseed procedures.
-
----
-
-## Testing and Demo Automation
-
-```
-cd C:\ml_projects\real-time-fraud-triage-system\fraud-console
-
-npm run test:e2e          # 11-check Playwright suite (navigation + Case Dossier 2.0 + 10M demo flow)
-npm run demo:visual       # Headed browser walkthrough for live review
-npm run demo:record       # Record local WebM artefact (MP4 if ffmpeg in PATH)
-npm run demo:edge-narrated  # Generate narrated MP4: Edge TTS voiceover + FFmpeg merge
-```
-
-`test:e2e` runs headless Chromium against the live stack; all 11 checks cover navigation
-correctness, Case Dossier 2.0 full render and analyst workflow, and the 10M scan surface.
-
-`demo:edge-narrated` generates a full narrated product demo locally using Microsoft Edge
-TTS (free, no API key required) and FFmpeg. Generated video and audio artefacts are
-local-only and intentionally gitignored.
-
----
-
-## CI and MLOps Readiness
-
-GitHub Actions CI runs on every push and pull request to `master`/`main`:
-
-| Job | Steps |
-|---|---|
-| `backend-release-readiness` | Python 3.11 compile check, 41-check release readiness validator, model artifact load and checksum verification, investigation smoke checks |
-| `frontend-build` | `npm ci`, ESLint, `next build --webpack` (Node.js LTS) |
-
-**What CI does not run:** Docker / PostgreSQL / Redpanda / Redis / Ollama services.
-E2E Playwright tests (`npm run test:e2e`, 11 checks) require the full live stack
-and are the **local pre-push gate** — run them from `fraud-console/` before every push.
-
-MLOps maturity: **L2+** — release engineering, artifact governance, and CI validation
-are implemented. MLflow, feature store, automated retraining, drift monitoring, and
-canary deployment are identified enterprise expansion controls, documented in
-[docs/MLOPS_READINESS.md](docs/MLOPS_READINESS.md) as the future L3 roadmap.
-
----
-
-## Key Documents
-
-| Document | Purpose |
-|---|---|
-| [docs/PORTFOLIO_CASE_STUDY.md](docs/PORTFOLIO_CASE_STUDY.md) | Full system and benchmark narrative for senior technical reviewers |
-| [docs/DEMO_STORYBOARD.md](docs/DEMO_STORYBOARD.md) | Scene-by-scene demo guide with narration angles and scope wording |
-| [docs/RISK_SCAN_BENCHMARKS.md](docs/RISK_SCAN_BENCHMARKS.md) | Verified 10M benchmark evidence with full metric tables |
-| [docs/PRODUCT_STAGES.md](docs/PRODUCT_STAGES.md) | Complete build history, phase completion log, and product roadmap |
-| [docs/DEPLOYMENT_PLAN.md](docs/DEPLOYMENT_PLAN.md) | Deployment profiles (Local/Cloud Demo/Enterprise), environment variable reference, reviewer run path |
-| [docs/CONSUMER_DURABILITY.md](docs/CONSUMER_DURABILITY.md) | Consumer offset management, idempotency design, and production gap matrix |
-| [docs/AUTH_RBAC_DESIGN.md](docs/AUTH_RBAC_DESIGN.md) | Authentication and RBAC architecture design |
-| [docs/SECURITY_POSTURE.md](docs/SECURITY_POSTURE.md) | Security posture, governance boundaries, and production hardening controls |
-| [fraud-console/demo/README.md](fraud-console/demo/README.md) | Demo video recording and AI narration pipeline |
-| [docs/VIDEO_ARTIFACTS.md](docs/VIDEO_ARTIFACTS.md) | Video artifact policy, external hosting placeholder, SHA256, and reassembly instructions |
-| [docs/GITHUB_REPO_METADATA.md](docs/GITHUB_REPO_METADATA.md) | GitHub repository name, description, topics, and badge block for post-push configuration |
 
 ---
 
@@ -795,6 +762,56 @@ canary deployment are identified enterprise expansion controls, documented in
 
 ---
 
+## Public Documentation
+
+| Document | Purpose |
+|---|---|
+| [docs/PORTFOLIO_CASE_STUDY.md](docs/PORTFOLIO_CASE_STUDY.md) | Full system and benchmark narrative for senior technical reviewers |
+| [docs/SYSTEM_SNAPSHOT.md](docs/SYSTEM_SNAPSHOT.md) | System identity, runtime configuration, and operational boundaries |
+| [docs/EXPERIENCE_FLOW.md](docs/EXPERIENCE_FLOW.md) | Product experience thesis and analyst workflow design |
+| [docs/DEMO_STORYBOARD.md](docs/DEMO_STORYBOARD.md) | Scene-by-scene demo guide with narration angles and scope wording |
+| [docs/DEMO_WALKTHROUGH.md](docs/DEMO_WALKTHROUGH.md) | Screenshot capture plan and complete demo walkthrough narrative |
+| [docs/RISK_SCAN_BENCHMARKS.md](docs/RISK_SCAN_BENCHMARKS.md) | Verified 10M benchmark evidence with full metric tables |
+| [docs/DEPLOYMENT_STRATEGY.md](docs/DEPLOYMENT_STRATEGY.md) | Deployment posture, environment configuration, and release readiness |
+| [docs/INTEGRATION_API_BLUEPRINT.md](docs/INTEGRATION_API_BLUEPRINT.md) | Proposed external-facing decision facade endpoint design |
+| [docs/CONSUMER_DURABILITY.md](docs/CONSUMER_DURABILITY.md) | Consumer offset management, idempotency design, and production gap matrix |
+| [docs/AUTH_RBAC_DESIGN.md](docs/AUTH_RBAC_DESIGN.md) | Authentication and RBAC architecture design |
+| [docs/MODEL_CARD.md](docs/MODEL_CARD.md) | Model artifact contract, feature schema, checksum, and governance notes |
+| [docs/MLOPS_READINESS.md](docs/MLOPS_READINESS.md) | MLOps maturity assessment and L3 expansion roadmap |
+| [docs/VIDEO_ARTIFACTS.md](docs/VIDEO_ARTIFACTS.md) | Video artifact policy, SHA256, and reassembly instructions |
+| [docs/presentation/real-time-fraud-intelligence-console-executive-deck.pptx](docs/presentation/real-time-fraud-intelligence-console-executive-deck.pptx) | Executive presentation deck (12 slides) |
+| [fraud-console/demo/README.md](fraud-console/demo/README.md) | Demo video recording and AI narration pipeline |
+| [docs/GITHUB_REPO_METADATA.md](docs/GITHUB_REPO_METADATA.md) | GitHub repository name, description, topics, and badge block for post-push configuration |
+
+---
+
+## Reviewer Notes
+
+**What to run first:** `docker compose up -d` from the repo root, then `npm run dev` in `fraud-console/`. The system is live at `http://localhost:3000` within ~30 seconds.
+
+**What to inspect:**
+
+| Area | Where to look |
+|---|---|
+| 4-layer scoring engine | `api/scoring_engine.py`: base ML/rule, rich signals, behavioural, graph layers |
+| Behavioural profiling | `api/behavioral_intelligence.py`: entity norm computation, deviation scoring |
+| Graph / mule detection | `api/graph_intelligence.py`: fan-in, fan-out, shared-entity signals |
+| Scoring consumer | `consumers/scoring_consumer.py`: Redpanda event processing, offset strategy |
+| Investigation consumer | `consumers/investigation_consumer.py`: AI brief persistence, AGENT_VERSION |
+| Case Dossier 2.0 | `fraud-console/src/app/cases/[id]/page.tsx`: grouped evidence, lifecycle timeline |
+| Portfolio Risk Scan | `api/risk_scan.py` + `fraud-console/src/app/risk-scan/`: async scan, chunked ingestion, cursor export |
+| AI brief hardening | `api/ai_investigation.py`: bounded failure handling, structured report persistence |
+| Consumer durability design | [docs/CONSUMER_DURABILITY.md](docs/CONSUMER_DURABILITY.md) |
+| Auth/RBAC design | [docs/AUTH_RBAC_DESIGN.md](docs/AUTH_RBAC_DESIGN.md) |
+| Full benchmark evidence | [docs/RISK_SCAN_BENCHMARKS.md](docs/RISK_SCAN_BENCHMARKS.md) |
+| Product walkthrough video | [docs/VIDEO_ARTIFACTS.md](docs/VIDEO_ARTIFACTS.md) -- product walkthrough video will be hosted separately on the portfolio site |
+
+**Governance boundary:** The model is intentionally trained on synthetic data only. A documented governance path covers institution-specific labelled-outcome calibration before any production use. See [docs/MODEL_CARD.md](docs/MODEL_CARD.md) and [docs/AUTH_RBAC_DESIGN.md](docs/AUTH_RBAC_DESIGN.md).
+
+**Validation:** `python scripts/verify_release_readiness.py` runs 40 automated checks (file existence, model integrity, screenshot evidence, git hygiene, stale phrase detection). All 40 pass on this commit.
+
+---
+
 ## Engineering Summary
 
 A fraud decision intelligence platform engineered across a 7-service Docker Compose
@@ -809,38 +826,10 @@ zero API restarts.
 Validated through benchmark-scale synthetic fraud scenarios, adversarial simulation
 across five fraud pattern families, controlled behavioural and graph intelligence
 verification, and 11/11 E2E Playwright checks. Governed by a formal documentation
-package covering consumer durability, auth/RBAC design, and security posture. Designed
-with a deployment-readiness boundary and a documented governance path for
+package covering consumer durability, auth/RBAC architecture, and deployment governance.
+Designed with a deployment-readiness boundary and a documented governance path for
 institution-specific labelled-outcome calibration, access controls, monitoring, and
 operational hardening.
-
----
-
-## Reviewer Notes
-
-**What to run first:** `docker compose up -d` from the repo root, then `npm run dev` in `fraud-console/`. The system is live at `http://localhost:3000` within ~30 seconds.
-
-**What to inspect:**
-
-| Area | Where to look |
-|---|---|
-| 4-layer scoring engine | `api/scoring_engine.py` — base ML/rule, rich signals, behavioural, graph layers |
-| Behavioural profiling | `api/behavioral_intelligence.py` — entity norm computation, deviation scoring |
-| Graph / mule detection | `api/graph_intelligence.py` — fan-in, fan-out, shared-entity signals |
-| Scoring consumer | `consumers/scoring_consumer.py` — Redpanda event processing, offset strategy |
-| Investigation consumer | `consumers/investigation_consumer.py` — AI brief persistence, AGENT_VERSION |
-| Case Dossier 2.0 | `fraud-console/src/app/cases/[id]/page.tsx` — grouped evidence, lifecycle timeline |
-| Portfolio Risk Scan | `api/risk_scan.py` + `fraud-console/src/app/risk-scan/` — async scan, chunked ingestion, cursor export |
-| AI brief hardening | `api/ai_investigation.py` — bounded failure handling, structured report persistence |
-| Consumer durability design | [docs/CONSUMER_DURABILITY.md](docs/CONSUMER_DURABILITY.md) |
-| Auth/RBAC design | [docs/AUTH_RBAC_DESIGN.md](docs/AUTH_RBAC_DESIGN.md) |
-| Security posture | [docs/SECURITY_POSTURE.md](docs/SECURITY_POSTURE.md) |
-| Full benchmark evidence | [docs/RISK_SCAN_BENCHMARKS.md](docs/RISK_SCAN_BENCHMARKS.md) |
-| Product walkthrough video | [docs/VIDEO_ARTIFACTS.md](docs/VIDEO_ARTIFACTS.md) — external URL added post-upload |
-
-**Governance boundary:** The model is intentionally trained on synthetic data only. A documented governance path covers institution-specific labelled-outcome calibration before any production use — see [docs/MODEL_CARD.md](docs/MODEL_CARD.md) and [docs/SECURITY_POSTURE.md](docs/SECURITY_POSTURE.md).
-
-**Validation:** `python scripts/verify_release_readiness.py` runs 41 automated checks (file existence, model integrity, screenshot evidence, git hygiene, stale phrase detection). All 41 pass on this commit.
 
 ---
 
