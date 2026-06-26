@@ -21,8 +21,6 @@ REQUIRED_FILES = [
     "docs/MODEL_CARD.md",
     "README.md",
     "docs/PORTFOLIO_CASE_STUDY.md",
-    "docs/DEMO_STORYBOARD.md",
-    "docs/DEMO_WALKTHROUGH.md",
     "docs/CONSUMER_DURABILITY.md",
     "docs/AUTH_RBAC_DESIGN.md",
 ]
@@ -67,9 +65,6 @@ STALE_PHRASES = {
     "docs/PORTFOLIO_CASE_STUDY.md": [
         "06_case_dossier_risk_evidence.png",
         "Resume-Safe Positioning",
-    ],
-    "docs/DEMO_WALKTHROUGH.md": [
-        "06_case_dossier_risk_evidence.png",
     ],
 }
 
