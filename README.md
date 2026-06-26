@@ -110,8 +110,10 @@ flowchart LR
 
 ## Operational Fraud Intelligence Results
 
-Results from controlled synthetic portfolio benchmarks. Institution-specific deployment
-requires labelled-outcome calibration before operational use.
+Benchmark basis: controlled synthetic transaction portfolios were used to validate scale,
+tier routing, exposure surfacing, export stability, and investigation workflow behaviour.
+Institution-specific deployment would calibrate thresholds, labels, and review policies
+against historical fraud outcomes.
 
 | Metric | Result | Type |
 |---|---|---|
@@ -135,7 +137,7 @@ requires labelled-outcome calibration before operational use.
 | Release readiness checks | 40 / 40 passed | Measured |
 | Scoring intelligence layers | 4 | Implemented |
 | Backend API endpoints | 27 | Implemented |
-| Frontend analyst console routes | 8 | Implemented |
+| Frontend analyst console | Multi-page analyst workflow covering intake, queue, cases, portfolio scan, audit, and reliability views | Implemented |
 
 ---
 
@@ -149,15 +151,14 @@ Across three benchmark runs using controlled synthetic transaction data, approxi
 low-risk. This concentration allows analyst review to focus on the highest-risk quarter
 of the portfolio rather than a flat, undifferentiated alert list.
 
-| Benchmark | Rows scored | Priority review (P0+P1) | Low-risk routing (P3) | Exposure surfaced | Operational meaning |
+| Benchmark | Rows scored | Priority review (P0+P1) | Low-risk routing (P3) | Primary evidence | Operational meaning |
 |---|---|---|---|---|---|
-| 10K legacy scan | 10,000 | 24.59% (2,459 rows) | 75.41% (7,541 rows) | Not recorded | Consistent tier routing established at baseline scale |
-| 10K rich banking scan | 10,000 | 24.55% (2,455 rows) | 70.12% (7,012 rows) | Not recorded | Rich signal layer confirmed on synthetic banking scenarios |
-| 5M benchmark | 5,000,000 | 24.45% (1,222,251 rows) | 75.55% (3,777,749 rows) | Total $6.98B / P0-tier $5.06B | Review queue concentrated on 1 in 4 transactions; $5.06B critical-tier surfaced |
-| 10M benchmark | 10,000,000 | 100% assigned P1 or P3 | -- | Total $25.1B / P1-tier $24.5B | $25 billion portfolio scored, tiered, and exported in a single async run |
+| 10K legacy scan | 10,000 | 24.59% (2,459 rows) | 75.41% (7,541 rows) | Consistent priority routing behaviour across a compact synthetic portfolio | Consistent tier routing established at baseline scale |
+| 10K rich banking scan | 10,000 | 24.55% (2,455 rows) | 70.12% (7,012 rows) | Rich signal tier routing with P0-P1 priority concentration and P3 low-risk handling | Rich signal layer confirmed on synthetic banking scenarios |
+| 5M benchmark | 5,000,000 | 24.45% (1,222,251 rows) | 75.55% (3,777,749 rows) | $6.98B total exposure scored; $5.06B surfaced in P0 critical tier | Review queue concentrated on 1 in 4 transactions; $5.06B critical-tier surfaced |
+| 10M benchmark | 10,000,000 | 100% assigned P1 or P3 | -- | $25.1B total exposure scored; $24.5B surfaced in high-priority tier | $25 billion portfolio scored, tiered, and exported in a single async run |
 
-All figures are from controlled synthetic benchmarks. Not a production fraud-loss
-reduction claim. Institution deployment requires labelled-outcome calibration.
+All benchmark figures are from controlled synthetic portfolios.
 
 **10M benchmark operational evidence:**
 
@@ -220,7 +221,7 @@ Every alert becomes an investigation record with a durable outcome.
 | Model attribution | Per-feature XGBoost contributions via TreeSHAP at GET /cases/{id}/explain | Every scored decision is explainable at the feature level |
 | AI investigation brief | Structured recommendation, confidence rating, risk and mitigating factors, rules triggered, playbooks referenced | AI supports the analyst. Analyst verdict always required before any operational action. |
 | Version-tracked AI brief traceability | Every investigation record tagged with the agent configuration that produced it | Every AI brief is attributable to the specific model configuration in use at the time |
-| Bounded failure handling | Ollama failure, schema failure, and unexpected errors each produce a specific FAILED record | No investigation attempt disappears silently. Analysts see failure state, not a blank. |
+| Bounded failure handling | Ollama failure, schema failure, and unexpected errors each produce a specific visible failure-state record | No investigation attempt disappears silently. Analysts see failure state, not a blank. |
 | Formal verdict capture | Analyst submits Confirmed Fraud / False Positive / Approved with notes | Every case outcome is formally recorded and linked to the case record |
 | Workflow dispatch | Verdict triggers workflow notification; automation layer processes the case event | Automation is triggered by analyst decision, not by model output alone |
 | Callback audit trail | Every automation action writes a callback event to PostgreSQL | Missing or failed callbacks are visible in reliability monitoring |
@@ -275,10 +276,10 @@ flowchart TD
     A([Case Evidence]) --> B[Evidence Grouping\nBase / Behavioural / Graph]
     B --> C[Playbook Retrieval]
     C --> D[Prompt Assembly]
-    D --> E[LLM Reasoning\nOllama local]
+    D --> E[LLM Investigation\nEvidence-grounded brief]
     E --> F{Schema Validation}
     F -->|Valid| G[COMPLETE Brief\nPersisted to PostgreSQL]
-    F -->|Invalid or Failure| H[FAILED Brief\nPersisted to PostgreSQL]
+    F -->|Invalid or Failure| H[Failure-state Brief\nPersisted to PostgreSQL]
     G --> I[Surfaced in Case Dossier]
     H --> I
     I --> J[Analyst Verdict\nStill Required]
@@ -323,7 +324,7 @@ flowchart LR
 | Rule controls | Deterministic flags: high amount, unusual time, risky payment method, risky geography | Binary rule flag; contributes 40% of base score | Transparent, auditable guardrails alongside the model |
 | Behavioural profiling | Compares transaction against entity-level norms for amount, velocity, and spend pattern | BEHAVIOURAL_AMOUNT_DEVIATION, BEHAVIOURAL_VELOCITY_DEVIATION, BEHAVIOURAL_PROFILE_SHIFT | Detects individually unremarkable transactions that deviate sharply from an entity baseline |
 | Graph / mule detection | Identifies shared-device clusters, fan-in patterns (mule receivers), and fan-out patterns (distribution accounts) | MULE_FAN_IN_PATTERN, MULE_FAN_OUT_PATTERN, graph boost contribution | Detects coordinated fraud rings invisible to single-transaction analysis |
-| AI investigation briefs | Evidence-grouped LLM investigation brief via Ollama, version-tracked, bounded failure handling | COMPLETE or FAILED brief persisted per case | Structures investigation context for analysts without removing analyst decision control |
+| AI investigation briefs | Evidence-grouped LLM investigation brief via Ollama, version-tracked, bounded failure handling | COMPLETE or failure-state brief persisted per case | Structures investigation context for analysts without removing analyst decision control |
 
 **Scoring formula:**
 
@@ -348,14 +349,14 @@ mule-network coordination.
 
 ## Model and Rule Tradeoffs
 
-| Option | Strength | Weakness | Decision |
+| Option | Strength | Trade-off | Decision |
 |---|---|---|---|
 | Rules-only | Deterministic, transparent, no training data required | Brittle, misses nonlinear patterns, requires constant manual updates | Used as a 40% guardrail component within the base score, not as the sole decision engine |
-| Logistic Regression | Explainable coefficients, calibrated probability | Underperforms on nonlinear fraud feature interactions | Not selected; XGBoost is a strong practical fit for structured tabular fraud scoring without requiring heavy manual feature engineering |
+| Logistic Regression | Explainable coefficients, calibrated probability | Underperforms on nonlinear fraud feature interactions | Not chosen as the primary scoring layer; XGBoost is a strong practical fit for structured tabular fraud scoring |
 | Random Forest | High accuracy, robust to outliers | Harder to calibrate probability output, larger deployment footprint | Viable alternative; XGBoost selected for tighter calibration and a lighter serialised artifact |
-| **XGBoost (selected)** | Strong on nonlinear interactions, calibrated probability output, fast inference, small artifact (~106 KB), TreeSHAP attribution | Requires labelled training data; threshold calibration needed for production | Champion model for structured transaction scoring. Deployable, interpretable, and appropriate for the current tabular feature set |
-| Neural network | Learns complex representations at scale | Requires large labelled production datasets, harder to explain, overkill for current structured feature set | Future path once larger labelled outcome datasets are available; not selected for the current structured tabular scoring layer |
-| Pure LLM decisioning | Flexible, handles unstructured context | Non-deterministic, unauditable, high latency, not appropriate for enforcement decisions | Rejected for enforcement. LLM used only in the advisory investigation brief layer, with analyst verdict always required |
+| **XGBoost (selected)** | Strong on nonlinear interactions, calibrated probability output, fast inference, small artifact (~106 KB), TreeSHAP attribution | Requires calibration data for institution deployment; threshold tuning applies at institution scale | Champion model for structured transaction scoring. Deployable, interpretable, and appropriate for the current tabular feature set |
+| Neural network | Learns complex representations at scale | Requires large labelled production datasets; not necessary for the current structured tabular scoring layer | Reserved for future labelled-outcome expansion |
+| Pure LLM decisioning | Flexible, handles unstructured context | Non-deterministic, unauditable, high latency; not appropriate for enforcement decisions | Constrained to advisory investigation support. LLM used only in the investigation brief layer, with analyst verdict always required |
 
 ---
 
@@ -386,7 +387,7 @@ before the next scale step was attempted.
 | 5M rows | Export routed through UI pagination helper; timed out before first byte after ~26 minutes; API restarted | Server-side cursor export with bounded-batch iterator; dedicated path separate from UI pagination | 824.14 MB export stable at 5M rows; TTFB 0.0055s; zero restarts |
 | 7.5M rows | Result queries scanned by scan_id and sorted millions of rows without composite index support | Composite ordered indexes with NULLS LAST on (scan_id, risk_score DESC, row_number ASC) and on (scan_id, tier, risk_score DESC, row_number ASC) | Page 1,000 on 10M rows bounded at 0.379s after index hardening |
 | 10M rows | Full end-to-end validation required after ingestion, export, dedup, and index hardening | Bounded-memory benchmark mode; 10M benchmark passed end-to-end | $25.1B portfolio scored, tiered, paginated, and exported; zero restarts; zero invalid rows |
-| AI investigation failures | Ollama failures produced invisible or raw error states with no durable outcome | Three distinct failure paths each produce analyst-readable FAILED records persisted to PostgreSQL | No investigation attempt disappears without a visible, durable outcome |
+| AI investigation failures | Ollama failures produced invisible or raw error states with no durable outcome | Three distinct failure paths each produce analyst-readable visible failure-state records persisted to PostgreSQL | No investigation attempt disappears without a visible, durable outcome |
 | Workflow audit blind spots | Automation dispatch with no confirmation created audit gaps | Callback events persisted to PostgreSQL; reliability metrics compute health verdict from actual event records | Missing or failed automation actions are detectable in the reliability dashboard, not hidden |
 | Analyst queue without prioritisation | Flat alert lists waste analyst time on low-risk cases at any portfolio scale | P0-P3 tier assignment at ingestion; server-side tier filters on scan results | High-risk cases surface at the top of the analyst queue regardless of portfolio volume |
 
@@ -412,7 +413,7 @@ Institution-specific deployment would expand fraud detection capabilities across
 | Closed-loop fraud outcome feedback | Fraud teams cannot reduce false positives or false negatives reliably unless analyst decisions and downstream fraud outcomes become labelled feedback | Use analyst verdicts, confirmed fraud, false positives, chargebacks, disputes, and manual overrides as outcome labels for threshold calibration, rule tuning, model retraining, drift monitoring, and fraud-pattern analysis | Creates a measurable improvement loop where the console becomes stronger as real fraud outcomes are observed | High |
 | Calibrate thresholds using institution-specific labelled fraud outcomes | Current thresholds (REVIEW 0.3 / BLOCK 0.7) are validated on synthetic data and may produce incorrect FPR or FNR on real portfolios | Environment-variable thresholds are already configurable; analyst verdict history provides the calibration signal | Reduces both missed fraud and unnecessary analyst burden on legitimate transactions | High |
 | Track false positive and false negative rates from analyst verdicts | Without verdict outcome tracking, the team does not know how many fraud cases are being missed or over-flagged | Every analyst verdict (Confirmed Fraud / False Positive / Approved) is persisted to PostgreSQL with case linkage; verdict aggregates are queryable | Quantifies the real cost of scoring error in operational terms | High |
-| Feed confirmed fraud and false-positive verdicts back into model retraining | The model trains on synthetic data only; analyst verdicts on real portfolios are the most valuable fraud signal available | Verdict records in PostgreSQL are the basis for a labelled outcome dataset that can drive retraining | Improves model precision and recall over time as real institution fraud patterns replace synthetic training data | High |
+| Feed confirmed fraud and false-positive verdicts back into model retraining | The initial model is trained on synthetic data; institution verdicts and confirmed outcomes become the higher-value calibration layer | Verdict records in PostgreSQL are the basis for a labelled outcome dataset that can drive retraining | Improves model precision and recall over time as real institution fraud patterns replace synthetic training data | High |
 | Add score distribution and feature drift monitoring | A model calibrated today may degrade silently as fraud patterns and customer behaviour evolve | The scoring pipeline produces per-transaction risk scores; score distribution aggregates over time are the input signal for drift detection | Prevents silent model degradation before it causes missed fraud at portfolio scale | Medium |
 | Extend behavioural features using account, device, payee, and merchant history | Fraud that mimics legitimate customer behaviour is invisible to transaction-level scoring alone | The behavioural boost layer already activates on entity-level deviation columns; extended features require enriched transaction context from upstream data | Detects account takeover, synthetic identity, and mule-account patterns that pure transaction scoring misses | Medium |
 | Expand graph intelligence with velocity rings, temporal fan patterns, and account clusters | Coordinated fraud rings and structuring patterns require temporal and network-topology views beyond a single scan window | The graph boost layer already implements shared-device and fan-in/fan-out detection; velocity ring patterns require temporal linkage across transactions | Detects money laundering structuring and coordinated ring patterns that static scoring cannot surface | Medium |
@@ -497,7 +498,7 @@ schema, and checksum.
 | E2E Playwright checks (11 checks, headless Chromium, live stack) | 11 / 11 PASS |
 | Detailed health endpoint | GET /health/detailed: all components healthy |
 | Model artifact checksum | Verified in CI (fraud_model.pkl MD5) |
-| Public artifact hygiene | Repository excludes generated media artifacts and private internal planning files |
+| Public release hygiene | Public README links only curated product, model, benchmark, and executive documentation |
 
 **Run release readiness checks:**
 ```
