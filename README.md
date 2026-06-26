@@ -17,66 +17,68 @@
 
 ## Executive Summary
 
-Transaction fraud teams need more than a risk probability. They need a system that scores
-incoming transactions, assigns priority tiers, routes cases to an analyst queue, surfaces
-structured evidence in context, supports investigation with AI-generated briefs, captures
-formal verdicts, dispatches workflow automation, maintains a queryable audit trail, and
-handles portfolio-scale bulk scanning.
+A fraud score tells an analyst that a transaction looks suspicious. It does not tell
+them which transaction to review first, why it was flagged, what the analyst decided,
+or whether automation ran correctly afterwards.
 
-This system implements the full transaction fraud decisioning lifecycle: from transaction
-intake through 4-layer hybrid scoring, analyst triage, AI-assisted investigation briefing
-with bounded failure handling, verdict capture, workflow dispatch with callback-based audit,
-and portfolio-scale risk scanning across 10 million transactions.
+This console implements the complete fraud decisioning lifecycle: from transaction intake
+through 4-layer hybrid scoring, risk-tiered analyst queue, evidence-led Case Dossier,
+AI-assisted investigation brief, formal verdict capture, workflow dispatch with callback
+audit, and portfolio-scale async scanning across 10 million transactions.
 
-It is not a fraud classifier. It is a fraud decisioning platform built to show what happens
-between a risk score and an analyst decision.
-
----
-
-## The Problem
-
-A fraud score alone is not operationally complete. It signals that a transaction looks
-suspicious. It does not tell an analyst what to review first, why the transaction was
-flagged, what evidence supports the flag, what the analyst decided, or whether automation
-ran correctly.
-
-| Operational gap | What score-only systems leave unresolved | What this console adds |
-|---|---|---|
-| No analyst prioritisation | All flagged transactions arrive with equal urgency | P0-P3 risk-tiered analyst review queue |
-| No evidence structure | Model output has no grouped investigation context | Evidence-structured Case Dossier: base signals, behavioural indicators, graph topology |
-| No investigation support | Analysts take unstructured manual notes | AI investigation briefs: structured, traceable, analyst-controlled |
-| No verdict capture | Analyst decisions are informal and unrecorded | Formal verdict with workflow dispatch linkage |
-| No audit trail | Automation actions are invisible | Queryable workflow event log with reliability monitoring |
-| No portfolio scale | Single transaction prediction only | Async 10M-row scan with indexed review and streaming export |
-| No reason codes | Model output is opaque | Per-layer reason codes surfaced in the Case Dossier |
+The system addresses the operational gap between fraud scoring and fraud investigation.
+Every stage has a clear handoff to the next, a durable evidence trail, and a formal
+accountability record.
 
 ---
 
-## What I Built
+## The Fraud Operations Gap
 
-A full-stack transaction fraud intelligence console across seven services:
+| Fraud operations challenge | Why score-only detection falls short | Console response | Business value |
+|---|---|---|---|
+| Portfolio-wide triage | Scoring one transaction at a time cannot cover institutional portfolio volume | Async portfolio scan: 10M rows, bounded memory, indexed pagination | Risk teams gain complete portfolio coverage, not point samples |
+| Analyst overload | Flat alert lists force analysts to spend equal time on low-risk and high-risk cases | P0-P3 risk-tiered review queue ordered by descending risk score | Analyst time concentrates on the highest-urgency cases first |
+| Risk exposure prioritisation | Raw score does not quantify the dollar value at risk across the portfolio | Exposure surfaced per tier across the full portfolio scan | Risk leadership sees aggregate exposure concentration, not just flagged counts |
+| Evidence quality | Model output alone provides no grouped investigation context | Evidence-structured Case Dossier: base signals, behavioural indicators, graph topology, model attribution | Analysts understand why a transaction was flagged, not just that it was |
+| Investigation traceability | Manual investigation notes are informal and unrecorded | Formal analyst verdict capture with structured evidence and AI investigation briefs | Every investigation has a documented outcome linked to a case record |
+| Workflow accountability | Automation actions with no confirmation create audit blind spots | Workflow callback events persisted to PostgreSQL; missing callbacks visible in reliability monitoring | Automation accountability is measurable, not assumed |
+| Large export and downstream review | Analyst UI cannot export millions of scored results without memory instability | Server-side cursor streaming export: 1.64 GiB at 6.987 ms time to first byte, zero restarts | Risk, compliance, and model teams can extract the complete scored portfolio |
+| Model and rule transparency | Opaque model output does not support analyst or compliance review | Per-layer reason codes and TreeSHAP model attribution per case | Every decision is explainable to the analyst and traceable to the scoring configuration |
+| High-risk case promotion | Portfolio scan results are disconnected from individual case investigation | Promote-to-case: any flagged scan row escalates to a full Case Dossier | A pattern spotted in bulk review moves directly into structured individual investigation |
 
-- **4-layer hybrid scoring engine**: XGBoost model score combined with deterministic rule
-  controls, behavioural profiling against entity norms, and graph-based mule-network
-  detection. Each layer contributes independently to a bounded risk score with per-layer
-  reason codes.
-- **Analyst review queue**: Priority-ordered case triage with P0-P3 tier labels, risk
-  score bars, and surgical status filters.
-- **Case Dossier**: Evidence-grouped investigation workspace with base signals,
-  behavioural indicators, graph signals, model attribution via TreeSHAP, lifecycle
-  timeline, and verdict capture.
-- **AI investigation briefs**: Evidence-grouped prompting through Ollama, tagged with
-  AGENT_VERSION for traceability. Bounded failure handling produces readable FAILED
-  records rather than silent failures. AI assists investigation. Analyst keeps decision
-  control.
-- **Workflow audit trail**: Every workflow dispatch and callback event is persisted to
-  PostgreSQL and surfaced in a reliability monitoring center that computes health verdicts
-  from actual event records.
-- **Portfolio Risk Scan**: Asynchronous bulk scoring of transaction files. HTTP 202
-  response with scan ID. Bounded-memory chunked ingestion. Composite indexed pagination.
-  Streaming cursor export. Promote-to-case for individual scan records.
-- **7-service Docker Compose runtime**: FastAPI, Next.js, PostgreSQL, Redpanda, Redis,
-  scoring consumer, investigation consumer. Single command startup. Fully reproducible.
+---
+
+## Fraud Decisioning System
+
+The console connects every stage of the fraud decisioning lifecycle into a structured
+operational workflow:
+
+```
+Raw transaction or portfolio file
+  --> 4-layer hybrid scoring
+  --> Risk tier assignment (P0 critical / P1 high / P2 medium / P3 low)
+  --> Priority analyst review queue
+  --> Evidence-led Case Dossier
+  --> AI-assisted investigation brief (advisory; analyst keeps decision control)
+  --> Formal analyst verdict
+  --> Workflow automation dispatch
+  --> Callback audit event
+  --> Reliability monitoring
+  --> Exportable, paginated portfolio-level risk results
+```
+
+The system closes the gap between three operational functions that score-only approaches
+leave disconnected:
+
+| Function | What this means operationally |
+|---|---|
+| Fraud prediction | 4-layer scoring assigns a risk score with per-layer reason codes to every transaction |
+| Fraud investigation | Case Dossier surfaces grouped evidence; AI brief provides structured context; analyst records a formal verdict |
+| Fraud governance | Every decision, automation action, and AI output is persisted with version traceability |
+
+**Services:** FastAPI (backend), Next.js 16 (analyst console), PostgreSQL 16 (persistence),
+Redpanda (event broker), Redis (cache), scoring consumer, investigation consumer -- seven
+services, single command startup.
 
 ---
 
@@ -106,41 +108,102 @@ flowchart LR
 
 ---
 
-## Measured Proof Points
+## Operational Fraud Intelligence Results
+
+Results from controlled synthetic portfolio benchmarks. Institution-specific deployment
+requires labelled-outcome calibration before operational use.
 
 | Metric | Result | Type |
 |---|---|---|
-| Portfolio scan benchmark scale | 10,000,000 transactions | Benchmark |
-| Rows processed (valid / invalid / skipped) | 10,000,000 / 0 / 0 | Measured |
-| Average scoring throughput | ~1,610 rows/sec | Measured |
-| Risk tier coverage | 100% of 10M rows assigned P1 or P3 | Derived |
-| Deep pagination (page 1,000 on 10M result set) | 0.379s | Measured |
-| Streaming export time to first byte (1.64 GiB file) | 6.987 ms | Measured |
-| API restarts during or after 1.64 GiB export | 0 | Measured |
-| API memory post-export (peak ~915 MiB during processing) | ~216 MiB stable | Measured |
-| End-to-end validation checks | 11 / 11 passed | Measured |
+| 10M benchmark: rows processed | 10,000,000 / 10,000,000 (100%) | Measured |
+| 10M benchmark: valid / invalid / skipped | 10,000,000 / 0 / 0 | Measured |
+| 10M benchmark: total portfolio exposure scored | $25,095,000,000 | Measured |
+| 10M benchmark: high-priority tier exposure surfaced | $24,455,516,419 | Measured |
+| 10M benchmark: average scoring throughput | ~1,610 rows/sec | Measured |
+| 10M benchmark: processing duration | ~103 minutes | Measured |
+| 10M benchmark: deep pagination (page 1,000 on 10M result set) | 0.379s | Measured |
+| 10M benchmark: streaming export time to first byte (1.64 GiB) | 6.987 ms | Measured |
+| 10M benchmark: export duration | 113.63s | Measured |
+| 10M benchmark: API restarts during and after export | 0 | Measured |
+| 5M benchmark: P0+P1 priority review share | 24.45% (1,222,251 of 5,000,000 rows) | Measured |
+| 5M benchmark: P3 low-risk routing | 75.55% (3,777,749 rows) | Measured |
+| 5M benchmark: total portfolio exposure | $6,982,753,484 | Measured |
+| 5M benchmark: P0 critical-tier exposure | $5,058,942,542 | Measured |
+| 10K rich scan: P0+P1 priority review share | 24.55% (2,455 of 10,000 rows) | Measured |
+| 10K rich scan: P3 low-risk routing | 70.12% (7,012 rows) | Measured |
+| E2E Playwright checks | 11 / 11 passed | Measured |
 | Release readiness checks | 40 / 40 passed | Measured |
 | Scoring intelligence layers | 4 | Implemented |
-| Docker Compose services | 7 | Implemented |
 | Backend API endpoints | 27 | Implemented |
 | Frontend analyst console routes | 8 | Implemented |
 
-No real-world fraud loss reduction is claimed. These metrics reflect the validated
-benchmark operating envelope.
+---
+
+## Portfolio Triage at Scale
+
+A fraud team cannot manually inspect a 10-million-transaction portfolio. It needs
+complete scoring, prioritised review, tiered exposure visibility, and exportable results.
+
+Across three benchmark runs using controlled synthetic transaction data, approximately
+24-25% of transactions were routed to P0-P1 priority review, with 70-75% scoring P3
+low-risk. This concentration allows analyst review to focus on the highest-risk quarter
+of the portfolio rather than a flat, undifferentiated alert list.
+
+| Benchmark | Rows scored | Priority review (P0+P1) | Low-risk routing (P3) | Exposure surfaced | Operational meaning |
+|---|---|---|---|---|---|
+| 10K legacy scan | 10,000 | 24.59% (2,459 rows) | 75.41% (7,541 rows) | Not recorded | Consistent tier routing established at baseline scale |
+| 10K rich banking scan | 10,000 | 24.55% (2,455 rows) | 70.12% (7,012 rows) | Not recorded | Rich signal layer confirmed on synthetic banking scenarios |
+| 5M benchmark | 5,000,000 | 24.45% (1,222,251 rows) | 75.55% (3,777,749 rows) | Total $6.98B / P0-tier $5.06B | Review queue concentrated on 1 in 4 transactions; $5.06B critical-tier surfaced |
+| 10M benchmark | 10,000,000 | 100% assigned P1 or P3 | -- | Total $25.1B / P1-tier $24.5B | $25 billion portfolio scored, tiered, and exported in a single async run |
+
+All figures are from controlled synthetic benchmarks. Not a production fraud-loss
+reduction claim. Institution deployment requires labelled-outcome calibration.
+
+**10M benchmark operational evidence:**
+
+| Capability | Evidence |
+|---|---|
+| Async upload acceptance | HTTP 202 in 5.79s; scan job returned immediately without blocking the API |
+| Processing | 10,000,000 / 10,000,000 rows; zero invalid; zero skipped; ~103 minutes; ~1,610 rows/sec |
+| Paginated analyst review | Page 1 in 0.676s; page 2 in 0.247s; deep page 1,000 in 0.379s after composite index hardening |
+| P1 tier filter query | 8,420,051 matching rows returned in 4.188s |
+| Streaming export | 1.64 GiB / 10,000,001 lines; TTFB 6.987 ms; duration 113.63s; zero API restarts; OOMKilled false |
+| Promote-to-case | Individual scan rows promotable to full Case Dossiers via the portfolio scan interface |
 
 ---
 
-## How to Review This Repository
+## Investigation and Audit Control
 
-| Review path | What to inspect | Where to start |
+Scoring identifies risk. The Case Dossier makes the evidence structured and actionable.
+Every alert becomes an investigation record with a durable outcome.
+
+**Case Dossier evidence groups:**
+
+| Evidence group | Contents |
+|---|---|
+| Base signals | ML risk score, decision tier, rule flag, 9-feature signal factors, reason codes |
+| Enriched signals | Device trust score, geo distance, velocity, failed attempts, merchant risk, new payee, chargeback history |
+| Behavioural indicators | Amount deviation from entity baseline, velocity deviation, balance drop ratio, new device, new country, new counterparty, unusual channel |
+| Graph intelligence | Shared device indicator, cross-account device reuse, counterparty fan-in, counterparty fan-out |
+
+**Analyst decisioning and governance:**
+
+| Capability | How it works | Governance value |
 |---|---|---|
-| Executive | Product positioning, decisioning workflow, and benchmark evidence | This README and [Portfolio Case Study](docs/PORTFOLIO_CASE_STUDY.md) |
-| Technical | Scoring architecture, async pipeline, AI brief design, and engineering tradeoffs | Intelligence Layers and System Design Tradeoffs sections below |
-| Local runtime | Run the console, inspect live cases, test the API surface | [Local Setup](#local-setup) |
+| Model attribution | Per-feature XGBoost contributions via TreeSHAP at GET /cases/{id}/explain | Every scored decision is explainable at the feature level |
+| AI investigation brief | Structured recommendation, confidence rating, risk and mitigating factors, rules triggered, playbooks referenced | AI supports the analyst. Analyst verdict always required before any operational action. |
+| AGENT_VERSION traceability | Every investigation record tagged with the agent configuration that produced it | Every AI brief is attributable to the specific model configuration in use at the time |
+| Bounded failure handling | Ollama failure, schema failure, and unexpected errors each produce a specific FAILED record | No investigation attempt disappears silently. Analysts see failure state, not a blank. |
+| Formal verdict capture | Analyst submits Confirmed Fraud / False Positive / Approved with notes | Every case outcome is formally recorded and linked to the case record |
+| Workflow dispatch | Verdict triggers workflow notification; automation layer processes the case event | Automation is triggered by analyst decision, not by model output alone |
+| Callback audit trail | Every automation action writes a callback event to PostgreSQL | Missing or failed callbacks are visible in reliability monitoring |
+| Reliability monitoring | Health verdict computed from actual event records: Healthy / Degraded / Critical | Fraud operations leadership can see automation health without querying service logs |
 
 ---
 
-## End-to-End Process Flows
+## How Transactions Move Through the System
+
+These flows show how the console converts fraud signals into operational decisions.
 
 ### 1. Transaction Intake and Scoring
 
@@ -232,7 +295,7 @@ flowchart LR
 |---|---|---|---|
 | Model scoring | XGBoost probability over transaction and device features | Bounded risk probability 0.0 to 1.0 | Captures nonlinear fraud patterns that static rules miss |
 | Rule controls | Deterministic flags: high amount, unusual time, risky payment method, risky geography | Binary rule flag; contributes 40% of base score | Transparent, auditable guardrails alongside the model |
-| Behavioural profiling | Compares transaction against entity-level norms for amount, velocity, and spend pattern | BEHAVIOURAL_AMOUNT_DEVIATION, BEHAVIOURAL_VELOCITY_DEVIATION, BEHAVIOURAL_PROFILE_SHIFT | Detects individually unremarkable transactions that deviate sharply from an established entity baseline |
+| Behavioural profiling | Compares transaction against entity-level norms for amount, velocity, and spend pattern | BEHAVIOURAL_AMOUNT_DEVIATION, BEHAVIOURAL_VELOCITY_DEVIATION, BEHAVIOURAL_PROFILE_SHIFT | Detects individually unremarkable transactions that deviate sharply from an entity baseline |
 | Graph / mule detection | Identifies shared-device clusters, fan-in patterns (mule receivers), and fan-out patterns (distribution accounts) | MULE_FAN_IN_PATTERN, MULE_FAN_OUT_PATTERN, graph boost contribution | Detects coordinated fraud rings invisible to single-transaction analysis |
 | AI investigation briefs | Evidence-grouped LLM investigation brief via Ollama, AGENT_VERSION tagged, bounded failure handling | COMPLETE or FAILED brief persisted per case | Structures investigation context for analysts without removing analyst decision control |
 
@@ -275,75 +338,51 @@ mule-network coordination.
 | Decision | Selected | Alternative | Why selected | What was sacrificed |
 |---|---|---|---|---|
 | Backend API | FastAPI | Flask, Django | Async-native, typed endpoints, Pydantic validation, auto-generated API docs at /docs | Smaller ecosystem than Django |
-| Frontend | Next.js 16 | Streamlit | Product-grade multi-page analyst console, TypeScript, full component control | Longer build time than Streamlit prototype |
+| Frontend | Next.js 16 | Streamlit | Product-grade multi-page analyst console, TypeScript, full component control | Longer build time than a simpler analytics tool |
 | Persistence | PostgreSQL 16 | SQLite, file storage | ACID transactions, composite indexes, streaming cursor export, deep pagination at 10M rows | Requires managed setup |
 | Event streaming | Redpanda (Kafka-compatible) | Synchronous-only API | Decouples fast scoring from slower investigation; POST /predict returns HTTP 202; investigation retries independently | Infrastructure complexity |
 | Cache | Redis 7 | No cache | Idempotency support, fast state access, deduplication | Adds a service to the runtime |
 | Workflow automation | n8n callback pattern | Code-only workflow | Callback events are durable and measurable; missing callbacks are detectable in reliability metrics | External dependency |
 | AI investigation | Advisory briefs with AGENT_VERSION | Autonomous AI enforcement | Analyst keeps decision control; every brief is traceable to its agent configuration | LLM latency; requires Ollama on host |
-| Deployment | Docker Compose (7 services) | Managed cloud | Fully reproducible local review; single command startup; no cloud cost | Not production-scalable without cloud hardening |
+| Deployment | Docker Compose (7 services) | Managed cloud | Fully reproducible for local review; single command startup; no cloud credentials required | Cloud infrastructure required for deployment at institution scale |
 
 ---
 
-## Execution Evidence and Observations
+## Engineering Hardening Journey
 
-These observations shaped the engineering decisions above.
+Each scale step exposed a different operational failure mode. The system was hardened
+before the next scale step was attempted.
 
-| Observation | Engineering response |
-|---|---|
-| LLM investigation latency is non-deterministic and would block scoring if coupled synchronously | Separate Redpanda consumers for scoring and investigation; POST /predict returns HTTP 202 immediately |
-| Buffering 10M rows into API heap caused instability during export | Server-side cursor iterator streams rows directly to HTTP response without buffering; 1.64 GiB exported with zero restarts |
-| Query time grew non-linearly past 500K rows without appropriate indexing | Composite ordered indexes on (scan_id, risk_score DESC, row_number ASC); page 1,000 on 10M rows bounded at 0.379s |
-| Recomputing tier summaries across all prior rows degraded at 500K scale | Running counter columns incremented per chunk; O(N^2) recomputation eliminated |
-| Ollama failures initially produced invisible or raw error states | Three distinct failure paths each produce analyst-readable FAILED records; no silent failures |
-| Automation dispatch had no verification without callbacks | Callback events persisted to PostgreSQL; reliability metrics compute health verdict from actual event records |
-| Scoring and investigation consumers have different failure-mode requirements | Intentional durability asymmetry: scoring consumer commits offsets on all paths for forward progress; investigation consumer withholds on unexpected errors for retry |
-
----
-
-## Measured Improvements and Proof Points
-
-| Score-only baseline | This system | Evidence |
-|---|---|---|
-| Raw risk score, no prioritisation | P0-P3 risk-tiered analyst queue | 100% of 10M benchmark rows assigned a risk tier |
-| Alert list with no context | Evidence-grouped Case Dossier: base, behavioural, graph signals | 12 Playwright-captured screenshots from live run |
-| Opaque model output | Reason-coded output with per-layer attribution via TreeSHAP | Model attribution endpoint: GET /cases/{id}/explain |
-| Single transaction prediction | 10M-row portfolio scan: bounded ingestion, indexed, streamed export | 10M benchmark: 100% rows processed, zero invalid |
-| Manual investigation notes | AI investigation brief: structured, traceable, AGENT_VERSION tagged | Every investigation record links to a specific agent configuration |
-| Invisible automation | Workflow event log with callback confirmation | Reliability metrics compute health verdict from real event data |
-| Memory-heavy export | Streaming cursor export: 1.64 GiB at 6.987 ms time to first byte | 0 API restarts post-export |
-| Flat bulk results | Paginated, filterable, tier-ordered, promotable scan records | Page 1,000 on 10M rows: 0.379s |
-
----
-
-## Bottlenecks and Engineering Challenges Observed
-
-| Challenge | What was observed | Engineering response | Why it matters |
+| Scale / scenario | Failure mode observed | Engineering response | Fraud operations value |
 |---|---|---|---|
-| Fast scoring blocked by investigation latency | LLM responses are slow and non-deterministic | Separate Redpanda consumers; POST /predict returns HTTP 202 | Scoring throughput is not coupled to AI availability |
-| Memory instability during large export | Full result set in API heap caused instability | Server-side cursor streaming without buffering | 1.64 GiB export stable with zero restarts |
-| Deep pagination degradation | Query time grew non-linearly at scale | Composite ordered PostgreSQL indexes | Page 1,000 on 10M rows bounded at 0.379s |
-| O(N^2) tier summary recomputation | Recomputing totals across all rows per chunk degraded at 500K rows | Running counter columns incremented per chunk | Scan summary stays responsive at any scale |
-| Silent AI investigation failures | Ollama failures produced invisible or raw error states | Three failure paths produce analyst-readable FAILED records with FAILED-state persistence | No investigation attempt disappears without a durable outcome |
-| AI audit traceability | LLM output without version traceability cannot support a compliance audit trail | AGENT_VERSION field on every investigation record | Every brief is attributable to the specific agent configuration that produced it |
-| Analyst queue without prioritisation | Flat alert lists waste analyst time on low-risk cases | P0-P3 tier scoring at ingestion; server-side tier filters | High-risk cases surface immediately even at 10M portfolio scale |
-| Multi-service reproducibility | A 7-service system is difficult to review without cloud credentials | Docker Compose single-command startup | Reviewer can run the full stack locally within seconds |
-| Consumer durability under failure | Scoring and investigation need different failure-mode behaviour | Intentional consumer durability asymmetry | Both forward progress and retry correctness are preserved |
+| 500K rows | Tier summary recomputation re-scanned all prior rows after each chunk; O(N^2) degradation | Running counter columns incremented per chunk | Scan summary remains responsive regardless of portfolio size |
+| 2.5M rows | PostgreSQL table bloat from prior benchmark churn slowed reads; export buffered too much state before flushing | VACUUM FULL and dead-space reclaim; StreamingResponse introduced | Large portfolio scans do not accumulate bloat into subsequent runs |
+| 5M rows | Export routed through UI pagination helper; timed out before first byte after ~26 minutes; API restarted | Server-side cursor export with bounded-batch iterator; dedicated path separate from UI pagination | 824.14 MB export stable at 5M rows; TTFB 0.0055s; zero restarts |
+| 7.5M rows | Result queries scanned by scan_id and sorted millions of rows without composite index support | Composite ordered indexes with NULLS LAST on (scan_id, risk_score DESC, row_number ASC) and on (scan_id, tier, risk_score DESC, row_number ASC) | Page 1,000 on 10M rows bounded at 0.379s after index hardening |
+| 10M rows | Full end-to-end validation required after ingestion, export, dedup, and index hardening | Bounded-memory benchmark mode; 10M benchmark passed end-to-end | $25.1B portfolio scored, tiered, paginated, and exported; zero restarts; zero invalid rows |
+| AI investigation failures | Ollama failures produced invisible or raw error states with no durable outcome | Three distinct failure paths each produce analyst-readable FAILED records persisted to PostgreSQL | No investigation attempt disappears without a visible, durable outcome |
+| Workflow audit blind spots | Automation dispatch with no confirmation created audit gaps | Callback events persisted to PostgreSQL; reliability metrics compute health verdict from actual event records | Missing or failed automation actions are detectable in the reliability dashboard, not hidden |
+| Analyst queue without prioritisation | Flat alert lists waste analyst time on low-risk cases at any portfolio scale | P0-P3 tier assignment at ingestion; server-side tier filters on scan results | High-risk cases surface at the top of the analyst queue regardless of portfolio volume |
 
 ---
 
-## Recommended Next Hardening Steps
+## Recommendations for Stronger Fraud Detection
 
-| Step | Priority |
-|---|---|
-| Production authentication and RBAC enforcement: JWT or OAuth2, role-gated API endpoints matching the three-role design in AUTH_RBAC_DESIGN.md | High |
-| Managed cloud deployment: FastAPI on container hosting, managed PostgreSQL, managed Kafka, monitoring and alerting | High |
-| Production monitoring and alerting: per-service health checks, latency tracking, alert escalation for consumer failures | High |
-| Model registry and drift monitoring: versioned artifacts, score distribution tracking against production label feedback | Medium |
-| Dead letter queue and retry strategy: DLQ for investigation consumer, exponential backoff for Ollama failures | Medium |
-| External fraud decision API facade: single integration endpoint encapsulating feature enrichment, 4-layer scoring, case creation, and investigation dispatch | Medium |
-| Production labelled-data calibration: threshold calibration using historical labelled fraud outcomes and false-positive cost analysis | Medium |
-| Analyst feedback loop: verdict outcomes feed back into model retraining pipeline | Medium |
+Institution-specific deployment would expand fraud detection capabilities across these areas:
+
+| Recommendation | Fraud problem addressed | How the console supports it | Business value | Priority |
+|---|---|---|---|---|
+| Calibrate thresholds using institution-specific labelled fraud outcomes | Current thresholds (REVIEW 0.3 / BLOCK 0.7) are validated on synthetic data and may produce incorrect FPR or FNR on real portfolios | Environment-variable thresholds are already configurable; analyst verdict history provides the calibration signal | Reduces both missed fraud and unnecessary analyst burden on legitimate transactions | High |
+| Track false positive and false negative rates from analyst verdicts | Without verdict outcome tracking, the team does not know how many fraud cases are being missed or over-flagged | Every analyst verdict (Confirmed Fraud / False Positive / Approved) is persisted to PostgreSQL with case linkage; verdict aggregates are queryable | Quantifies the real cost of scoring error in operational terms | High |
+| Feed confirmed fraud and false-positive verdicts back into model retraining | The model trains on synthetic data only; analyst verdicts on real portfolios are the most valuable fraud signal available | Verdict records in PostgreSQL are the basis for a labelled outcome dataset that can drive retraining | Improves model precision and recall over time as real institution fraud patterns replace synthetic training data | High |
+| Add score distribution and feature drift monitoring | A model calibrated today may degrade silently as fraud patterns and customer behaviour evolve | The scoring pipeline produces per-transaction risk scores; score distribution aggregates over time are the input signal for drift detection | Prevents silent model degradation before it causes missed fraud at portfolio scale | Medium |
+| Extend behavioural features using account, device, payee, and merchant history | Fraud that mimics legitimate customer behaviour is invisible to transaction-level scoring alone | The behavioural boost layer already activates on entity-level deviation columns; extended features require enriched transaction context from upstream data | Detects account takeover, synthetic identity, and mule-account patterns that pure transaction scoring misses | Medium |
+| Expand graph intelligence with velocity rings, temporal fan patterns, and account clusters | Coordinated fraud rings and structuring patterns require temporal and network-topology views beyond a single scan window | The graph boost layer already implements shared-device and fan-in/fan-out detection; velocity ring patterns require temporal linkage across transactions | Detects money laundering structuring and coordinated ring patterns that static scoring cannot surface | Medium |
+| Add cost-sensitive thresholds based on fraud loss, review cost, and customer friction | A single threshold treats a $50 transaction and a $50,000 transaction identically; that is not operationally sound | Risk tier assignment (P0-P3) already incorporates score-based differentiation; institution-specific cost curves drive threshold separation | Maximises expected loss prevention relative to available review resource | Medium |
+| Separate real-time blocking threshold from review threshold | Blocking a legitimate high-value customer transaction carries significant cost; the review threshold should be more sensitive than the block threshold | REVIEW_THRESHOLD and BLOCK_THRESHOLD are independent environment variables; institution calibration tunes both independently | Reduces false block rate on high-value customers while maintaining detection sensitivity | Medium |
+| Introduce champion/challenger model governance | A production fraud model needs safe experimentation paths before rollout; full replacement without shadow testing creates unnecessary risk | The model loads from a serialised artifact; a champion/challenger architecture routes a percentage of traffic to a challenger model for comparison | Allows safer model evolution without exposing the full portfolio to an untested configuration | Medium |
+| Monitor rule fatigue and rule decay | Deterministic rules that were relevant at launch may become ineffective as fraud patterns shift and attackers adapt | Rule flag firing rates are computable from prediction records in PostgreSQL; a rule performance view detects decaying coverage | Prevents false confidence in stale rule controls | Lower |
+| Feed downstream chargebacks and disputes back into case outcomes | Chargebacks often arrive weeks after a transaction is approved; that confirmed fraud signal is valuable model and threshold calibration input | The verdict capture infrastructure supports a future chargeback ingestion endpoint that writes retrospective CONFIRM_FRAUD verdicts against case records | Closes the feedback loop between analyst decisions today and fraud outcomes weeks later | Lower |
 
 ---
 
@@ -419,8 +458,8 @@ schema, and checksum.
 | Frontend TypeScript build | PASS |
 | E2E Playwright checks (11 checks, headless Chromium, live stack) | 11 / 11 PASS |
 | Detailed health endpoint | GET /health/detailed: all components healthy |
-| Model artifact checksum | Verified in CI (fraud_model.pkl SHA256) |
-| No video or MP4 file committed | Confirmed |
+| Model artifact checksum | Verified in CI (fraud_model.pkl MD5) |
+| No MP4 or media file committed | Confirmed |
 
 **Run release readiness checks:**
 ```
@@ -446,10 +485,6 @@ npm run test:e2e
 | [docs/MLOPS_READINESS.md](docs/MLOPS_READINESS.md) | MLOps maturity and production expansion roadmap |
 | [docs/presentation/real-time-fraud-intelligence-console-executive-deck.pptx](docs/presentation/real-time-fraud-intelligence-console-executive-deck.pptx) | Executive presentation deck (12 slides) |
 
-Additional documentation covering API design, consumer durability, auth architecture,
-deployment strategy, adversarial simulation, and graph intelligence is available in
-the `docs/` directory.
-
 ---
 
 ## Tech Stack
@@ -471,20 +506,22 @@ the `docs/` directory.
 
 ## Engineering Summary
 
-A transaction fraud decision intelligence platform built across a 7-service Docker Compose
-runtime. Implements 4-layer event-driven scoring (XGBoost model + rule controls +
-behavioural profiling + graph mule-network detection), PostgreSQL persistence with
-composite-indexed 10M-row queries, evidence-grouped Case Dossiers with TreeSHAP model
-attribution, hardened AI investigation briefs with AGENT_VERSION traceability, workflow
-automation audit trails with callback-based reliability monitoring, and a verified
-10M-transaction Portfolio Risk Scan benchmark: ~1,610 rows/sec average throughput, 1.64 GiB
-streaming export at 6.987 ms time to first byte, zero API restarts.
+A transaction fraud decisioning platform built across a 7-service Docker Compose runtime.
+Implements 4-layer event-driven scoring (XGBoost model + rule controls + behavioural
+profiling + graph mule-network detection), PostgreSQL persistence with composite-indexed
+10M-row queries, evidence-grouped Case Dossiers with TreeSHAP model attribution, hardened
+AI investigation briefs with AGENT_VERSION traceability, workflow automation audit trails
+with callback-based reliability monitoring, and a verified 10M-transaction Portfolio Risk
+Scan benchmark: ~1,610 rows/sec average throughput, $25.1B portfolio exposure scored,
+1.64 GiB streaming export at 6.987 ms time to first byte, zero API restarts.
 
-Validated through benchmark-scale adversarial simulation across five fraud pattern families
-and 11/11 E2E Playwright checks. Governed by a documentation package covering consumer
-durability, auth/RBAC architecture, model governance, and deployment readiness. Designed
-with a documented calibration path for institution-specific labelled-outcome calibration,
-access controls, and production hardening.
+Consistent tier routing across three benchmark runs (5M-row scan, 10K legacy scan, 10K
+rich banking scan): 24-25% of transactions routed to P0-P1 priority review, 70-75% to
+P3 low-risk, on controlled synthetic data. Validated through adversarial simulation across
+five fraud pattern families and 11/11 E2E Playwright checks. Governed by a documentation
+package covering consumer durability, auth/RBAC architecture, model governance, and
+deployment readiness. Designed with a documented calibration path for institution-specific
+labelled-outcome calibration, access controls, and production hardening.
 
 ---
 
