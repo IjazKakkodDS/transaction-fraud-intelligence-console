@@ -172,6 +172,33 @@ reduction claim. Institution deployment requires labelled-outcome calibration.
 
 ---
 
+## Critical Findings from Implementation
+
+Implementing the console showed that transaction fraud is not solved by a model score
+alone. The operational challenge is converting risk signals into prioritised review,
+evidence-led investigation, accountable workflow actions, and measurable feedback loops.
+
+| Finding | Evidence from implementation | Business impact |
+|---|---|---|
+| Fraud detection becomes useful only when connected to workflow | Scoring, tier assignment, Case Dossier review, AI investigation briefs, analyst verdicts, workflow dispatch, and callback audit events are linked in one lifecycle | Converts fraud prediction into a complete fraud decisioning workflow |
+| Priority routing can reduce analyst overload | Across the 5M, 10K legacy, and 10K rich synthetic benchmarks, roughly 24-25% of transactions routed to P0-P1 priority review while 70-75% routed to P3 low-risk handling | Analysts can focus immediate review on the riskiest quarter of the portfolio instead of a flat alert list |
+| Portfolio-wide scoring changes the review model | The 10M benchmark processed 10,000,000 / 10,000,000 rows, scored $25.1B in portfolio exposure, exported 1.64 GiB of results with zero invalid rows, zero skipped rows, and zero API restarts | Risk teams can move from sample-based inspection to full-portfolio triage, filtering, export, and downstream review |
+| Investigation governance is as important as model accuracy | Each case can include model attribution, behavioural indicators, graph signals, AI investigation context, analyst verdict, workflow dispatch, and callback audit events | Fraud decisions become explainable, reviewable, and traceable for compliance, disputes, analyst handover, and model governance |
+
+---
+
+## Core Challenges Addressed
+
+| Challenge | Why it matters in fraud operations | System response | Remaining hardening path |
+|---|---|---|---|
+| False positives versus analyst workload | Too many alerts overwhelm investigators and increase customer friction | Risk tiers, priority review routing, P3 low-risk handling, analyst queue filters | Use analyst verdicts and confirmed outcomes to tune thresholds and reduce false positive rates |
+| False negatives versus fraud loss exposure | Missed fraud produces direct loss, customer impact, and delayed detection | Hybrid model/rule scoring, behavioural signal expansion, graph mule indicators, adversarial scenario validation | Add labelled outcome evaluation, recall monitoring, and champion/challenger models |
+| Scale versus usability | A fraud system that can score millions of rows but cannot filter, page, or export results is not operationally useful | Async scan jobs, persisted risk tiers, indexed pagination, streaming export, promote-to-case | Add saved review cohorts, analyst assignment queues, and downstream case management integrations |
+| AI assistance versus decision control | Fraud enforcement cannot rely on unbounded autonomous LLM output | AI investigation briefs are advisory, schema-validated, failure-bounded, persisted, and reviewed by analysts | Add production prompt governance, version comparison, and investigation quality scoring |
+| Auditability versus automation opacity | Workflow automation must be traceable when actions succeed, fail, or never callback | Workflow dispatch and callback events are persisted; reliability metrics surface missing or degraded events | Add DLQ, retry policy, alerting, and external audit sink integrations |
+
+---
+
 ## Investigation and Audit Control
 
 Scoring identifies risk. The Case Dossier makes the evidence structured and actionable.
@@ -366,12 +393,24 @@ before the next scale step was attempted.
 
 ---
 
+## Business Impact for Fraud Risk Teams
+
+- **Portfolio-wide triage:** risk teams can score and prioritise complete transaction portfolios rather than relying on samples.
+- **Analyst efficiency:** priority tiers concentrate immediate review on the highest-risk segment while routing low-risk transactions to pass-through, sampling, or lower-frequency review.
+- **Investigation quality:** case dossiers convert model outputs into evidence-led investigation records with analyst verdicts and AI-assisted context.
+- **Governance and accountability:** workflow events, AI brief traceability, and verdict capture make fraud operations reviewable after the decision.
+
+Results are from controlled synthetic portfolio benchmarks. No real-world fraud loss reduction is claimed. Institution deployment requires labelled-outcome calibration.
+
+---
+
 ## Recommendations for Stronger Fraud Detection
 
 Institution-specific deployment would expand fraud detection capabilities across these areas:
 
 | Recommendation | Fraud problem addressed | How the console supports it | Business value | Priority |
 |---|---|---|---|---|
+| Closed-loop fraud outcome feedback | Fraud teams cannot reduce false positives or false negatives reliably unless analyst decisions and downstream fraud outcomes become labelled feedback | Use analyst verdicts, confirmed fraud, false positives, chargebacks, disputes, and manual overrides as outcome labels for threshold calibration, rule tuning, model retraining, drift monitoring, and fraud-pattern analysis | Creates a measurable improvement loop where the console becomes stronger as real fraud outcomes are observed | High |
 | Calibrate thresholds using institution-specific labelled fraud outcomes | Current thresholds (REVIEW 0.3 / BLOCK 0.7) are validated on synthetic data and may produce incorrect FPR or FNR on real portfolios | Environment-variable thresholds are already configurable; analyst verdict history provides the calibration signal | Reduces both missed fraud and unnecessary analyst burden on legitimate transactions | High |
 | Track false positive and false negative rates from analyst verdicts | Without verdict outcome tracking, the team does not know how many fraud cases are being missed or over-flagged | Every analyst verdict (Confirmed Fraud / False Positive / Approved) is persisted to PostgreSQL with case linkage; verdict aggregates are queryable | Quantifies the real cost of scoring error in operational terms | High |
 | Feed confirmed fraud and false-positive verdicts back into model retraining | The model trains on synthetic data only; analyst verdicts on real portfolios are the most valuable fraud signal available | Verdict records in PostgreSQL are the basis for a labelled outcome dataset that can drive retraining | Improves model precision and recall over time as real institution fraud patterns replace synthetic training data | High |
