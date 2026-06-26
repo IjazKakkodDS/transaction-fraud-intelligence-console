@@ -141,6 +141,36 @@ against historical fraud outcomes.
 
 ---
 
+## From Portfolio Risk to Analyst Decision
+
+The console is designed to move risk from raw transaction data into analyst action.
+Portfolio files and individual transactions are scored, routed into priority tiers,
+converted into evidence-led cases, and closed through analyst verdicts and workflow audit records.
+
+![Fraud Intelligence Command Center](docs/screenshots/01_overview_command_center.png)
+
+*Command center view showing system status, fraud intelligence summary, and entry points into triage workflows.*
+
+![Priority Review Queue](docs/screenshots/05_review_queue_prioritization.png)
+
+*Risk-tiered review queue that concentrates analyst attention on P0-P1 priority cases while keeping lower-risk activity filterable.*
+
+![Case Dossier Evidence View](docs/screenshots/06_case_dossier_evidence.png)
+
+*Evidence-led Case Dossier showing the transition from scored transaction to reviewable investigation record.*
+
+| Step | Console action | Fraud operations value |
+|---|---|---|
+| 1 | Score transaction or portfolio file | Converts raw activity into risk-ranked records |
+| 2 | Assign P0-P3 risk tiers | Separates immediate review from lower-risk handling |
+| 3 | Route high-priority cases to queue | Concentrates analyst effort on the highest-risk segment |
+| 4 | Build Case Dossier | Turns a score into evidence-led investigation context |
+| 5 | Generate AI-assisted investigation brief | Supports analyst review without replacing analyst decision control |
+| 6 | Capture verdict and workflow callback | Creates an audit-ready decision and automation trail |
+| 7 | Export scored portfolio | Enables downstream fraud, risk, and governance review |
+
+---
+
 ## Portfolio Triage at Scale
 
 A fraud team cannot manually inspect a 10-million-transaction portfolio. It needs
@@ -425,9 +455,7 @@ Institution-specific deployment would expand fraud detection capabilities across
 
 ---
 
-## Screenshots
-
-Captured from a validated product run. All 12 screenshots are tracked in `docs/screenshots/`.
+## Screenshot Gallery
 
 | # | Screen | File |
 |---|---|---|
