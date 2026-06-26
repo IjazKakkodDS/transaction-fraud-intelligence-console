@@ -1,6 +1,6 @@
 # Real-Time Transaction Fraud Intelligence Console
 
-**Fraud decisioning is an operations problem, not a scoring problem.**
+**Portfolio-scale fraud intelligence, built for risk triage, investigation control, and audit-ready decisioning.**
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-latest-009688?logo=fastapi&logoColor=white)
@@ -219,7 +219,7 @@ Every alert becomes an investigation record with a durable outcome.
 |---|---|---|
 | Model attribution | Per-feature XGBoost contributions via TreeSHAP at GET /cases/{id}/explain | Every scored decision is explainable at the feature level |
 | AI investigation brief | Structured recommendation, confidence rating, risk and mitigating factors, rules triggered, playbooks referenced | AI supports the analyst. Analyst verdict always required before any operational action. |
-| AGENT_VERSION traceability | Every investigation record tagged with the agent configuration that produced it | Every AI brief is attributable to the specific model configuration in use at the time |
+| Version-tracked AI brief traceability | Every investigation record tagged with the agent configuration that produced it | Every AI brief is attributable to the specific model configuration in use at the time |
 | Bounded failure handling | Ollama failure, schema failure, and unexpected errors each produce a specific FAILED record | No investigation attempt disappears silently. Analysts see failure state, not a blank. |
 | Formal verdict capture | Analyst submits Confirmed Fraud / False Positive / Approved with notes | Every case outcome is formally recorded and linked to the case record |
 | Workflow dispatch | Verdict triggers workflow notification; automation layer processes the case event | Automation is triggered by analyst decision, not by model output alone |
@@ -284,8 +284,7 @@ flowchart TD
     I --> J[Analyst Verdict\nStill Required]
 ```
 
-*AI surfaces investigation context. Analyst keeps decision control. Every brief is tagged
-with AGENT_VERSION for traceability.*
+*AI surfaces investigation context. Analyst keeps decision control. Every brief carries version-tracked investigation configuration.*
 
 ### 4. Portfolio Risk Scan
 
@@ -324,7 +323,7 @@ flowchart LR
 | Rule controls | Deterministic flags: high amount, unusual time, risky payment method, risky geography | Binary rule flag; contributes 40% of base score | Transparent, auditable guardrails alongside the model |
 | Behavioural profiling | Compares transaction against entity-level norms for amount, velocity, and spend pattern | BEHAVIOURAL_AMOUNT_DEVIATION, BEHAVIOURAL_VELOCITY_DEVIATION, BEHAVIOURAL_PROFILE_SHIFT | Detects individually unremarkable transactions that deviate sharply from an entity baseline |
 | Graph / mule detection | Identifies shared-device clusters, fan-in patterns (mule receivers), and fan-out patterns (distribution accounts) | MULE_FAN_IN_PATTERN, MULE_FAN_OUT_PATTERN, graph boost contribution | Detects coordinated fraud rings invisible to single-transaction analysis |
-| AI investigation briefs | Evidence-grouped LLM investigation brief via Ollama, AGENT_VERSION tagged, bounded failure handling | COMPLETE or FAILED brief persisted per case | Structures investigation context for analysts without removing analyst decision control |
+| AI investigation briefs | Evidence-grouped LLM investigation brief via Ollama, version-tracked, bounded failure handling | COMPLETE or FAILED brief persisted per case | Structures investigation context for analysts without removing analyst decision control |
 
 **Scoring formula:**
 
@@ -352,10 +351,10 @@ mule-network coordination.
 | Option | Strength | Weakness | Decision |
 |---|---|---|---|
 | Rules-only | Deterministic, transparent, no training data required | Brittle, misses nonlinear patterns, requires constant manual updates | Used as a 40% guardrail component within the base score, not as the sole decision engine |
-| Logistic Regression | Explainable coefficients, calibrated probability | Underperforms on nonlinear fraud feature interactions | Not selected; XGBoost dominates tabular fraud scoring without heavy manual feature engineering |
+| Logistic Regression | Explainable coefficients, calibrated probability | Underperforms on nonlinear fraud feature interactions | Not selected; XGBoost is a strong practical fit for structured tabular fraud scoring without requiring heavy manual feature engineering |
 | Random Forest | High accuracy, robust to outliers | Harder to calibrate probability output, larger deployment footprint | Viable alternative; XGBoost selected for tighter calibration and a lighter serialised artifact |
 | **XGBoost (selected)** | Strong on nonlinear interactions, calibrated probability output, fast inference, small artifact (~106 KB), TreeSHAP attribution | Requires labelled training data; threshold calibration needed for production | Champion model for structured transaction scoring. Deployable, interpretable, and appropriate for the current tabular feature set |
-| Neural network | Learns complex representations at scale | Requires large labelled production datasets, harder to explain, overkill for current structured feature set | Future path with labelled production data; not appropriate at current scale |
+| Neural network | Learns complex representations at scale | Requires large labelled production datasets, harder to explain, overkill for current structured feature set | Future path once larger labelled outcome datasets are available; not selected for the current structured tabular scoring layer |
 | Pure LLM decisioning | Flexible, handles unstructured context | Non-deterministic, unauditable, high latency, not appropriate for enforcement decisions | Rejected for enforcement. LLM used only in the advisory investigation brief layer, with analyst verdict always required |
 
 ---
@@ -370,7 +369,7 @@ mule-network coordination.
 | Event streaming | Redpanda (Kafka-compatible) | Synchronous-only API | Decouples fast scoring from slower investigation; POST /predict returns HTTP 202; investigation retries independently | Infrastructure complexity |
 | Cache | Redis 7 | No cache | Idempotency support, fast state access, deduplication | Adds a service to the runtime |
 | Workflow automation | n8n callback pattern | Code-only workflow | Callback events are durable and measurable; missing callbacks are detectable in reliability metrics | External dependency |
-| AI investigation | Advisory briefs with AGENT_VERSION | Autonomous AI enforcement | Analyst keeps decision control; every brief is traceable to its agent configuration | LLM latency; requires Ollama on host |
+| AI investigation | Advisory briefs with version-tracked investigation configuration | Autonomous AI enforcement | Analyst keeps decision control; every brief is traceable to its agent configuration | LLM latency; requires Ollama on host |
 | Deployment | Docker Compose (7 services) | Managed cloud | Fully reproducible for local review; single command startup; no cloud credentials required | Cloud infrastructure required for deployment at institution scale |
 
 ---
@@ -400,7 +399,7 @@ before the next scale step was attempted.
 - **Investigation quality:** case dossiers convert model outputs into evidence-led investigation records with analyst verdicts and AI-assisted context.
 - **Governance and accountability:** workflow events, AI brief traceability, and verdict capture make fraud operations reviewable after the decision.
 
-Results are from controlled synthetic portfolio benchmarks. No real-world fraud loss reduction is claimed. Institution deployment requires labelled-outcome calibration.
+Results are based on controlled synthetic portfolio benchmarks. Institution-specific deployment would calibrate thresholds, labels, and review policies against historical fraud outcomes.
 
 ---
 
@@ -427,7 +426,7 @@ Institution-specific deployment would expand fraud detection capabilities across
 
 ## Screenshots
 
-Playwright-captured from a live local run. All 12 tracked in `docs/screenshots/`.
+Captured from a validated product run. All 12 screenshots are tracked in `docs/screenshots/`.
 
 | # | Screen | File |
 |---|---|---|
@@ -437,7 +436,7 @@ Playwright-captured from a live local run. All 12 tracked in `docs/screenshots/`
 | 4 | Scoring Result Handoff: risk score, tier assignment, reason codes | [04_scoring_result_handoff.png](docs/screenshots/04_scoring_result_handoff.png) |
 | 5 | Review Queue Prioritization: P0-P3 tiers, score bars, status filters | [05_review_queue_prioritization.png](docs/screenshots/05_review_queue_prioritization.png) |
 | 6 | Case Dossier Evidence: grouped signals, lifecycle timeline, model attribution | [06_case_dossier_evidence.png](docs/screenshots/06_case_dossier_evidence.png) |
-| 7 | AI Investigation Panel: structured brief, AGENT_VERSION, bounded failure handling | [07_ai_investigation_panel.png](docs/screenshots/07_ai_investigation_panel.png) |
+| 7 | AI Investigation Panel: structured brief, version-tracked traceability, bounded failure handling | [07_ai_investigation_panel.png](docs/screenshots/07_ai_investigation_panel.png) |
 | 8 | Analyst Verdict Panel: confirm or override, workflow dispatch linkage | [08_analyst_verdict_panel.png](docs/screenshots/08_analyst_verdict_panel.png) |
 | 9 | Case Workflow Audit Trail: event log, timestamps, case linkage | [09_case_workflow_audit_trail.png](docs/screenshots/09_case_workflow_audit_trail.png) |
 | 10 | False Positive Review Case: analyst override with reason capture | [10_false_positive_review_case.png](docs/screenshots/10_false_positive_review_case.png) |
@@ -466,7 +465,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-**Seed demo cases:**
+**Seed review cases:**
 ```
 python scripts/demo_seed.py
 ```
@@ -498,7 +497,7 @@ schema, and checksum.
 | E2E Playwright checks (11 checks, headless Chromium, live stack) | 11 / 11 PASS |
 | Detailed health endpoint | GET /health/detailed: all components healthy |
 | Model artifact checksum | Verified in CI (fraud_model.pkl MD5) |
-| No MP4 or media file committed | Confirmed |
+| Public artifact hygiene | Repository excludes generated media artifacts and private internal planning files |
 
 **Run release readiness checks:**
 ```
@@ -536,7 +535,7 @@ npm run test:e2e
 | Eventing | Redpanda (Kafka-compatible), kafka-python consumers |
 | Cache | Redis 7 |
 | Scoring | XGBoost 3.0+, scikit-learn, 4-layer fraud scoring engine |
-| AI Investigation | Ollama, evidence-grouped prompting, AGENT_VERSION traceability, structured report persistence |
+| AI Investigation | Ollama, evidence-grouped prompting, version-tracked AI brief traceability, structured report persistence |
 | Workflow | n8n, webhook dispatch, HTTP callback audit pattern |
 | Testing | Playwright 1.60+ |
 | Runtime | Docker Compose (7 services) |
@@ -549,7 +548,7 @@ A transaction fraud decisioning platform built across a 7-service Docker Compose
 Implements 4-layer event-driven scoring (XGBoost model + rule controls + behavioural
 profiling + graph mule-network detection), PostgreSQL persistence with composite-indexed
 10M-row queries, evidence-grouped Case Dossiers with TreeSHAP model attribution, hardened
-AI investigation briefs with AGENT_VERSION traceability, workflow automation audit trails
+AI investigation briefs with version-tracked investigation brief traceability, workflow automation audit trails
 with callback-based reliability monitoring, and a verified 10M-transaction Portfolio Risk
 Scan benchmark: ~1,610 rows/sec average throughput, $25.1B portfolio exposure scored,
 1.64 GiB streaming export at 6.987 ms time to first byte, zero API restarts.
