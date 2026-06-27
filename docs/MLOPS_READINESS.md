@@ -223,7 +223,6 @@ controls appropriate for its deployment boundary. CI validates model integrity a
 release readiness on every commit. The model artifact is tracked, checksummed, and
 documented. The governance path to enterprise L3 MLOps is explicitly mapped.
 
-This is not a prototype packaged for presentation. It is a production-style fraud
-decision intelligence system, validated at the MLOps maturity level its current
-deployment scope requires, with a documented expansion path for institution-specific
-regulatory deployment.
+This is a production-style fraud decision intelligence system, validated at the MLOps
+maturity level its current deployment scope requires, with a documented expansion path
+for institution-specific regulatory deployment.

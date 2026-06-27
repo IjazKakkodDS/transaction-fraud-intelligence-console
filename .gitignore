@@ -157,9 +157,7 @@ mlruns/
 node_modules/
 
 # =============================================================================
-# Claude Code
-# User-specific Claude Code CLI configuration. Machine-specific and not
-# part of project source.
+# CLI development tool configuration (machine-specific; not part of project source).
 # =============================================================================
 .claude/
 
