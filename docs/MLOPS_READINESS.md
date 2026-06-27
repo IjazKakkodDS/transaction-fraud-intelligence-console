@@ -90,7 +90,7 @@ monitoring) is explicitly deferred and documented as a future roadmap — not a 
 
 ### Governance Documentation
 - `docs/MODEL_CARD.md` — model artifact contract and feature schema
-- `docs/SECURITY_POSTURE.md` — deployment boundary and 18 production hardening controls
+- Security and access-control hardening — documented as a recommended production expansion path
 - `docs/CONSUMER_DURABILITY.md` — consumer offset management and idempotency design
 - `docs/AUTH_RBAC_DESIGN.md` — RBAC architecture and implementation prerequisites
 - `docs/AI_INVESTIGATION_BRIEF_DESIGN.md` — AI pipeline architecture and evidence contract

@@ -659,7 +659,7 @@ reason codes that reflect the full 4-layer decision.
 The Fraud Intelligence Console operates in a controlled local product environment:
 a single Docker Compose stack on a development machine, using synthetic transaction
 data, with no internet exposure and no external institution integration. The
-deployment boundary is documented in [docs/SECURITY_POSTURE.md](docs/SECURITY_POSTURE.md).
+deployment boundary reflects the current build scope as a local Docker Compose inspection package.
 
 This boundary is a defined engineering constraint, not a capability limit. The
 architecture, intelligence layers, audit trail design, and governance documentation
@@ -701,8 +701,7 @@ Deploying this system to a regulated financial services environment requires:
 
 These requirements are not deficiencies -- they are standard deployment prerequisites
 for any financial services risk system. They are documented in the governance package
-and prioritised in the production hardening controls in
-[docs/SECURITY_POSTURE.md](docs/SECURITY_POSTURE.md).
+and in the public MLOps readiness and deployment documentation.
 
 ### What to claim confidently
 

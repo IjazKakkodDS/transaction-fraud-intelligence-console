@@ -360,7 +360,7 @@ Product screenshots (Playwright-captured): 12 PNGs in `docs/screenshots/` (01-12
 | PostgreSQL credentials via environment variables | Not hardcoded |
 | No web-accessible admin interfaces by default | Redpanda Console requires explicit dev profile activation |
 
-Full posture detail: `docs/SECURITY_POSTURE.md`.
+Security and access-control considerations are summarised in the public system and MLOps documentation.
 
 ---
 
@@ -386,7 +386,7 @@ Full posture detail: `docs/SECURITY_POSTURE.md`.
 | Authentication and RBAC | docs/AUTH_RBAC_DESIGN.md |
 | Production scoring calibration | docs/MODEL_CARD.md |
 | Consumer durability and retry design | docs/CONSUMER_DURABILITY.md |
-| Security hardening path | docs/SECURITY_POSTURE.md |
+| Security hardening path | Access-control hardening is documented as a recommended production expansion path in docs/MLOPS_READINESS.md |
 | Cloud deployment and infrastructure | docs/DEPLOYMENT_PLAN.md |
 
 The governance path for each deferred control is documented. These reflect the appropriate boundary between a local inspection package and an institution-specific production deployment. The console is designed for cloud extension: each service boundary maps to a separately scalable deployment unit, and the scoring formula, audit trail, and LLM traceability fields are designed to survive into a production context without architectural rework.

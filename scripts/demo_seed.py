@@ -376,7 +376,7 @@ def main() -> None:
     print_summary(results)
 
     print("Demo seed complete. Both cases prepared successfully.")
-    print("Record the case IDs above in docs/DEMO_STATE.md for the walkthrough.\n")
+    print("Seeded review cases for the Fraud Console. See README.md for review workflow context.\n")
     sys.exit(0)
 
 
