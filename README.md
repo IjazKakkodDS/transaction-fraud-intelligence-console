@@ -474,6 +474,27 @@ Institution-specific deployment would expand fraud detection capabilities across
 
 ---
 
+## Hosted Portfolio Demo
+
+Live inspection environment:
+https://transaction-fraud-intelligence-cons.vercel.app
+
+Backend API and Swagger:
+https://fraud-console-api.onrender.com/docs
+
+The hosted portfolio environment runs the console on Vercel, Render, and Neon Postgres in
+synchronous scoring mode. It supports transaction scoring, analyst triage, evidence-led
+case review, workflow audit views, and small portfolio risk scans on controlled synthetic
+transaction data.
+
+The local Docker Compose package remains the full-stack runtime for Kafka-backed
+asynchronous scoring, local LLM investigation brief generation, and workflow automation.
+Kafka, local LLM inference, and n8n automation are intentionally excluded from the hosted
+free-tier profile. In this profile, `/health/detailed` reports Postgres as healthy while
+Kafka and Ollama are unavailable by design.
+
+---
+
 ## Local Setup
 
 **Prerequisites:** Docker Desktop, Node.js 18+, Python 3.11+. Ollama on host for AI

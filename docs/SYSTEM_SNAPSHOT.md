@@ -7,7 +7,7 @@
 | Property | Value |
 |---|---|
 | Product name | Real-Time Transaction Fraud Intelligence Console |
-| Build status | Local development build, not deployed to production |
+| Build status | Hosted portfolio environment deployed (Vercel, Render, Neon Postgres); local Docker Compose full-stack package also available |
 | Primary runtime | Docker Compose (7 persistent services) |
 | Frontend runtime | Next.js 16, port 3000 (runs on host, outside Docker) |
 | Backend runtime | FastAPI, Python 3.11+, port 8000 |
@@ -35,8 +35,8 @@
 | Portfolio Risk Scan (10M-row benchmark verified) | Complete |
 | Manual transaction intake | Complete |
 | Demo automation pipeline (Playwright, Edge TTS, FFmpeg) | Complete |
-| Authentication and RBAC | Designed; deferred to Phase 21 (see docs/AUTH_RBAC_DESIGN.md) |
-| Cloud deployment | Deferred to Phase 21 (see docs/DEPLOYMENT_PLAN.md) |
+| Authentication and RBAC | Designed; required for institution-specific deployment (see docs/AUTH_RBAC_DESIGN.md) |
+| Cloud deployment | Profile B hosted portfolio environment deployed (Vercel + Render + Neon Postgres; see docs/DEPLOYMENT_PLAN.md) |
 
 ---
 
@@ -368,7 +368,7 @@ Security and access-control considerations are summarised in the public system a
 
 | Limitation | Notes |
 |---|---|
-| Authentication not implemented | Design in docs/AUTH_RBAC_DESIGN.md; deferred to Phase 21 |
+| Authentication not implemented | Design in docs/AUTH_RBAC_DESIGN.md; required for institution-specific deployment |
 | Single-node Redpanda | Local dev configuration; not a multi-broker production topology |
 | XGBoost trained on synthetic data | No institution-specific calibration; calibration path in docs/MODEL_CARD.md |
 | Ollama on host machine | LLM response times depend on model, hardware, and host load |
