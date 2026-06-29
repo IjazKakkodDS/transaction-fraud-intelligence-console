@@ -1270,6 +1270,51 @@ function RecentScansPanel({
   );
 }
 
+// ─── Sample CSV ──────────────────────────────────────────────────────────────
+
+function downloadSampleCSV() {
+  const rows: string[][] = [
+    ["transaction_id", "amount", "timestamp", "country", "payment_method"],
+    // High-risk rows (5) — expected P0/BLOCK
+    ["txn-p0-001", "9500",  "2026-06-28T02:15:00Z", "NG", "credit_card"],
+    ["txn-p0-002", "8750",  "2026-06-27T03:45:00Z", "NG", "wire"],
+    ["txn-p0-003", "12000", "2026-06-26T01:30:00Z", "RU", "credit_card"],
+    ["txn-p0-004", "7800",  "2026-06-25T02:00:00Z", "IR", "credit_card"],
+    ["txn-p0-005", "9200",  "2026-06-24T04:10:00Z", "NG", "wire"],
+    // Medium-risk rows (5) — expected P1/REVIEW
+    ["txn-p1-001", "2500",  "2026-06-28T22:30:00Z", "US", "credit_card"],
+    ["txn-p1-002", "3200",  "2026-06-27T21:00:00Z", "GB", "credit_card"],
+    ["txn-p1-003", "1800",  "2026-06-26T23:15:00Z", "CA", "digital_wallet"],
+    ["txn-p1-004", "4100",  "2026-06-25T20:45:00Z", "AU", "credit_card"],
+    ["txn-p1-005", "2900",  "2026-06-24T22:00:00Z", "DE", "bank_transfer"],
+    // Low-risk rows (15) — expected P3/APPROVE
+    ["txn-p3-001", "42.50",  "2026-06-28T13:30:00Z", "US", "debit_card"],
+    ["txn-p3-002", "85.00",  "2026-06-27T10:15:00Z", "GB", "debit_card"],
+    ["txn-p3-003", "28.75",  "2026-06-26T14:00:00Z", "US", "debit_card"],
+    ["txn-p3-004", "65.00",  "2026-06-25T09:30:00Z", "CA", "debit_card"],
+    ["txn-p3-005", "120.00", "2026-06-24T11:45:00Z", "AU", "digital_wallet"],
+    ["txn-p3-006", "33.50",  "2026-06-23T13:00:00Z", "US", "debit_card"],
+    ["txn-p3-007", "95.00",  "2026-06-22T15:30:00Z", "GB", "debit_card"],
+    ["txn-p3-008", "48.25",  "2026-06-21T10:00:00Z", "US", "debit_card"],
+    ["txn-p3-009", "72.00",  "2026-06-20T14:45:00Z", "CA", "digital_wallet"],
+    ["txn-p3-010", "55.00",  "2026-06-19T12:15:00Z", "US", "debit_card"],
+    ["txn-p3-011", "39.99",  "2026-06-18T09:00:00Z", "GB", "debit_card"],
+    ["txn-p3-012", "88.50",  "2026-06-17T11:30:00Z", "AU", "debit_card"],
+    ["txn-p3-013", "15.75",  "2026-06-16T13:45:00Z", "US", "debit_card"],
+    ["txn-p3-014", "62.00",  "2026-06-15T10:30:00Z", "CA", "debit_card"],
+    ["txn-p3-015", "44.00",  "2026-06-14T14:00:00Z", "US", "debit_card"],
+  ];
+
+  const csv = rows.map((row) => row.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "fraud-console-sample-portfolio.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function RiskScanPage() {
@@ -1554,6 +1599,32 @@ export default function RiskScanPage() {
             }}
           >
             {upload.isPending ? "Scanning…" : "Run Risk Scan"}
+          </button>
+        </div>
+
+        {/* Sample CSV helper */}
+        <div
+          className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md px-3 py-3"
+          style={{
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.07)",
+          }}
+        >
+          <p className="text-[12px]" style={{ color: "#6B7280" }}>
+            Use a small sample portfolio to test the hosted risk scan workflow.
+          </p>
+          <button
+            type="button"
+            onClick={downloadSampleCSV}
+            className="shrink-0 rounded-md px-3 py-1.5 text-[12px] font-semibold"
+            style={{
+              background: "rgba(167,139,250,0.08)",
+              border: "1px solid rgba(167,139,250,0.22)",
+              color: "#A78BFA",
+              cursor: "pointer",
+            }}
+          >
+            Download Sample CSV
           </button>
         </div>
       </div>

@@ -214,12 +214,12 @@ export function IntakeForm({ onSubmit, isSubmitting, initialPayload }: IntakeFor
       transaction_id: createTransactionId("txn_high_"),
       user_id: "user_high_001",
       merchant_id: "merchant_risk_001",
-      amount: "2750",
+      amount: "9500",
       currency: "USD",
       payment_method: "credit_card",
-      timestamp: "2026-05-09T02:15:00Z",
-      country: "RU",
-      city: "Moscow",
+      timestamp: "2026-06-28T02:15:00Z",
+      country: "NG",
+      city: "",
       device_id: "",
       ip_address: "",
       device_type: "mobile",
@@ -227,7 +227,7 @@ export function IntakeForm({ onSubmit, isSubmitting, initialPayload }: IntakeFor
       is_international: true,
     });
     setErrors({});
-    setShowInvestigation(true);
+    setShowInvestigation(false);
   }
 
   function fillLowRiskExample() {
@@ -235,20 +235,20 @@ export function IntakeForm({ onSubmit, isSubmitting, initialPayload }: IntakeFor
       transaction_id: createTransactionId("txn_low_"),
       user_id: "user_low_001",
       merchant_id: "merchant_regular_001",
-      amount: "49.99",
+      amount: "42.50",
       currency: "USD",
       payment_method: "debit_card",
-      timestamp: "2026-05-09T14:30:00Z",
-      country: "US",
-      city: "New York",
-      device_id: "device_001",
-      ip_address: "192.168.1.10",
+      timestamp: "2026-06-28T13:30:00Z",
+      country: "GB",
+      city: "London",
+      device_id: "reviewer-device-001",
+      ip_address: "",
       device_type: "desktop",
       merchant_category: "groceries",
       is_international: false,
     });
     setErrors({});
-    setShowInvestigation(true);
+    setShowInvestigation(false);
   }
 
   function clearFields() {
