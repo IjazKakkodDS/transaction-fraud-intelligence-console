@@ -48,6 +48,23 @@ function AuditSummaryRail({ events }: { events: WorkflowEvents }) {
   );
 }
 
+function HostedProfileNote() {
+  return (
+    <div
+      className="rounded-lg px-4 py-3 text-[12px] leading-relaxed"
+      style={{ background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.14)", color: "#94A3B8" }}
+    >
+      <p className="mb-1 font-semibold" style={{ color: "#C9D1D9" }}>
+        Workflow automation is available in the local full-stack runtime.
+      </p>
+      <p>
+        The hosted inspection environment displays the audit structure and event review
+        interface. External workflow automation is intentionally excluded from this hosted profile.
+      </p>
+    </div>
+  );
+}
+
 function getCoverageLabel(events: WorkflowEvents) {
   const timestamps = events
     .map((event) => new Date(event.created_at).getTime())
@@ -96,6 +113,8 @@ export default function WorkflowEventsPage() {
           </p>
         )}
       </div>
+
+      {data && data.length === 0 && <HostedProfileNote />}
 
       {data && <AuditSummaryRail events={data} />}
 

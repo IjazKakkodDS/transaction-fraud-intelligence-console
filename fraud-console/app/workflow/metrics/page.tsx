@@ -108,6 +108,24 @@ function ReliabilityStatusStrip({ metrics }: { metrics: WorkflowMetrics }) {
   );
 }
 
+function HostedProfileNote() {
+  return (
+    <div
+      className="rounded-lg px-4 py-3 text-[12px] leading-relaxed"
+      style={{ background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.14)", color: "#94A3B8" }}
+    >
+      <p className="mb-1 font-semibold" style={{ color: "#C9D1D9" }}>
+        No workflow automation events have been recorded in this hosted profile.
+      </p>
+      <p>
+        Reliability metrics populate when workflow automation is enabled in the local
+        full-stack runtime. The hosted inspection environment keeps this view available
+        for reviewer inspection while external automation is intentionally excluded.
+      </p>
+    </div>
+  );
+}
+
 function formatActionName(action: string): string {
   return action
     .replace(/_/g, " ")
@@ -340,6 +358,7 @@ export default function WorkflowMetricsPage() {
 
       {data && (
         <>
+          {data.total_workflow_events === 0 && <HostedProfileNote />}
           <ReliabilityStatusStrip metrics={data} />
           <OperationalDiagnosis metrics={data} />
           <ReliabilityTargetPanel metrics={data} />

@@ -358,6 +358,10 @@ export function InvestigationPanel({ caseId, reviewedAt }: InvestigationPanelPro
               </p>
             )}
           </div>
+          <p className="text-[12px] leading-relaxed" style={{ color: "#6B7280" }}>
+            Available in local full-stack runtime. Local LLM investigation brief
+            generation is intentionally excluded from the hosted inspection profile.
+          </p>
         </div>
       )}
 
@@ -390,6 +394,10 @@ export function InvestigationPanel({ caseId, reviewedAt }: InvestigationPanelPro
             )}
           </div>
           <InvestigationTrigger caseId={caseId} label="Retry Investigation" />
+          <p className="text-[12px] leading-relaxed" style={{ color: "#6B7280" }}>
+            Available in local full-stack runtime. Local LLM investigation brief
+            generation is intentionally excluded from the hosted inspection profile.
+          </p>
         </div>
       )}
 
