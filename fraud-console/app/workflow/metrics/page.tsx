@@ -17,9 +17,10 @@ function Skeleton({ className }: { className?: string }) {
   );
 }
 
-type HealthVerdict = "Healthy" | "Degraded" | "Critical";
+type HealthVerdict = "Healthy" | "Degraded" | "Critical" | "HostedProfile";
 
-function getHealthVerdict(successRate: number, dispatchFailures: number): HealthVerdict {
+function getHealthVerdict(total: number, successRate: number, dispatchFailures: number): HealthVerdict {
+  if (total === 0) return "HostedProfile";
   if (successRate < 70 || dispatchFailures > 3) return "Critical";
   if (successRate < 90 || dispatchFailures > 0) return "Degraded";
   return "Healthy";
@@ -27,11 +28,12 @@ function getHealthVerdict(successRate: number, dispatchFailures: number): Health
 
 const HEALTH_CONFIG: Record<
   HealthVerdict,
-  { dot: string; labelColor: string; message: string; card: React.CSSProperties }
+  { dot: string; labelColor: string; label: string; message: string; card: React.CSSProperties }
 > = {
   Healthy: {
     dot: "#10B981",
     labelColor: "#10B981",
+    label: "Healthy",
     message: "Automation operating within expected limits.",
     card: {
       border: "1px solid rgba(16,185,129,0.22)",
@@ -41,6 +43,7 @@ const HEALTH_CONFIG: Record<
   Degraded: {
     dot: "#F59E0B",
     labelColor: "#F59E0B",
+    label: "Degraded",
     message: "Automation requires monitoring due to failures or reduced success rate.",
     card: {
       border: "1px solid rgba(245,158,11,0.22)",
@@ -50,10 +53,22 @@ const HEALTH_CONFIG: Record<
   Critical: {
     dot: "#FF4D4D",
     labelColor: "#FF4D4D",
+    label: "Critical",
     message: "Automation reliability requires immediate attention.",
     card: {
       border: "1px solid rgba(255,77,77,0.28)",
       background: "rgba(255,77,77,0.05)",
+    },
+  },
+  HostedProfile: {
+    dot: "#8B949E",
+    labelColor: "#94A3B8",
+    label: "Hosted profile: workflow automation not enabled",
+    message:
+      "No workflow automation events have been recorded in this hosted profile. Reliability metrics populate when workflow automation is enabled in the local full-stack runtime.",
+    card: {
+      border: "1px solid rgba(148,163,184,0.18)",
+      background: "rgba(148,163,184,0.04)",
     },
   },
 };
@@ -66,7 +81,7 @@ function fmtRate(numerator: number, total: number): string {
 function ReliabilityStatusStrip({ metrics }: { metrics: WorkflowMetrics }) {
   const total = metrics.total_workflow_events;
   const successRate = total > 0 ? (metrics.total_success_events / total) * 100 : 0;
-  const verdict = getHealthVerdict(successRate, metrics.total_dispatch_failures);
+  const verdict = getHealthVerdict(total, successRate, metrics.total_dispatch_failures);
   const cfg = HEALTH_CONFIG[verdict];
 
   const rates = [
@@ -86,7 +101,7 @@ function ReliabilityStatusStrip({ metrics }: { metrics: WorkflowMetrics }) {
           />
           <div>
             <p className="text-[14px] font-semibold leading-none mb-1" style={{ color: cfg.labelColor }}>
-              {verdict}
+              {cfg.label}
             </p>
             <p className="text-[12px] leading-relaxed" style={{ color: "#94A3B8" }}>
               {cfg.message}
@@ -140,7 +155,7 @@ function OperationalDiagnosis({ metrics }: { metrics: WorkflowMetrics }) {
   const successRate = total > 0 ? (metrics.total_success_events / total) * 100 : 0;
   const failureRate = total > 0 ? (failed / total) * 100 : 0;
   const dispatchFailureRate = total > 0 ? (dispatchFailures / total) * 100 : 0;
-  const verdict = getHealthVerdict(successRate, dispatchFailures);
+  const verdict = getHealthVerdict(total, successRate, dispatchFailures);
   const topFailingAction = [...metrics.events_by_workflow_action]
     .filter((item) => item.workflow_action.toUpperCase().includes("FAILED"))
     .sort((a, b) => b.count - a.count)[0];
