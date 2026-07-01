@@ -122,7 +122,7 @@ async function preflight() {
 
   log("Checking canonical demo cases...");
   const case22 = await apiGet("/case/22");
-  if (!case22) throw new Error("Case 22 not found. Run: POST /demo/seed or python scripts/demo_seed.py");
+  if (!case22) throw new Error("Case 22 not found. Run: POST /cases/seed-review or python scripts/seed_review_cases.py");
   log(`  Case 22: decision=${case22.decision} score=${case22.risk_score}`);
 }
 

@@ -514,7 +514,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 **Seed review cases:**
 ```
-python scripts/demo_seed.py
+python scripts/seed_review_cases.py
 ```
 
 Or click **Launch Guided Investigation** on the command center home page after the

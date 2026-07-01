@@ -23,5 +23,5 @@ export interface DemoSeedResponse {
 }
 
 export async function seedDemoState(): Promise<DemoSeedResponse> {
-  return apiFetch<DemoSeedResponse>("/demo/seed", { method: "POST" });
+  return apiFetch<DemoSeedResponse>("/cases/seed-review", { method: "POST" });
 }

@@ -1,5 +1,5 @@
 """
-FastAPI application entry point for the Real-Time Fraud Triage System.
+FastAPI application entry point for the Real-Time Transaction Fraud Intelligence Console.
 """
 
 import json
@@ -166,7 +166,7 @@ def _log_workflow_dispatch_failure(
 
 
 app = FastAPI(
-    title="Real-Time Fraud Triage System",
+    title="Real-Time Transaction Fraud Intelligence Console",
     version="0.1.0",
 )
 
@@ -187,7 +187,7 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"message": "Real-Time Fraud Triage System API is running"}
+    return {"message": "Real-Time Transaction Fraud Intelligence Console API is running"}
 
 
 @app.get("/stats")
@@ -377,15 +377,15 @@ def get_prediction(transaction_id: str):
 
 
 # ---------------------------------------------------------------------------
-# Demo seed — Phase 20G
-# Idempotent endpoint that creates canonical demo transactions using the
+# Review case seeder - Phase 20G
+# Idempotent endpoint that creates canonical review cases using the
 # inline sync scoring path. No Ollama, no Kafka publish, no schema change.
 # ---------------------------------------------------------------------------
 
 _DEMO_SHOWCASE_TXN: dict = {
-    "transaction_id": "demo_intake_showcase_001",
-    "user_id": "demo_user_ru_002",
-    "merchant_id": "demo_merchant_elec_002",
+    "transaction_id": "case_hr_showcase_001",
+    "user_id": "reviewer_user_hr_001",
+    "merchant_id": "reviewer_merchant_elec_001",
     "amount": 8500,
     "timestamp": "2026-05-14T02:30:00Z",
     "currency": "USD",
@@ -400,9 +400,9 @@ _DEMO_SHOWCASE_TXN: dict = {
 }
 
 _DEMO_REVIEW_TXN: dict = {
-    "transaction_id": "demo_review_false_positive_001_a750",
-    "user_id": "demo_user_ru_001",
-    "merchant_id": "demo_merchant_elec_001",
+    "transaction_id": "case_fp_review_001",
+    "user_id": "reviewer_user_fp_001",
+    "merchant_id": "reviewer_merchant_elec_002",
     "amount": 750,
     "timestamp": "2026-05-14T02:00:00Z",
     "currency": "USD",
@@ -444,12 +444,12 @@ def _score_demo_transaction(txn: dict) -> dict | None:
     return get_prediction_by_id(case_id)
 
 
-@app.post("/demo/seed")
+@app.post("/cases/seed-review")
 def seed_demo_state():
     """
-    Idempotent demo state seeder.
+    Idempotent review case seeder.
 
-    Creates two canonical demo transactions via inline sync scoring:
+    Creates two canonical review cases via inline sync scoring:
     - showcase: high-risk BLOCK candidate for evidence inspection
     - review:   lower-risk transaction with FALSE_POSITIVE verdict applied
 
@@ -458,12 +458,12 @@ def seed_demo_state():
     """
     seeded_any = False
 
-    showcase = get_prediction_by_transaction_id("demo_intake_showcase_001")
+    showcase = get_prediction_by_transaction_id("case_hr_showcase_001")
     if showcase is None:
         showcase = _score_demo_transaction(_DEMO_SHOWCASE_TXN)
         seeded_any = True
 
-    review = get_prediction_by_transaction_id("demo_review_false_positive_001_a750")
+    review = get_prediction_by_transaction_id("case_fp_review_001")
     if review is None:
         review = _score_demo_transaction(_DEMO_REVIEW_TXN)
         seeded_any = True
@@ -480,7 +480,7 @@ def seed_demo_state():
 
     return {
         "status": "seeded" if seeded_any else "already_exists",
-        "message": "Demo state ready. Open the Case Dossier to inspect fraud evidence.",
+        "message": "Review cases ready. Open the Case Dossier to inspect fraud evidence.",
         "case_id": primary_case_id,
         "case_url": f"/cases/{primary_case_id}" if primary_case_id else None,
         "recommended_flow": [
@@ -497,13 +497,13 @@ def seed_demo_state():
                 "case_id": showcase["id"] if showcase else None,
                 "decision": showcase.get("decision") if showcase else None,
                 "risk_score": showcase.get("risk_score") if showcase else None,
-                "description": "Primary demo case — high-risk BLOCK decision, evidence inspection.",
+                "description": "Sample high-risk case - BLOCK decision, evidence inspection.",
             },
             "review": {
                 "case_id": review["id"] if review else None,
                 "decision": review.get("decision") if review else None,
                 "analyst_status": "FALSE_POSITIVE",
-                "description": "Secondary demo case — FALSE_POSITIVE verdict applied.",
+                "description": "Sample review case - FALSE_POSITIVE verdict applied.",
             },
         },
     }

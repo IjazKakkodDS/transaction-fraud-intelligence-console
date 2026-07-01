@@ -1,12 +1,12 @@
 """
-Demo seed script for the Fraud Intelligence Console.
+Review case seeder for the Fraud Intelligence Console.
 
-Creates two canonical demo cases via HTTP API calls only:
-  1. demo_review_false_positive_001 — REVIEW decision, FALSE_POSITIVE verdict
-  2. demo_intake_showcase_001       — BLOCK decision, unreviewed (intake handoff)
+Creates two canonical review cases via HTTP API calls only:
+  1. case_fp_review_001    -- REVIEW decision, FALSE_POSITIVE verdict
+  2. case_hr_showcase_001  -- BLOCK decision, unreviewed (intake handoff)
 
 Usage:
-    python scripts/demo_seed.py
+    python scripts/seed_review_cases.py
 
 Requirements:
     requests library (pip install requests)
@@ -183,18 +183,18 @@ def _fetch_workflow_events(case_id: int) -> list:
 
 
 # ---------------------------------------------------------------------------
-# Demo case 1: REVIEW false positive
+# Review case 1: REVIEW false positive
 # ---------------------------------------------------------------------------
 
 REVIEW_PROFILES = [
-    {"amount": 750,  "transaction_id": "demo_review_false_positive_001_a750"},
-    {"amount": 600,  "transaction_id": "demo_review_false_positive_001_a600"},
-    {"amount": 450,  "transaction_id": "demo_review_false_positive_001_a450"},
+    {"amount": 750,  "transaction_id": "case_fp_review_001_a750"},
+    {"amount": 600,  "transaction_id": "case_fp_review_001_a600"},
+    {"amount": 450,  "transaction_id": "case_fp_review_001_a450"},
 ]
 
 REVIEW_BASE_PAYLOAD = {
-    "user_id":           "demo_user_ru_001",
-    "merchant_id":       "demo_merchant_elec_001",
+    "user_id":           "reviewer_user_fp_001",
+    "merchant_id":       "reviewer_merchant_elec_002",
     "timestamp":         TIMESTAMP_NIGHT,
     "currency":          "USD",
     "country":           "RU",
@@ -210,7 +210,7 @@ REVIEW_BASE_PAYLOAD = {
 
 def build_review_case() -> dict:
     print("=" * 60)
-    print("DEMO CASE 1: demo_review_false_positive_001 (target: REVIEW)")
+    print("REVIEW CASE 1: case_fp_review_001 (target: REVIEW)")
     print("=" * 60)
 
     for profile in REVIEW_PROFILES:
@@ -257,13 +257,13 @@ def build_review_case() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Demo case 2: BLOCK intake showcase
+# Review case 2: BLOCK intake showcase
 # ---------------------------------------------------------------------------
 
 INTAKE_PAYLOAD = {
-    "transaction_id":    "demo_intake_showcase_001",
-    "user_id":           "demo_user_ru_002",
-    "merchant_id":       "demo_merchant_elec_002",
+    "transaction_id":    "case_hr_showcase_001",
+    "user_id":           "reviewer_user_hr_001",
+    "merchant_id":       "reviewer_merchant_elec_001",
     "amount":            8500,
     "timestamp":         TIMESTAMP_NIGHT_2,
     "currency":          "USD",
@@ -280,7 +280,7 @@ INTAKE_PAYLOAD = {
 
 def build_intake_case() -> dict:
     print("=" * 60)
-    print("DEMO CASE 2: demo_intake_showcase_001 (target: BLOCK)")
+    print("REVIEW CASE 2: case_hr_showcase_001 (target: BLOCK)")
     print("=" * 60)
 
     txn_id = INTAKE_PAYLOAD["transaction_id"]
@@ -296,8 +296,8 @@ def build_intake_case() -> dict:
 
     investigation = trigger_and_wait_investigation(case_id, txn_id)
 
-    # No verdict — leave analyst_status as null for intake handoff demo
-    print(f"  [{txn_id}] Skipping verdict (case left unreviewed for intake demo).")
+    # No verdict -- leave analyst_status as null for intake handoff
+    print(f"  [{txn_id}] Skipping verdict (case left unreviewed for intake handoff).")
 
     workflow_status = dispatch_and_confirm_workflow(case_id, txn_id)
 
@@ -311,7 +311,7 @@ def build_intake_case() -> dict:
         "analyst_status":      "null (unreviewed)",
         "investigation_status": investigation.get("status"),
         "workflow_event_status": workflow_status,
-        "notes":               "Primary intake demo case. Unreviewed P0.",
+        "notes":               "Sample high-risk case. Unreviewed P0.",
     }
 
 
@@ -321,7 +321,7 @@ def build_intake_case() -> dict:
 
 def print_summary(results: list[dict]) -> None:
     print("\n" + "=" * 60)
-    print("DEMO SEED SUMMARY")
+    print("REVIEW SEED SUMMARY")
     print("=" * 60)
 
     fields = [
@@ -360,7 +360,7 @@ def _abort(message: str) -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    print("\nFraud Intelligence Console — Demo Seed Script")
+    print("\nFraud Intelligence Console - Review Case Seeder")
     print("=" * 60)
     print(f"Target API: {BASE_URL}")
     print(f"Poll interval: {POLL_INTERVAL_S}s  Max attempts: {POLL_MAX_ATTEMPTS}")
@@ -375,7 +375,7 @@ def main() -> None:
 
     print_summary(results)
 
-    print("Demo seed complete. Both cases prepared successfully.")
+    print("Review case seeder complete. Both cases prepared successfully.")
     print("Seeded review cases for the Fraud Console. See README.md for review workflow context.\n")
     sys.exit(0)
 

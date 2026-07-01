@@ -14,7 +14,7 @@
  *   - Frontend dev server running:   cd fraud-console && npm run dev
  *   - n8n workflow active on port 5678 (required for screenshot 09 workflow events)
  *   - Ollama running on host at port 11434 (required for screenshot 07 AI investigation)
- *   - Demo seed data present: python scripts/demo_seed.py
+ *   - Review case seeder present: python scripts/seed_review_cases.py
  *
  * Output:
  *   docs/screenshots/01_overview_command_center.png
@@ -151,13 +151,13 @@ async function checkHealth() {
   const case22 = await apiGet("/case/22");
   if (!case22) {
     throw new Error(
-      `Case 22 not found. Run 'python scripts/demo_seed.py' to seed demo data.`
+      `Case 22 not found. Run 'python scripts/seed_review_cases.py' to seed review cases.`
     );
   }
   const case21 = await apiGet("/case/21");
   if (!case21) {
     throw new Error(
-      `Case 21 not found. Run 'python scripts/demo_seed.py' to seed demo data.`
+      `Case 21 not found. Run 'python scripts/seed_review_cases.py' to seed review cases.`
     );
   }
   const case19 = await apiGet("/case/19");
