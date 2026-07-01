@@ -134,7 +134,7 @@ against historical fraud outcomes.
 | 10K rich scan: P0+P1 priority review share | 24.55% (2,455 of 10,000 rows) | Measured |
 | 10K rich scan: P3 low-risk routing | 70.12% (7,012 rows) | Measured |
 | E2E Playwright checks | 11 / 11 passed | Measured |
-| Release readiness checks | 40 / 40 passed | Measured |
+| Release readiness checks | 37 / 37 passed | Measured |
 | Scoring intelligence layers | 4 | Implemented |
 | Backend API endpoints | 27 | Implemented |
 | Frontend analyst console | Multi-page analyst workflow covering intake, queue, cases, portfolio scan, audit, and reliability views | Implemented |
@@ -269,7 +269,7 @@ These flows show how the console converts fraud signals into operational decisio
 flowchart TD
     A([Transaction Submitted]) --> B[API Validation]
     B --> C[Feature Extraction]
-    C --> D[XGBoost Model Score]
+    C --> D[Model Risk Signal]
     C --> E[Deterministic Rules]
     C --> F[Behavioural Profiling]
     C --> G[Graph / Mule Detection]
@@ -306,7 +306,7 @@ flowchart TD
     A([Case Evidence]) --> B[Evidence Grouping\nBase / Behavioural / Graph]
     B --> C[Playbook Retrieval]
     C --> D[Prompt Assembly]
-    D --> E[LLM Investigation\nEvidence-grounded brief]
+    D --> E[Investigation Brief\nEvidence-grounded]
     E --> F{Schema Validation}
     F -->|Valid| G[COMPLETE Brief\nPersisted to PostgreSQL]
     F -->|Invalid or Failure| H[Failure-state Brief\nPersisted to PostgreSQL]
@@ -337,7 +337,7 @@ flowchart TD
 ```mermaid
 flowchart LR
     A([Analyst Verdict]) --> B[Workflow Dispatch\nPOST /workflow/notify-case]
-    B --> C[Automation Layer\nn8n or HTTP callback]
+    B --> C[Workflow Automation\nCallback]
     C --> D[Audit Callback\nPOST /workflow/audit-event]
     D --> E[(PostgreSQL\nAudit Trail)]
     E --> F[Workflow Events\nDashboard]
@@ -354,14 +354,11 @@ flowchart LR
 | Rule controls | Deterministic flags: high amount, unusual time, risky payment method, risky geography | Binary rule flag; contributes 40% of base score | Transparent, auditable guardrails alongside the model |
 | Behavioural profiling | Compares transaction against entity-level norms for amount, velocity, and spend pattern | BEHAVIOURAL_AMOUNT_DEVIATION, BEHAVIOURAL_VELOCITY_DEVIATION, BEHAVIOURAL_PROFILE_SHIFT | Detects individually unremarkable transactions that deviate sharply from an entity baseline |
 | Graph / mule detection | Identifies shared-device clusters, fan-in patterns (mule receivers), and fan-out patterns (distribution accounts) | MULE_FAN_IN_PATTERN, MULE_FAN_OUT_PATTERN, graph boost contribution | Detects coordinated fraud rings invisible to single-transaction analysis |
-| AI investigation briefs | Evidence-grouped LLM investigation brief via Ollama, version-tracked, bounded failure handling | COMPLETE or failure-state brief persisted per case | Structures investigation context for analysts without removing analyst decision control |
+| AI investigation briefs | Evidence-grouped investigation brief, version-tracked, bounded failure handling | COMPLETE or failure-state brief persisted per case | Structures investigation context for analysts without removing analyst decision control |
 
-**Scoring formula:**
-
-```
-base_score = (0.6 x model_output) + (0.4 x rule_flag)
-risk_score = clip(base_score + rich_boost + behavioural_boost + graph_boost, 0.0, 1.0)
-```
+The risk score is composed from model risk, rule controls, behavioural indicators, and graph
+intelligence. The exact signal composition is documented in the model governance record and
+can be calibrated for institution-specific labelled outcomes.
 
 Decision tiers: APPROVE below 0.3, REVIEW 0.3 to 0.7, BLOCK above 0.7. Each layer
 contributes independently -- a transaction flagged only by graph topology can reach REVIEW
@@ -474,7 +471,7 @@ Institution-specific deployment would expand fraud detection capabilities across
 
 ---
 
-## Hosted Portfolio Demo
+## Live Inspection Environment
 
 Live inspection environment:
 https://transaction-fraud-intelligence-cons.vercel.app
@@ -482,7 +479,7 @@ https://transaction-fraud-intelligence-cons.vercel.app
 Backend API and Swagger:
 https://fraud-console-api.onrender.com/docs
 
-The hosted portfolio environment runs the console on Vercel, Render, and Neon Postgres in
+The hosted inspection environment runs the console on Vercel, Render, and Neon Postgres in
 synchronous scoring mode. It supports transaction scoring, analyst triage, evidence-led
 case review, workflow audit views, and small portfolio risk scans on controlled synthetic
 transaction data.
@@ -542,10 +539,10 @@ schema, and checksum.
 
 | Check | Result |
 |---|---|
-| Release readiness (40 automated checks) | 40 / 40 PASS |
+| Release readiness (37 automated checks) | 37 / 37 PASS |
 | Frontend TypeScript build | PASS |
 | E2E Playwright checks (11 checks, headless Chromium, live stack) | 11 / 11 PASS |
-| Detailed health endpoint | GET /health/detailed: all components healthy |
+| Detailed health endpoint | GET /health/detailed: components report per runtime profile |
 | Model artifact checksum | Verified in CI (fraud_model.pkl MD5) |
 | Public release hygiene | Public README links only curated product, model, benchmark, and executive documentation |
 
