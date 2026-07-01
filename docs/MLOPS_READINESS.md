@@ -22,7 +22,7 @@ monitoring) is explicitly deferred and documented as a future roadmap — not a 
 | Domain | Maturity | Notes |
 |---|---|---|
 | Product and Application Engineering | L2+ | 4-layer scoring engine, 7-service Docker Compose runtime, 27 API endpoints, 11/11 E2E Playwright checks |
-| Release Engineering | L2+ | GitHub Actions CI (compile, 41 release checks, model load, evidence smoke checks, frontend build), local E2E gate |
+| Release Engineering | L2+ | GitHub Actions CI (compile, release readiness checks, model load, evidence smoke checks, frontend build), local E2E gate |
 | Model Artifact Governance | L2+ | Artifact tracked in git, MD5 checksum documented, MODEL_CARD.md, deterministic rebuild path, feature schema validation at CI |
 | Model Lifecycle Automation | L2 | Manual retrain path documented and tested (deterministic, seed 42); no automated retraining trigger or drift-detection gate |
 | Full Enterprise MLOps (L3) | Future | MLflow, feature store, drift monitoring, A/B deployment, canary rollout — documented as future roadmap |
@@ -36,7 +36,7 @@ monitoring) is explicitly deferred and documented as a future roadmap — not a 
   pull request to `master`/`main`
 - **Python compile check**: `python -m compileall src/ -q` — catches syntax errors across
   the full backend package before any test or validator runs
-- **41-check release readiness validator** (`scripts/verify_release_readiness.py`):
+- **Release readiness validator** (`scripts/verify_release_readiness.py`):
   required files, model artifact loadability, MD5 checksum, 12 screenshot checks, old
   filename absence, secret/generated artifact hygiene, required tracked artifact presence,
   and stale phrase scan across public-facing docs
@@ -118,7 +118,7 @@ The model lifecycle for this release follows a controlled, manual path:
    docker compose build                     (COPY copies pkl into container image)
 
 6. CI gate
-   verify_release_readiness.py              (41 checks including artifact and checksum)
+   verify_release_readiness.py              (checks including artifact and checksum)
 
 7. Local E2E gate
    npm run test:e2e                         (11 Playwright checks against live stack)
