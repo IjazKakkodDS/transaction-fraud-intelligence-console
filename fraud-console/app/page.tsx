@@ -658,7 +658,7 @@ function GuidedInvestigationPanel() {
       setErrorMsg(
         err instanceof Error
           ? err.message
-          : "Demo seed failed. Check API connectivity.",
+          : "Guided investigation flow failed. Check API connectivity.",
       );
     }
   }
@@ -683,7 +683,7 @@ function GuidedInvestigationPanel() {
                   border: "1px solid rgba(34,211,238,0.22)",
                 }}
               >
-                Controlled Workflow Demo
+                Guided Investigation Flow
               </span>
             </div>
             <h2 className="mt-1 text-[15px] font-semibold" style={{ color: COLORS.slate }}>
@@ -725,10 +725,7 @@ function GuidedInvestigationPanel() {
               >
                 {errorMsg}
                 <span className="mt-0.5 block" style={{ color: COLORS.muted }}>
-                  Fallback:{" "}
-                  <span style={{ fontFamily: "monospace" }}>
-                    python scripts/demo_seed.py
-                  </span>
+                  Seed review cases locally using the review-case seeding script.
                 </span>
               </p>
             )}

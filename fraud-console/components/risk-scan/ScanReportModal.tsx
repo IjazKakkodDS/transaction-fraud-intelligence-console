@@ -133,7 +133,7 @@ function buildMarkdown(
     "",
     "## Validation Scope",
     "",
-    "Report generated from the local synthetic benchmark scan record.",
+    "Generated from the portfolio scan record.",
     "Institution deployment would require security, governance, monitoring, and model validation controls.",
   ].join("\n");
 }
@@ -546,7 +546,7 @@ export function ScanReportModal({
                   Validation Scope
                 </p>
                 <p className="text-[12px] leading-relaxed" style={{ color: "#6B7280" }}>
-                  Report generated from the local synthetic benchmark scan record.
+                  Generated from the portfolio scan record.
                   Institution deployment would require security, governance, monitoring,
                   and model validation controls.
                 </p>

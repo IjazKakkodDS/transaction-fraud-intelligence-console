@@ -388,13 +388,10 @@ export function IntakeForm({ onSubmit, isSubmitting, initialPayload }: IntakeFor
             className="text-[11px] font-semibold uppercase tracking-[0.1em]"
             style={{ color: "#22D3EE" }}
           >
-            Enhanced Scoring Contract
+            Scoring Intelligence Layers
           </p>
           <p className="mt-1.5 text-[12px] leading-relaxed" style={{ color: "#8B949E" }}>
-            The scoring engine combines model output and deterministic rule signals. Amount, transaction time, payment method, country, merchant category, international status, and device context can influence the final risk outcome.
-          </p>
-          <p className="mt-2 font-mono text-[11px]" style={{ color: "#6B7280" }}>
-            Risk score = 0.6 model output + 0.4 rule flag
+            The scoring engine evaluates model risk, rule controls, behavioural profiling, and network intelligence. Relevant signals appear in the Case Dossier evidence after submission.
           </p>
         </div>
 

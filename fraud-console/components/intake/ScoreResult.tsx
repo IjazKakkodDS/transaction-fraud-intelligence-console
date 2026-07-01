@@ -70,13 +70,13 @@ export function ScoreResult({ prediction, onReset }: ScoreResultProps) {
       helper: null as string | null,
     },
     {
-      label: "Rule Flag",
+      label: "Rule Control Signal",
       value: prediction.rule_flag === null ? "N/A" : String(prediction.rule_flag),
       color: "#C9D1D9",
       helper: "Fires when a known high-risk pattern is detected.",
     },
     {
-      label: "Model Prediction",
+      label: "Model Risk Signal",
       value: prediction.model_prediction === null ? "N/A" : String(prediction.model_prediction),
       color: "#C9D1D9",
       helper:
@@ -216,7 +216,7 @@ export function ScoreResult({ prediction, onReset }: ScoreResultProps) {
         )}
       </div>
 
-      {/* Enhanced Scoring Contract */}
+      {/* Risk Signal Composition */}
       <div
         className="rounded-md p-4"
         style={{
@@ -228,13 +228,10 @@ export function ScoreResult({ prediction, onReset }: ScoreResultProps) {
           className="text-[11px] font-semibold uppercase tracking-[0.1em]"
           style={{ color: "#22D3EE" }}
         >
-          Enhanced Scoring Contract
+          Risk Signal Composition
         </p>
         <p className="mt-2 text-[12px] leading-relaxed" style={{ color: "#8B949E" }}>
-          The risk score combines a model prediction and deterministic rule flag. The current scoring engine evaluates amount, transaction timing, payment method, geographic risk, merchant category, international status, and device context.
-        </p>
-        <p className="mt-2 font-mono text-[11px]" style={{ color: "#6B7280" }}>
-          Risk score = 0.6 model output + 0.4 rule flag
+          The final risk score combines model risk, rule controls, behavioural signals, and network intelligence. Full signal composition is documented in the model governance record.
         </p>
       </div>
 

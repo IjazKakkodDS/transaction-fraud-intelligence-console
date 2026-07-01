@@ -510,14 +510,14 @@ export function ScanResultDrawer({
               <SectionHead label="Model and Rule Context" />
               {row.model_prediction !== null && (
                 <FieldRow
-                  label="Model Prediction"
+                  label="Model Risk Signal"
                   value={row.model_prediction === 1 ? "Flagged (1)" : "Clean (0)"}
                   valueColor={row.model_prediction === 1 ? "#F59E0B" : "#10B981"}
                 />
               )}
               {row.rule_flag !== null && (
                 <FieldRow
-                  label="Rule Flag"
+                  label="Rule Control Signal"
                   value={row.rule_flag === 1 ? "Triggered (1)" : "Not triggered (0)"}
                   valueColor={row.rule_flag === 1 ? "#F59E0B" : "#6B7280"}
                 />
