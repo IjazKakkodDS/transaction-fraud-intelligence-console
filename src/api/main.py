@@ -444,8 +444,12 @@ def _score_demo_transaction(txn: dict) -> dict | None:
     return get_prediction_by_id(case_id)
 
 
-@app.post("/cases/seed-review")
-def seed_demo_state():
+@app.post(
+    "/cases/seed-review",
+    summary="Seed Review Cases",
+    operation_id="seed_review_cases",
+)
+def seed_review_cases():
     """
     Idempotent review case seeder.
 
