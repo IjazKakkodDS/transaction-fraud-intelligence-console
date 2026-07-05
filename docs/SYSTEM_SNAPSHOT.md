@@ -141,7 +141,7 @@ graph TD
 | Investigation | GET /cases/{case_id}/investigation, POST /cases/{case_id}/investigate (async, HTTP 202), GET /cases/{case_id}/explain |
 | Workflow automation | POST /workflow/audit-event, GET /workflow/events, GET /workflow/metrics, GET /workflow/daily-summary, GET /workflow/stale-cases, POST /workflow/notify-case/{case_id} |
 | Portfolio Risk Scan | POST /risk-scan (async, HTTP 202), GET /risk-scan/{scan_id}/status, GET /risk-scan/{scan_id}/summary, GET /risk-scan/{scan_id}/results, GET /risk-scan/{scan_id}/export (streaming), POST /risk-scan/{scan_id}/promote/{result_id} |
-| Internal | GET /stats, POST /demo/seed |
+| Internal | GET /stats, POST /cases/seed-review |
 
 Total: 27 endpoints.
 

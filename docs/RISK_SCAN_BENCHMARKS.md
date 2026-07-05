@@ -23,7 +23,7 @@ behavior throughout.
 | **2.5M rows** | Verified | COMPLETE after DB cleanup and streaming export | Postgres dead-space reclaim required first |
 | **5M rows** | Verified | COMPLETE with hardened server-side streaming export | Initial export attempt failed; server-side cursor fix committed |
 | **7.5M rows** | Verified | COMPLETE with chunked ingestion and dedup benchmark mode | Confirmed API heap stayed stable |
-| **10M rows** | Verified | COMPLETE after result-query index hardening | Current verified local synthetic benchmark ceiling |
+| **10M rows** | Verified | COMPLETE after result-query index hardening | Current verified controlled synthetic benchmark ceiling |
 
 ---
 
@@ -371,7 +371,7 @@ bounded and avoids using analyst UI pagination for full-file export.
 | Large upload heap | Async upload and processing needed bounded memory at higher scale | Temp-file spooling plus chunked CSV ingestion implemented (commit `6f97224`) |
 | Dedup memory | Cross-scan Python set grew O(N) for duplicate detection | `RISK_SCAN_ENABLE_IN_MEMORY_DEDUP=false` benchmark mode added for guaranteed-unique synthetic IDs (commit `d8d64a7`) |
 | 7.5M query scale | Page and filter queries scanned by `scan_id` then sorted millions of rows; deep page spilled to disk | Ordered composite indexes with `NULLS LAST` added (commit `cdf4874`) |
-| 10M verification | Needed full end-to-end proof after ingestion/export/dedup/index hardening | 10M local synthetic benchmark passed end-to-end |
+| 10M verification | Needed full end-to-end proof after ingestion/export/dedup/index hardening | 10M controlled synthetic benchmark passed end-to-end |
 
 ---
 
@@ -453,7 +453,7 @@ disk or object storage, not in the repository.
 7. **Observability, durable worker architecture, auth/RBAC, and deployment/demo-safe mode.** Move
    from local benchmark maturity toward deployable operational readiness.
 
-8. **Final portfolio case study/demo video.** Package the verified local synthetic benchmark and
+8. **Final portfolio case study/demo video.** Package the verified controlled synthetic benchmark and
    product walkthrough without overstating production claims.
 
 ---

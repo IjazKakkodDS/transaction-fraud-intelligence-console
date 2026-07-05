@@ -249,8 +249,8 @@ adversarial patterns do not contaminate training-distribution validation. Archit
 
 The Fraud Intelligence Command Center (Overview page) presents the Guided Investigation
 Command Panel as the structured reviewer entry point. Clicking "Launch Guided
-Investigation" calls `POST /demo/seed`, which idempotently provisions two canonical
-fraud cases covering the showcase (BLOCK / CONFIRM_FRAUD verdict) and review
+Investigation" calls `POST /cases/seed-review`, which idempotently provisions two canonical
+review cases covering the showcase (BLOCK decision, evidence inspection) and review
 (REVIEW / FALSE_POSITIVE verdict) paths, then navigates directly to the Case Dossier
 for the high-priority showcase case.
 
@@ -595,7 +595,7 @@ controls in place.
 | Async Portfolio Risk Scan | Score portfolios of millions of transactions without blocking real-time case operations |
 | Indexed pagination at 10M scale | Analysts can review, filter, and export large result sets without system degradation |
 | Server-side streaming export | 1.64 GiB CSV exported without API restart or memory pressure |
-| Guided Investigation Command Panel | Structured reviewer entry point: `POST /demo/seed` provisions canonical cases; six capability cards and nine-step workflow path orient reviewers to each intelligence surface |
+| Guided Investigation Command Panel | Structured reviewer entry point: `POST /cases/seed-review` provisions canonical review cases; six capability cards and nine-step workflow path orient reviewers to each intelligence surface |
 | Case Dossier 2.0 | Grouped evidence, lifecycle timeline, behavioural and graph chips, model attribution, AI brief, verdict capture -- full analyst context in one workspace |
 | Model Attribution | `GET /cases/{case_id}/explain` via XGBoost native TreeSHAP (`pred_contribs=True`) -- 9 feature contributions ranked by magnitude; separates base ML model attribution from hybrid reason codes |
 | AI Investigation Brief | Evidence-grouped prompting, AGENT_VERSION traceability, bounded failure handling, structured LLM report persisted per case |

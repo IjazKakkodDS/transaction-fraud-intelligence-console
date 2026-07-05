@@ -203,7 +203,7 @@ Before every push to the default branch, all of the following must pass:
 | Gate | Command | Scope |
 |---|---|---|
 | Python compile | `python -m compileall src/ -q` | All backend source files |
-| Release readiness | `python scripts/verify_release_readiness.py` | 41 checks: files, model, checksums, screenshots, hygiene, stale phrases |
+| Release readiness | `python scripts/verify_release_readiness.py` | 37 checks: files, model, checksums, screenshots, hygiene, stale phrases |
 | Model load | `joblib.load('saved_models/fraud_model.pkl')` | Artifact integrity |
 | Investigation smoke | `python scripts/verify_investigation_failure.py` | Failure classification contract |
 | Evidence smoke | `python scripts/verify_investigation_evidence.py` | Evidence grouping contract |
