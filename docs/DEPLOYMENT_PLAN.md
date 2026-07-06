@@ -19,10 +19,10 @@ not provisioned environments.
 | Item | Status |
 |---|---|
 | GitHub Actions CI | Implemented — `.github/workflows/ci.yml` |
-| Release readiness validator | Implemented — `scripts/verify_release_readiness.py` (41 checks) |
+| Release readiness validator | Implemented — `scripts/verify_release_readiness.py` (release readiness checks) |
 | Model artifact governance | Implemented — `docs/MODEL_CARD.md`, MD5 tracked |
 | MLOps readiness documentation | Implemented — `docs/MLOPS_READINESS.md` |
-| Guided demo endpoint | Implemented — `POST /demo/seed` |
+| Review seeding endpoint | Implemented — `POST /cases/seed-review` |
 | Model attribution endpoint | Implemented — `GET /cases/{case_id}/explain` |
 | CORS environment-configurable | Implemented — `ALLOWED_ORIGINS` env var (Phase 20I) |
 | `NEXT_PUBLIC_API_BASE_URL` | Implemented — frontend reads from environment |
@@ -89,7 +89,7 @@ The primary product package. All capabilities available when the full stack is r
 | Ollama / LLM | Host-machine process at `host.docker.internal:11434` |
 | n8n | Docker Compose service (`n8n`) on port 5678 |
 
-**Capabilities available:** all 27 API endpoints, guided demo (`POST /demo/seed`), model
+**Capabilities available:** all 27 API endpoints, review case seeding (`POST /cases/seed-review`), model
 attribution (`GET /cases/{case_id}/explain`), AI investigation briefs, workflow automation
 audit trail, reliability metrics, portfolio risk scan.
 
@@ -130,7 +130,7 @@ consumer dependency.
 | `KAFKA_BOOTSTRAP_SERVERS` | Unset (disables event publishing; API scores synchronously) |
 
 **Capabilities available in Profile B:** transaction intake, review queue, case dossier,
-model attribution, analyst verdict capture, guided demo endpoint. Workflow events and
+model attribution, analyst verdict capture, review case seeding. Workflow events and
 reliability metrics surfaces will not populate without n8n.
 
 **Not available in Profile B (first cloud demo):** async event-driven scoring, AI
@@ -268,12 +268,12 @@ curl http://localhost:8000/health/detailed
 
 # 6. Open browser
 #    http://localhost:3000                    - Fraud Intelligence Command Center
-#    http://localhost:3000 → Run Demo         - seed canonical demo cases
+#    http://localhost:3000 → Guided Investigation - seed canonical review cases
 #    http://localhost:3000/cases/<id>         - Case Dossier (model attribution panel)
 #    http://localhost:8000/docs               - FastAPI Swagger API documentation
 
 # 7. Run release readiness gate
-python scripts/verify_release_readiness.py   # 41 checks; all must pass
+python scripts/verify_release_readiness.py   # 37 checks; all must pass
 
 # 8. Run E2E Playwright suite (requires live stack)
 cd fraud-console

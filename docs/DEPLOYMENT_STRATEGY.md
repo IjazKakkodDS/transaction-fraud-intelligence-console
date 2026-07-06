@@ -29,7 +29,7 @@ Full cloud deployment is deferred until authentication, secret management, monit
 | Public URL | None |
 | Data | Synthetic data only. No real transaction records, no real cardholder data, no PII. |
 | Repo size | 7.1 MB object store (video history removed in Phase 20DPLY-A) |
-| Release readiness | 41/41 automated checks PASS |
+| Release readiness | 37/37 automated checks PASS |
 | E2E coverage | 11/11 Playwright checks PASS |
 | Video artifact | v9-subtitled (56.6 MB, local only, untracked); external hosting placeholder in docs/VIDEO_ARTIFACTS.md |
 | Screenshot evidence | 12 Playwright-captured PNGs in docs/screenshots/ |
@@ -44,7 +44,7 @@ The codebase, Docker Compose configuration, source code, scoring logic, and docu
 
 **Local inspection is reproducible and verifiable.**
 
-A reviewer can run `python scripts/verify_release_readiness.py` (41/41 PASS), run `npm run lint` and `npm run build` (both PASS), and clone the repository to confirm model artifacts, schemas, and scoring logic are exactly as documented. A static hosted page or a screenshot-only portfolio cannot offer that level of verification.
+A reviewer can run `python scripts/verify_release_readiness.py` (37/37 PASS), run `npm run lint` and `npm run build` (both PASS), and clone the repository to confirm model artifacts, schemas, and scoring logic are exactly as documented. A static hosted page or a screenshot-only portfolio cannot offer that level of verification.
 
 **The deployment prerequisites are not yet complete.**
 
@@ -328,7 +328,7 @@ The following phrasings are approved for public-facing descriptions of the syste
 
 **What to confirm about deployment readiness:**
 
-1. `python scripts/verify_release_readiness.py` passes 41/41 checks
+1. `python scripts/verify_release_readiness.py` passes 37/37 checks
 2. `git ls-files | grep -i .mp4` returns nothing (no video binaries tracked)
 3. `.env` is excluded from git (confirmed by release readiness check)
 4. `docs/AUTH_RBAC_DESIGN.md` documents the designed access control model
