@@ -11,7 +11,7 @@ on:
 # -------------------------------------------------------------------------
 # Job 1 — backend-release-readiness
 #   - Python 3.11 compile check across src/
-#   - 41-check release readiness validator (files, model artifact, checksums,
+#   - 37-check release readiness validator (files, model artifact, checksums,
 #     screenshots, secret hygiene, stale phrase scan)
 #   - Model artifact load and type verification via joblib
 #   - Investigation failure classification smoke check (no Ollama, no DB)
@@ -52,7 +52,7 @@ jobs:
       - name: Python compile check (src/)
         run: python -m compileall src/ -q
 
-      - name: Release readiness — 41 checks
+      - name: Release readiness validation
         run: python scripts/verify_release_readiness.py
 
       - name: Model artifact load check
