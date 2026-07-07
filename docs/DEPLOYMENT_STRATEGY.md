@@ -149,7 +149,7 @@ The repository, as it stands after Phase 20DPLY-B and Phase 20DPLY-B2, constitut
 
 ## 7. External Video Artifact Strategy
 
-The narrated product walkthrough is not tracked in the repository (git history cleaned in Phase 20DPLY-A; object store reduced from 977 MB to 7.1 MB). The final artifact (`v9-subtitled`, SHA256: `56047f8932026263f5d8e2ec39051d392b020ec737a66a7b55e29d9b6158db23`) is held locally and in an external backup at `C:\tmp\fraud-console-final-video\`.
+The narrated product walkthrough is not tracked in the repository (git history cleaned in Phase 20DPLY-A; object store reduced from 977 MB to 7.1 MB). The final artifact (`v9-subtitled`) is held as a local artifact.
 
 **Recommended external hosting:**
 
@@ -191,7 +191,7 @@ The video URL is the primary public demonstrability asset until a cloud-hosted l
 | Domain and TLS certificate | HTTPS required for production | Minimal cost; varies by registrar |
 | Secret management | Required for credential injection in cloud context | Provider-specific pricing; requires verification |
 
-**Cost planning principle:** Do not commit to a specific cloud provider or cost estimate until the Phase 21 deployment scope is finalized. Provider pricing and free-tier limits change. All cost claims in this document require provider-specific verification before any public planning or commitment.
+**Cost planning principle:** Provider pricing and free-tier limits change frequently. Cost estimates in this document are indicative; any deployment decision requires provider-specific verification.
 
 ---
 

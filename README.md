@@ -85,16 +85,16 @@ services, single command startup.
 
 ```mermaid
 flowchart LR
-    A([Transaction\nor Portfolio CSV]) --> B[FastAPI\nBackend]
-    B --> C[4-Layer\nScoring Engine]
+    A(["Transaction or Portfolio CSV"]) --> B["FastAPI Backend"]
+    B --> C["4-Layer Scoring Engine"]
     C --> D[(PostgreSQL)]
-    B --> E[Redpanda\nEvent Bus]
-    E --> F[Scoring\nConsumer]
-    E --> G[Investigation\nConsumer]
-    G --> H[AI Investigation\nBrief]
-    B --> I[Workflow\nAutomation]
-    D --> J[Next.js\nAnalyst Console]
-    J --> K[Queue · Cases\nPortfolio · Audit · Metrics]
+    B --> E["Redpanda Event Bus"]
+    E --> F["Scoring Consumer"]
+    E --> G["Investigation Consumer"]
+    G --> H["AI Investigation Brief"]
+    B --> I["Workflow Automation"]
+    D --> J["Next.js Analyst Console"]
+    J --> K["Queue, Cases, Portfolio, Audit, Metrics"]
 ```
 
 | Layer | Components |
@@ -266,52 +266,52 @@ These flows show how the console converts fraud signals into operational decisio
 
 ```mermaid
 flowchart TD
-    A([Transaction Submitted]) --> B[API Validation]
-    B --> C[Feature Extraction]
-    C --> D[Model Risk Signal]
-    C --> E[Deterministic Rules]
-    C --> F[Behavioural Profiling]
-    C --> G[Graph / Mule Detection]
-    D & E & F & G --> H[4-Layer Score Composition]
-    H --> I[Risk Tier Assignment\nP0 / P1 / P2 / P3]
-    I --> J[Reason Codes Generated]
-    J --> K[(PostgreSQL Case Record)]
-    K --> L[Analyst Review Queue]
+    A(["Transaction Submitted"]) --> B["API Validation"]
+    B --> C["Feature Extraction"]
+    C --> D["Model Risk Signal"]
+    C --> E["Deterministic Rules"]
+    C --> F["Behavioural Profiling"]
+    C --> G["Graph and Mule Detection"]
+    D & E & F & G --> H["4-Layer Score Composition"]
+    H --> I["Risk Tier Assignment: P0, P1, P2, P3"]
+    I --> J["Reason Codes Generated"]
+    J --> K[("PostgreSQL Case Record")]
+    K --> L["Analyst Review Queue"]
 ```
 
 ### 2. Analyst Case Dossier and Verdict
 
 ```mermaid
 flowchart TD
-    A([Flagged Transaction]) --> B[Priority Queue\nP0 to P3 Order]
-    B --> C[Case Dossier]
-    C --> D[Base Signals\nML + Rules]
-    C --> E[Behavioural\nIndicators]
-    C --> F[Graph / Mule\nSignals]
-    C --> G[Model Attribution\nTreeSHAP]
-    D & E & F & G --> H[Analyst Reviews Evidence]
-    H --> I{Request AI\nInvestigation Brief?}
-    I -->|Yes| J[AI Brief Generated\nand Persisted]
-    I -->|No| K[Analyst Verdict\nConfirm or Override]
+    A(["Flagged Transaction"]) --> B["Priority Queue: P0 to P3"]
+    B --> C["Case Dossier"]
+    C --> D["Base Signals: ML and Rules"]
+    C --> E["Behavioural Indicators"]
+    C --> F["Graph and Mule Signals"]
+    C --> G["Model Attribution: TreeSHAP"]
+    D & E & F & G --> H["Analyst Reviews Evidence"]
+    H --> I{"Request Agentic Investigation Brief?"}
+    I -->|Yes| J["Investigation Brief Generated and Persisted"]
+    I -->|No| K["Analyst Verdict: Confirm or Override"]
     J --> K
-    K --> L[Workflow Dispatch]
-    L --> M[(Audit Trail)]
+    K --> L["Workflow Dispatch"]
+    L --> M[("Audit Trail")]
 ```
 
 ### 3. AI Investigation Brief
 
 ```mermaid
 flowchart TD
-    A([Case Evidence]) --> B[Evidence Grouping\nBase / Behavioural / Graph]
-    B --> C[Playbook Retrieval]
-    C --> D[Prompt Assembly]
-    D --> E[Investigation Brief\nEvidence-grounded]
-    E --> F{Schema Validation}
-    F -->|Valid| G[COMPLETE Brief\nPersisted to PostgreSQL]
-    F -->|Invalid or Failure| H[Failure-state Brief\nPersisted to PostgreSQL]
-    G --> I[Surfaced in Case Dossier]
+    A(["Case Evidence"]) --> B["Evidence Grouping: Base, Behavioural, Graph"]
+    B --> C["Playbook Retrieval"]
+    C --> D["Prompt Assembly"]
+    D --> E["Investigation Brief: Evidence-grounded"]
+    E --> F{"Schema Validation"}
+    F -->|Valid| G["COMPLETE Brief Persisted to PostgreSQL"]
+    F -->|"Invalid or Failure"| H["Failure-state Brief Persisted to PostgreSQL"]
+    G --> I["Surfaced in Case Dossier"]
     H --> I
-    I --> J[Analyst Verdict\nStill Required]
+    I --> J["Analyst Verdict Still Required"]
 ```
 
 *AI surfaces investigation context. Analyst keeps decision control. Every brief carries version-tracked investigation configuration.*
@@ -320,27 +320,27 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A([CSV Upload]) --> B[Schema Validation]
-    B --> C[Async Scan Job\nHTTP 202 + scan_id]
-    C --> D[Chunked Ingestion\nBounded Memory]
-    D --> E[4-Layer Scoring\nPer Chunk]
-    E --> F[(PostgreSQL\nResult Rows + Counters)]
-    F --> G[Risk Tier Filters\nP1 / P3]
-    G --> H[Paginated Review]
-    H --> I[Streaming CSV Export]
-    H --> J[Promote to Case Dossier]
+    A(["CSV Upload"]) --> B["Schema Validation"]
+    B --> C["Async Scan Job: HTTP 202"]
+    C --> D["Chunked Ingestion: Bounded Memory"]
+    D --> E["4-Layer Scoring Per Chunk"]
+    E --> F[("PostgreSQL: Result Rows and Counters")]
+    F --> G["Risk Tier Filters: P1 and P3"]
+    G --> H["Paginated Review"]
+    H --> I["Streaming CSV Export"]
+    H --> J["Promote to Case Dossier"]
 ```
 
 ### 5. Workflow Automation and Audit
 
 ```mermaid
 flowchart LR
-    A([Analyst Verdict]) --> B[Workflow Dispatch\nPOST /workflow/notify-case]
-    B --> C[Workflow Automation\nCallback]
-    C --> D[Audit Callback\nPOST /workflow/audit-event]
-    D --> E[(PostgreSQL\nAudit Trail)]
-    E --> F[Workflow Events\nDashboard]
-    F --> G[Reliability Metrics\nHealthy / Degraded / Critical]
+    A(["Analyst Verdict"]) --> B["Workflow Dispatch"]
+    B --> C["Workflow Automation Callback"]
+    C --> D["Audit Callback"]
+    D --> E[("PostgreSQL Audit Trail")]
+    E --> F["Workflow Events Dashboard"]
+    F --> G["Reliability Metrics: Healthy, Degraded, Critical"]
 ```
 
 ---
@@ -567,7 +567,6 @@ npm run test:e2e
 | [docs/MODEL_CARD.md](docs/MODEL_CARD.md) | Model artifact contract, feature schema, checksum, and governance notes |
 | [docs/RISK_SCAN_BENCHMARKS.md](docs/RISK_SCAN_BENCHMARKS.md) | Verified 10M benchmark evidence with full metric tables |
 | [docs/MLOPS_READINESS.md](docs/MLOPS_READINESS.md) | MLOps maturity and production expansion roadmap |
-| [docs/presentation/real-time-fraud-intelligence-console-executive-deck.pptx](docs/presentation/real-time-fraud-intelligence-console-executive-deck.pptx) | Executive presentation deck (12 slides) |
 
 ---
 

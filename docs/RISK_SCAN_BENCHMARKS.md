@@ -430,34 +430,6 @@ disk or object storage, not in the repository.
 
 ---
 
-## Next Recommended Phases
-
-1. **Post-10M DB cleanup/archive strategy.** Preserve evidence scans while defining what can be
-   archived, exported, or purged before repeated benchmark work.
-
-2. **Scan history/detail UX polish.** Improve large-scan history browsing, scan detail context,
-   result detail drawer, filtered exports, and scan report generation.
-
-3. **Schema mapping and data quality layer.** Support varied transaction file layouts, column
-   mapping, quality scoring, and rejected-row reporting.
-
-4. **Richer synthetic banking dataset generator.** Add user baselines, merchants, device variety,
-   velocity patterns, and fraud injections to improve benchmark realism for future validation work.
-
-5. **Enhanced fraud decision engine and Case Dossier 2.0.** Add per-dimension decision evidence,
-   richer investigation brief hardening, and better analyst traceability.
-
-6. **Workflow, audit, and governance hardening.** Improve operational audit controls and workflow
-   governance surfaces.
-
-7. **Observability, durable worker architecture, auth/RBAC, and deployment/demo-safe mode.** Move
-   from local benchmark maturity toward deployable operational readiness.
-
-8. **Final portfolio case study/demo video.** Package the verified controlled synthetic benchmark and
-   product walkthrough without overstating production claims.
-
----
-
 ## Post-10M Benchmark Hygiene
 
 ### Storage footprint after 10M verification (2026-06-01)

@@ -648,7 +648,7 @@ reason codes that reflect the full 4-layer decision.
 | Phase 17 | Case Dossier 2.0 | Complete |
 | Phase 18 | AI investigation brief hardening | Complete |
 | Phase 19 | Governance and production readiness documentation | Complete |
-| Phase 20 | Deployment, GitHub, portfolio integration | In Progress |
+| Phase 20 | Deployment, GitHub, portfolio integration | Complete |
 
 ---
 
