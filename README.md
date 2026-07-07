@@ -9,7 +9,6 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)
 ![Redpanda](https://img.shields.io/badge/Redpanda-Kafka--compatible-FF3B00)
-![XGBoost](https://img.shields.io/badge/XGBoost-3.0+-F7931A)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![Playwright](https://img.shields.io/badge/Playwright-1.60+-2EAD33?logo=playwright&logoColor=white)
 
@@ -23,7 +22,7 @@ or whether automation ran correctly afterwards.
 
 This console implements the complete fraud decisioning lifecycle: from transaction intake
 through 4-layer hybrid scoring, risk-tiered analyst queue, evidence-led Case Dossier,
-AI-assisted investigation brief, formal verdict capture, workflow dispatch with callback
+agentic investigation brief, formal verdict capture, workflow dispatch with callback
 audit, and portfolio-scale async scanning across 10 million transactions.
 
 The system addresses the operational gap between fraud scoring and fraud investigation.
@@ -36,7 +35,7 @@ accountability record.
 
 | Fraud operations challenge | Why score-only detection falls short | Console response | Business value |
 |---|---|---|---|
-| Portfolio-wide triage | Scoring one transaction at a time cannot cover institutional portfolio volume | Async portfolio scan: 10M rows, bounded memory, indexed pagination | Risk teams gain complete portfolio coverage, not point samples |
+| Portfolio-wide triage | Scoring one transaction at a time cannot cover institutional portfolio volume | Async portfolio scan: 10M transactions, bounded memory, indexed pagination | Risk teams gain complete portfolio coverage, not point samples |
 | Analyst overload | Flat alert lists force analysts to spend equal time on low-risk and high-risk cases | P0-P3 risk-tiered review queue ordered by descending risk score | Analyst time concentrates on the highest-urgency cases first |
 | Risk exposure prioritisation | Raw score does not quantify the dollar value at risk across the portfolio | Exposure surfaced per tier across the full portfolio scan | Risk leadership sees aggregate exposure concentration, not just flagged counts |
 | Evidence quality | Model output alone provides no grouped investigation context | Evidence-structured Case Dossier: base signals, behavioural indicators, graph topology, model attribution | Analysts understand why a transaction was flagged, not just that it was |
@@ -59,7 +58,7 @@ Raw transaction or portfolio file
   --> Risk tier assignment (P0 critical / P1 high / P2 medium / P3 low)
   --> Priority analyst review queue
   --> Evidence-led Case Dossier
-  --> AI-assisted investigation brief (advisory; analyst keeps decision control)
+  --> agentic investigation brief (advisory; analyst keeps decision control)
   --> Formal analyst verdict
   --> Workflow automation dispatch
   --> Callback audit event
@@ -117,22 +116,22 @@ against historical fraud outcomes.
 
 | Metric | Result | Type |
 |---|---|---|
-| 10M benchmark: rows processed | 10,000,000 / 10,000,000 (100%) | Measured |
+| 10M benchmark: transactions processed | 10,000,000 / 10,000,000 (100%) | Measured |
 | 10M benchmark: valid / invalid / skipped | 10,000,000 / 0 / 0 | Measured |
 | 10M benchmark: total portfolio exposure scored | $25,095,000,000 | Measured |
 | 10M benchmark: high-priority tier exposure surfaced | $24,455,516,419 | Measured |
-| 10M benchmark: average scoring throughput | ~1,610 rows/sec | Measured |
+| 10M benchmark: average scoring throughput | ~1,610 transactions/sec | Measured |
 | 10M benchmark: processing duration | ~103 minutes | Measured |
 | 10M benchmark: deep pagination (page 1,000 on 10M result set) | 0.379s | Measured |
 | 10M benchmark: streaming export time to first byte (1.64 GiB) | 6.987 ms | Measured |
 | 10M benchmark: export duration | 113.63s | Measured |
 | 10M benchmark: API restarts during and after export | 0 | Measured |
-| 5M benchmark: P0+P1 priority review share | 24.45% (1,222,251 of 5,000,000 rows) | Measured |
-| 5M benchmark: P3 low-risk routing | 75.55% (3,777,749 rows) | Measured |
+| 5M benchmark: P0+P1 priority review share | 24.45% (1,222,251 of 5,000,000 transactions) | Measured |
+| 5M benchmark: P3 low-risk routing | 75.55% (3,777,749 transactions) | Measured |
 | 5M benchmark: total portfolio exposure | $6,982,753,484 | Measured |
 | 5M benchmark: P0 critical-tier exposure | $5,058,942,542 | Measured |
-| 10K rich scan: P0+P1 priority review share | 24.55% (2,455 of 10,000 rows) | Measured |
-| 10K rich scan: P3 low-risk routing | 70.12% (7,012 rows) | Measured |
+| 10K rich scan: P0+P1 priority review share | 24.55% (2,455 of 10,000 transactions) | Measured |
+| 10K rich scan: P3 low-risk routing | 70.12% (7,012 transactions) | Measured |
 | E2E Playwright checks | 11 / 11 passed | Measured |
 | Release readiness checks | 37 / 37 passed | Measured |
 | Scoring intelligence layers | 4 | Implemented |
@@ -165,7 +164,7 @@ converted into evidence-led cases, and closed through analyst verdicts and workf
 | 2 | Assign P0-P3 risk tiers | Separates immediate review from lower-risk handling |
 | 3 | Route high-priority cases to queue | Concentrates analyst effort on the highest-risk segment |
 | 4 | Build Case Dossier | Turns a score into evidence-led investigation context |
-| 5 | Generate AI-assisted investigation brief | Supports analyst review without replacing analyst decision control |
+| 5 | Generate agentic investigation brief | Supports analyst review without replacing analyst decision control |
 | 6 | Capture verdict and workflow callback | Creates an audit-ready decision and automation trail |
 | 7 | Export scored portfolio | Enables downstream fraud, risk, and governance review |
 
@@ -181,11 +180,11 @@ Across three benchmark runs using controlled synthetic transaction data, approxi
 low-risk. This concentration allows analyst review to focus on the highest-risk quarter
 of the portfolio rather than a flat, undifferentiated alert list.
 
-| Benchmark | Rows scored | Priority review (P0+P1) | Low-risk routing (P3) | Primary evidence | Operational meaning |
+| Benchmark | Transactions scored | Priority review (P0+P1) | Low-risk routing (P3) | Primary evidence | Operational meaning |
 |---|---|---|---|---|---|
-| 10K legacy scan | 10,000 | 24.59% (2,459 rows) | 75.41% (7,541 rows) | Consistent priority routing behaviour across a compact synthetic portfolio | Consistent tier routing established at baseline scale |
-| 10K rich banking scan | 10,000 | 24.55% (2,455 rows) | 70.12% (7,012 rows) | Rich signal tier routing with P0-P1 priority concentration and P3 low-risk handling | Rich signal layer confirmed on synthetic banking scenarios |
-| 5M benchmark | 5,000,000 | 24.45% (1,222,251 rows) | 75.55% (3,777,749 rows) | $6.98B total exposure scored; $5.06B surfaced in P0 critical tier | Review queue concentrated on 1 in 4 transactions; $5.06B critical-tier surfaced |
+| 10K legacy scan | 10,000 | 24.59% (2,459 transactions) | 75.41% (7,541 transactions) | Consistent priority routing behaviour across a compact synthetic portfolio | Consistent tier routing established at baseline scale |
+| 10K rich banking scan | 10,000 | 24.55% (2,455 transactions) | 70.12% (7,012 transactions) | Rich signal tier routing with P0-P1 priority concentration and P3 low-risk handling | Rich signal layer confirmed on synthetic banking scenarios |
+| 5M benchmark | 5,000,000 | 24.45% (1,222,251 transactions) | 75.55% (3,777,749 transactions) | $6.98B total exposure scored; $5.06B surfaced in P0 critical tier | Review queue concentrated on 1 in 4 transactions; $5.06B critical-tier surfaced |
 | 10M benchmark | 10,000,000 | 100% assigned P1 or P3 | -- | $25.1B total exposure scored; $24.5B surfaced in high-priority tier | $25 billion portfolio scored, tiered, and exported in a single async run |
 
 All benchmark figures are from controlled synthetic portfolios.
@@ -195,7 +194,7 @@ All benchmark figures are from controlled synthetic portfolios.
 | Capability | Evidence |
 |---|---|
 | Async upload acceptance | HTTP 202 in 5.79s; scan job returned immediately without blocking the API |
-| Processing | 10,000,000 / 10,000,000 rows; zero invalid; zero skipped; ~103 minutes; ~1,610 rows/sec |
+| Processing | 10,000,000 / 10,000,000 rows; zero invalid; zero skipped; ~103 minutes; ~1,610 transactions/sec |
 | Paginated analyst review | Page 1 in 0.676s; page 2 in 0.247s; deep page 1,000 in 0.379s after composite index hardening |
 | P1 tier filter query | 8,420,051 matching rows returned in 4.188s |
 | Streaming export | 1.64 GiB / 10,000,001 lines; TTFB 6.987 ms; duration 113.63s; zero API restarts; OOMKilled false |
@@ -424,7 +423,7 @@ before the next scale step was attempted.
 
 - **Portfolio-wide triage:** risk teams can score and prioritise complete transaction portfolios rather than relying on samples.
 - **Analyst efficiency:** priority tiers concentrate immediate review on the highest-risk segment while routing low-risk transactions to pass-through, sampling, or lower-frequency review.
-- **Investigation quality:** case dossiers convert model outputs into evidence-led investigation records with analyst verdicts and AI-assisted context.
+- **Investigation quality:** case dossiers convert model outputs into evidence-led investigation records with analyst verdicts and advisory investigation context.
 - **Governance and accountability:** workflow events, AI brief traceability, and verdict capture make fraud operations reviewable after the decision.
 
 Results are based on controlled synthetic portfolio benchmarks. Institution-specific deployment would calibrate thresholds, labels, and review policies against historical fraud outcomes.
@@ -597,10 +596,10 @@ profiling + graph mule-network detection), PostgreSQL persistence with composite
 10M-row queries, evidence-grouped Case Dossiers with TreeSHAP model attribution, hardened
 AI investigation briefs with version-tracked investigation brief traceability, workflow automation audit trails
 with callback-based reliability monitoring, and a verified 10M-transaction Portfolio Risk
-Scan benchmark: ~1,610 rows/sec average throughput, $25.1B portfolio exposure scored,
+Scan benchmark: ~1,610 transactions/sec average throughput, $25.1B portfolio exposure scored,
 1.64 GiB streaming export at 6.987 ms time to first byte, zero API restarts.
 
-Consistent tier routing across three benchmark runs (5M-row scan, 10K legacy scan, 10K
+Consistent tier routing across three benchmark runs (5M-transaction scan, 10K legacy scan, 10K
 rich banking scan): 24-25% of transactions routed to P0-P1 priority review, 70-75% to
 P3 low-risk, on controlled synthetic data. Validated through adversarial simulation across
 five fraud pattern families and 11/11 E2E Playwright checks. Governed by a documentation
