@@ -209,3 +209,11 @@ data/generated/
 # =============================================================================
 docs/evidence/
 scripts/evidence/
+
+# =============================================================================
+# Internal design planning contracts
+# These are local-only phase design docs. Not required for reviewer understanding.
+# =============================================================================
+docs/ADVERSARIAL_FRAUD_DESIGN.md
+docs/AI_INVESTIGATION_BRIEF_DESIGN.md
+docs/CASE_DOSSIER_2_DESIGN.md
