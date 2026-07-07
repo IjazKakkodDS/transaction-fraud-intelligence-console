@@ -85,9 +85,9 @@ services, single command startup.
 
 ```mermaid
 flowchart LR
-    A(["Transaction or Portfolio CSV"]) --> B["FastAPI Backend"]
+    A["Transaction or Portfolio CSV"] --> B["FastAPI Backend"]
     B --> C["4-Layer Scoring Engine"]
-    C --> D[(PostgreSQL)]
+    C --> D["PostgreSQL"]
     B --> E["Redpanda Event Bus"]
     E --> F["Scoring Consumer"]
     E --> G["Investigation Consumer"]
@@ -266,16 +266,19 @@ These flows show how the console converts fraud signals into operational decisio
 
 ```mermaid
 flowchart TD
-    A(["Transaction Submitted"]) --> B["API Validation"]
+    A["Transaction Submitted"] --> B["API Validation"]
     B --> C["Feature Extraction"]
     C --> D["Model Risk Signal"]
     C --> E["Deterministic Rules"]
     C --> F["Behavioural Profiling"]
     C --> G["Graph and Mule Detection"]
-    D & E & F & G --> H["4-Layer Score Composition"]
-    H --> I["Risk Tier Assignment: P0, P1, P2, P3"]
+    D --> H["4-Layer Score Composition"]
+    E --> H
+    F --> H
+    G --> H
+    H --> I["Risk Tier: P0, P1, P2, P3"]
     I --> J["Reason Codes Generated"]
-    J --> K[("PostgreSQL Case Record")]
+    J --> K["PostgreSQL Case Record"]
     K --> L["Analyst Review Queue"]
 ```
 
@@ -283,35 +286,38 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A(["Flagged Transaction"]) --> B["Priority Queue: P0 to P3"]
+    A["Flagged Transaction"] --> B["Priority Queue: P0 to P3"]
     B --> C["Case Dossier"]
     C --> D["Base Signals: ML and Rules"]
     C --> E["Behavioural Indicators"]
     C --> F["Graph and Mule Signals"]
     C --> G["Model Attribution: TreeSHAP"]
-    D & E & F & G --> H["Analyst Reviews Evidence"]
-    H --> I{"Request Agentic Investigation Brief?"}
-    I -->|Yes| J["Investigation Brief Generated and Persisted"]
+    D --> H["Analyst Reviews Evidence"]
+    E --> H
+    F --> H
+    G --> H
+    H --> I{"Request Brief?"}
+    I -->|Yes| J["Investigation Brief Generated"]
     I -->|No| K["Analyst Verdict: Confirm or Override"]
     J --> K
     K --> L["Workflow Dispatch"]
-    L --> M[("Audit Trail")]
+    L --> M["Audit Trail"]
 ```
 
 ### 3. AI Investigation Brief
 
 ```mermaid
 flowchart TD
-    A(["Case Evidence"]) --> B["Evidence Grouping: Base, Behavioural, Graph"]
+    A["Case Evidence"] --> B["Evidence Grouping: Base, Behavioural, Graph"]
     B --> C["Playbook Retrieval"]
     C --> D["Prompt Assembly"]
-    D --> E["Investigation Brief: Evidence-grounded"]
-    E --> F{"Schema Validation"}
-    F -->|Valid| G["COMPLETE Brief Persisted to PostgreSQL"]
-    F -->|"Invalid or Failure"| H["Failure-state Brief Persisted to PostgreSQL"]
+    D --> E["Investigation Brief Generated"]
+    E --> F{"Schema Valid?"}
+    F -->|Valid| G["Complete Brief Persisted"]
+    F -->|Invalid| H["Failure-state Brief Persisted"]
     G --> I["Surfaced in Case Dossier"]
     H --> I
-    I --> J["Analyst Verdict Still Required"]
+    I --> J["Analyst Verdict Required"]
 ```
 
 *AI surfaces investigation context. Analyst keeps decision control. Every brief carries version-tracked investigation configuration.*
@@ -320,11 +326,11 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A(["CSV Upload"]) --> B["Schema Validation"]
+    A["CSV Upload"] --> B["Schema Validation"]
     B --> C["Async Scan Job: HTTP 202"]
     C --> D["Chunked Ingestion: Bounded Memory"]
     D --> E["4-Layer Scoring Per Chunk"]
-    E --> F[("PostgreSQL: Result Rows and Counters")]
+    E --> F["PostgreSQL Results"]
     F --> G["Risk Tier Filters: P1 and P3"]
     G --> H["Paginated Review"]
     H --> I["Streaming CSV Export"]
@@ -335,10 +341,10 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    A(["Analyst Verdict"]) --> B["Workflow Dispatch"]
+    A["Analyst Verdict"] --> B["Workflow Dispatch"]
     B --> C["Workflow Automation Callback"]
     C --> D["Audit Callback"]
-    D --> E[("PostgreSQL Audit Trail")]
+    D --> E["PostgreSQL Audit Trail"]
     E --> F["Workflow Events Dashboard"]
     F --> G["Reliability Metrics: Healthy, Degraded, Critical"]
 ```
