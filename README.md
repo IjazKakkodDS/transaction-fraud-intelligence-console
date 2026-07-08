@@ -84,17 +84,17 @@ services, single command startup.
 ## System at a Glance
 
 ```mermaid
-flowchart LR
-    A["Transaction or Portfolio CSV"] --> B["FastAPI Backend"]
-    B --> C["4-Layer Scoring Engine"]
-    C --> D["PostgreSQL"]
-    B --> E["Redpanda Event Bus"]
-    E --> F["Scoring Consumer"]
-    E --> G["Investigation Consumer"]
-    G --> H["AI Investigation Brief"]
-    B --> I["Workflow Automation"]
-    D --> J["Next.js Analyst Console"]
-    J --> K["Queue, Cases, Portfolio, Audit, Metrics"]
+graph TD
+A[Frontend Console]
+B[FastAPI Service]
+C[Scoring Logic]
+D[Postgres Database]
+E[Analyst Workflow]
+
+A --> B
+B --> C
+C --> D
+D --> E
 ```
 
 | Layer | Components |
@@ -265,59 +265,83 @@ These flows show how the console converts fraud signals into operational decisio
 ### 1. Transaction Intake and Scoring
 
 ```mermaid
-flowchart TD
-    A["Transaction Submitted"] --> B["API Validation"]
-    B --> C["Feature Extraction"]
-    C --> D["Model Risk Signal"]
-    C --> E["Deterministic Rules"]
-    C --> F["Behavioural Profiling"]
-    C --> G["Graph and Mule Detection"]
-    D --> H["4-Layer Score Composition"]
-    E --> H
-    F --> H
-    G --> H
-    H --> I["Risk Tier: P0, P1, P2, P3"]
-    I --> J["Reason Codes Generated"]
-    J --> K["PostgreSQL Case Record"]
-    K --> L["Analyst Review Queue"]
+graph TD
+A[Transaction Submitted]
+B[API Validation]
+C[Feature Extraction]
+D[Model Risk Signal]
+E[Rule Signals]
+F[Behavioural Signals]
+G[Graph Signals]
+H[Score Composition]
+I[Risk Tier Assigned]
+J[Reason Codes]
+K[Case Record]
+L[Review Queue]
+
+A --> B
+B --> C
+C --> D
+C --> E
+C --> F
+C --> G
+D --> H
+E --> H
+F --> H
+G --> H
+H --> I
+I --> J
+J --> K
+K --> L
 ```
 
 ### 2. Analyst Case Dossier and Verdict
 
 ```mermaid
-flowchart TD
-    A["Flagged Transaction"] --> B["Priority Queue: P0 to P3"]
-    B --> C["Case Dossier"]
-    C --> D["Base Signals: ML and Rules"]
-    C --> E["Behavioural Indicators"]
-    C --> F["Graph and Mule Signals"]
-    C --> G["Model Attribution: TreeSHAP"]
-    D --> H["Analyst Reviews Evidence"]
-    E --> H
-    F --> H
-    G --> H
-    H --> I{"Request Brief?"}
-    I -->|Yes| J["Investigation Brief Generated"]
-    I -->|No| K["Analyst Verdict: Confirm or Override"]
-    J --> K
-    K --> L["Workflow Dispatch"]
-    L --> M["Audit Trail"]
+graph TD
+A[Review Queue]
+B[Case Dossier]
+C[Transaction Evidence]
+D[Risk Signals]
+E[Behaviour Evidence]
+F[Graph Evidence]
+G[Analyst Review]
+H[Verdict Capture]
+I[Workflow Event]
+J[Audit Trail]
+
+A --> B
+B --> C
+B --> D
+B --> E
+B --> F
+C --> G
+D --> G
+E --> G
+F --> G
+G --> H
+H --> I
+I --> J
 ```
 
 ### 3. AI Investigation Brief
 
 ```mermaid
-flowchart TD
-    A["Case Evidence"] --> B["Evidence Grouping: Base, Behavioural, Graph"]
-    B --> C["Playbook Retrieval"]
-    C --> D["Prompt Assembly"]
-    D --> E["Investigation Brief Generated"]
-    E --> F{"Schema Valid?"}
-    F -->|Valid| G["Complete Brief Persisted"]
-    F -->|Invalid| H["Failure-state Brief Persisted"]
-    G --> I["Surfaced in Case Dossier"]
-    H --> I
-    I --> J["Analyst Verdict Required"]
+graph TD
+A[Case Context]
+B[Evidence Payload]
+C[Brief Service]
+D[Investigation Brief]
+E[Analyst Review]
+F[Human Verdict]
+G[Audit Trail]
+
+A --> B
+B --> C
+C --> D
+D --> E
+E --> F
+F --> G
 ```
 
 *AI surfaces investigation context. Analyst keeps decision control. Every brief carries version-tracked investigation configuration.*
@@ -325,28 +349,39 @@ flowchart TD
 ### 4. Portfolio Risk Scan
 
 ```mermaid
-flowchart TD
-    A["CSV Upload"] --> B["Schema Validation"]
-    B --> C["Async Scan Job: HTTP 202"]
-    C --> D["Chunked Ingestion: Bounded Memory"]
-    D --> E["4-Layer Scoring Per Chunk"]
-    E --> F["PostgreSQL Results"]
-    F --> G["Risk Tier Filters: P1 and P3"]
-    G --> H["Paginated Review"]
-    H --> I["Streaming CSV Export"]
-    H --> J["Promote to Case Dossier"]
+graph TD
+A[CSV Upload]
+B[Schema Validation]
+C[Batch Scoring]
+D[Risk Tiering]
+E[Benchmark Summary]
+F[Promoted Cases]
+G[Review Queue]
+
+A --> B
+B --> C
+C --> D
+D --> E
+D --> F
+F --> G
 ```
 
 ### 5. Workflow Automation and Audit
 
 ```mermaid
-flowchart LR
-    A["Analyst Verdict"] --> B["Workflow Dispatch"]
-    B --> C["Workflow Automation Callback"]
-    C --> D["Audit Callback"]
-    D --> E["PostgreSQL Audit Trail"]
-    E --> F["Workflow Events Dashboard"]
-    F --> G["Reliability Metrics: Healthy, Degraded, Critical"]
+graph TD
+A[Prediction Event]
+B[Investigation Event]
+C[Verdict Event]
+D[Workflow Events Table]
+E[Reliability Metrics]
+F[Reviewer Traceability]
+
+A --> D
+B --> D
+C --> D
+D --> E
+D --> F
 ```
 
 ---
