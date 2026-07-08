@@ -90,7 +90,6 @@ B[FastAPI Service]
 C[Scoring Logic]
 D[Postgres Database]
 E[Analyst Workflow]
-
 A --> B
 B --> C
 C --> D
@@ -278,7 +277,6 @@ I[Risk Tier Assigned]
 J[Reason Codes]
 K[Case Record]
 L[Review Queue]
-
 A --> B
 B --> C
 C --> D
@@ -309,7 +307,6 @@ G[Analyst Review]
 H[Verdict Capture]
 I[Workflow Event]
 J[Audit Trail]
-
 A --> B
 B --> C
 B --> D
@@ -335,7 +332,6 @@ D[Investigation Brief]
 E[Analyst Review]
 F[Human Verdict]
 G[Audit Trail]
-
 A --> B
 B --> C
 C --> D
@@ -357,7 +353,6 @@ D[Risk Tiering]
 E[Benchmark Summary]
 F[Promoted Cases]
 G[Review Queue]
-
 A --> B
 B --> C
 C --> D
@@ -376,7 +371,6 @@ C[Verdict Event]
 D[Workflow Events Table]
 E[Reliability Metrics]
 F[Reviewer Traceability]
-
 A --> D
 B --> D
 C --> D
