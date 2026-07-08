@@ -27,7 +27,7 @@ behavior throughout.
 
 ---
 
-## Phase 12H-1 Benchmark Evidence Pack
+## Benchmark Evidence Pack
 
 ### Benchmark Scope
 
@@ -46,9 +46,9 @@ review, access controls, monitoring, data governance, and operational approval.
 
 ### Consolidated Evidence Table
 
-| Phase / Evidence Item | Dataset size | Input type | Processing mode | Result | Key metrics | Source / reference doc |
+| Evidence Item | Dataset size | Input type | Processing mode | Result | Key metrics | Source / reference doc |
 |---|---:|---|---|---|---|---|
-| Legacy 10k regression reference | 10,000 rows | Legacy synthetic CSV | Portfolio risk scan regression | Passed | P0 1,546 / P1 913 / P2 0 / P3 7,541; exact match to Phase 12D-5 reference; no rich boost applied | `docs/RICH_SYNTHETIC_BANKING_SCHEMA.md` |
+| Legacy 10k regression reference | 10,000 rows | Legacy synthetic CSV | Portfolio risk scan regression | Passed | P0 1,546 / P1 913 / P2 0 / P3 7,541; no rich boost applied | `docs/RICH_SYNTHETIC_BANKING_SCHEMA.md` |
 | Early scale ramp | 50k rows | Legacy synthetic CSV | Async portfolio scan | Verified | Detailed numeric metrics are not preserved in current docs | Implementation progress reflected in public README and benchmark documentation |
 | Early scale ramp | 100k rows | Legacy synthetic CSV | Async portfolio scan | Verified | Detailed numeric metrics are not preserved in current docs | Implementation progress reflected in public README and benchmark documentation |
 | Intermediate scale ramp | 250k rows | Legacy synthetic CSV | Async portfolio scan | Verified | Detailed numeric metrics are not preserved in current docs | Implementation progress reflected in public README and benchmark documentation |
@@ -62,7 +62,7 @@ review, access controls, monitoring, data governance, and operational approval.
 | 10M streaming export | 10,000,000 rows | Persisted scan results | Server-side cursor CSV export | Passed | HTTP 200; TTFB 0.006987s; duration 113.63s; 10,000,001 lines; 1,638.95 MiB; API RestartCount 0; OOMKilled false | 10M export verification below |
 | DB/index/resource evidence | Accumulated benchmark DB | Persisted scan history | Local Postgres evidence | Documented | `portfolio_scan_results` rows after run 22,752,000; total size 19 GB; index size 13 GB; database size 19 GB | Memory, database, and disk section below |
 | Rich 10k scenario scan | 10,000 rows | Rich synthetic banking CSV | Rich scenario Portfolio Risk Scan | Passed | Scan `62c601b2-ddf7-487b-ad32-976a71b3bf58`; 10,000 / 0 / 0 valid / invalid / skipped; processing ~6s; P0 2,080 / P1 375 / P2 533 / P3 7,012; export 10,001 lines / ~2.0 MB; drawer scenario and chip rendering verified | `docs/RICH_SYNTHETIC_BANKING_SCHEMA.md` |
-| Artifact hygiene | Generated CSVs, exports, media, helpers, env/cache files | Local artifacts | Git ignore policy | Passed | Generated benchmark CSVs, export CSVs, generated media, scratch scripts, evidence folders, environment files, caches, and build outputs remain untracked/ignored; rich banking generator and verifier remain tracked | `.gitignore`, `fraud-console/.gitignore`, Phase 12G-6 status |
+| Artifact hygiene | Generated CSVs, exports, media, helpers, env/cache files | Local artifacts | Git ignore policy | Passed | Generated benchmark CSVs, export CSVs, generated media, scratch scripts, evidence folders, environment files, caches, and build outputs remain untracked/ignored; rich banking generator and verifier remain tracked | `.gitignore`, `fraud-console/.gitignore` |
 
 ### Interpretation for Reviewers
 

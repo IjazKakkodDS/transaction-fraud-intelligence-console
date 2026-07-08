@@ -1,20 +1,17 @@
 # Deployment Strategy
 
 **Project:** Real-Time Transaction Fraud Intelligence Console
-**Phase:** Phase 20DPLY-B3
-**Status:** Strategy and planning document. No deployment has been performed. This document defines the current release posture and the recommended path forward.
+**Status:** Profile B hosted inspection environment deployed (Vercel, Render, Neon Postgres). Full-stack local Docker Compose package also available. This document describes deployment posture and the path for further expansion.
 
 ---
 
 ## 1. Deployment Recommendation
 
-**Current recommendation: Local-first flagship inspection package.**
+**Current status: Profile B hosted inspection environment plus full-stack local package.**
 
-The console is presented as a reproducible Docker Compose inspection package, not as a live hosted service. This is the correct strategy for the current phase.
+The console runs in two complementary forms. The hosted inspection environment (Vercel, Render, Neon Postgres) provides live scoring, analyst triage, case review, and small portfolio scans without local setup. The full-stack Docker Compose package provides the complete seven-service runtime including Kafka-backed async scoring, local LLM investigation brief generation, and workflow automation.
 
-The system's value as a portfolio artifact is architectural, not operational. Reviewers need to be able to inspect the scoring architecture, the case dossier design, the AI investigation layer, the portfolio scan performance, and the workflow audit trail. A Docker Compose package enables that inspection completely and without cloud cost, cloud risk, or authentication overhead.
-
-Full cloud deployment is deferred until authentication, secret management, monitoring, managed infrastructure, and cost planning are complete. This is not a limitation of the system design; it is the correct sequencing.
+Kafka, Ollama, and n8n are intentionally excluded from the hosted free-tier profile. The `/health/detailed` endpoint reports these services as unavailable in the hosted profile; this is expected boundary behaviour, not a blocker. Full-stack local deployment remains the verification path for all benchmark results documented in this repository.
 
 ---
 
@@ -22,16 +19,15 @@ Full cloud deployment is deferred until authentication, secret management, monit
 
 | Dimension | Current state |
 |---|---|
-| Deployment status | Not deployed. Local development environment only. |
-| Runtime | Docker Compose on a single developer machine |
-| Authentication | None (localhost CORS boundary) |
-| TLS | None (HTTP, localhost only) |
-| Public URL | None |
+| Hosted profile | Profile B: Vercel (frontend), Render (FastAPI), Neon Postgres; synchronous scoring only |
+| Local full-stack | Docker Compose 7 services; Kafka async scoring, Ollama LLM, n8n automation |
+| Authentication | None (synchronous scoring; no auth in hosted profile or local dev) |
+| TLS | HTTPS on hosted profile (Vercel/Render managed); HTTP on local |
+| Hosted inspection URL | https://transaction-fraud-intelligence-cons.vercel.app |
 | Data | Synthetic data only. No real transaction records, no real cardholder data, no PII. |
-| Repo size | 7.1 MB object store (video history removed in Phase 20DPLY-A) |
+| Repo size | 7.1 MB object store |
 | Release readiness | 37/37 automated checks PASS |
 | E2E coverage | 11/11 Playwright checks PASS |
-| Video artifact | v9-subtitled (56.6 MB, local only, untracked); external hosting placeholder in docs/VIDEO_ARTIFACTS.md |
 | Screenshot evidence | 12 Playwright-captured PNGs in docs/screenshots/ |
 
 ---
@@ -49,7 +45,7 @@ A reviewer can run `python scripts/verify_release_readiness.py` (37/37 PASS), ru
 **The deployment prerequisites are not yet complete.**
 
 The following are not implemented and must be in place before any shared or internet-facing deployment:
-- Authentication and RBAC (design in docs/AUTH_RBAC_DESIGN.md; implementation deferred to Phase 21)
+- Authentication and RBAC (design in docs/AUTH_RBAC_DESIGN.md; implementation deferred for institution-specific deployment)
 - TLS and HTTPS
 - Production secret management (not flat `.env` files)
 - Rate limiting and API gateway controls
@@ -123,7 +119,7 @@ Redpanda Console browser UI: http://localhost:8080
 
 ## 6. Public Inspection Package
 
-The repository, as it stands after Phase 20DPLY-B and Phase 20DPLY-B2, constitutes a complete inspection package:
+The repository constitutes a complete inspection package:
 
 | Asset | Status | Location |
 |---|---|---|
@@ -149,7 +145,7 @@ The repository, as it stands after Phase 20DPLY-B and Phase 20DPLY-B2, constitut
 
 ## 7. External Video Artifact Strategy
 
-The narrated product walkthrough is not tracked in the repository (git history cleaned in Phase 20DPLY-A; object store reduced from 977 MB to 7.1 MB). The final artifact (`v9-subtitled`) is held as a local artifact.
+The narrated product walkthrough is not tracked in the repository (git history cleaned; object store reduced from 977 MB to 7.1 MB). The final artifact (`v9-subtitled`) is held as a local artifact.
 
 **Recommended external hosting:**
 
@@ -177,7 +173,7 @@ The video URL is the primary public demonstrability asset until a cloud-hosted l
 - External video hosting on LinkedIn or YouTube
 - All documentation, screenshots, and source code
 
-**Likely paid later (Phase 21 cloud deployment):**
+**Likely paid later (full cloud deployment):**
 
 | Component | Why paid | Notes |
 |---|---|---|
@@ -199,10 +195,9 @@ The video URL is the primary public demonstrability asset until a cloud-hosted l
 
 | Option | Cost | What runs | Pros | Risks | Verdict |
 |---|---|---|---|---|---|
-| Local-first flagship package | Zero | Full Docker Compose stack on developer machine | Complete system inspection; full benchmark verifiable; no auth risk; no cloud cost | Not accessible without developer presence or local clone | **Recommended for current phase** |
-| Static portfolio showcase | Zero or near-zero | Next.js static export; screenshots; docs | Shareable URL; zero hosting cost; fast page load | No live API; no live scoring demonstration | Suitable as a complement after video is uploaded |
-| Hybrid lightweight cloud demo | Requires provider-specific verification | Frontend hosted; API on managed platform; managed database | Accessible without local setup; demonstrates live API calls | Requires auth, TLS, managed DB and Redis; cost varies by provider | Appropriate after Phase 21 auth and hardening are complete |
-| Full-stack cloud deployment | Requires provider-specific verification | All 7 services on managed cloud infrastructure plus hosted LLM | Maximum demonstrability; fully accessible | Highest cost; requires all deferred controls to be complete; Ollama on GPU adds cost | Deferred to Phase 21+ |
+| Local-first flagship package | Zero | Full Docker Compose stack on developer machine | Complete system inspection; full benchmark verifiable; no auth risk; no cloud cost | Not accessible without developer presence or local clone | Recommended for deep inspection and benchmark verification |
+| Hosted inspection profile (Profile B) | Free tier | Vercel, Render, Neon Postgres; synchronous scoring only | Live scoring, triage, and case review without local setup | Kafka, Ollama, and n8n excluded from hosted profile | Deployed and available at hosted URL above |
+| Full-stack cloud deployment | Requires provider-specific verification | All 7 services on managed cloud infrastructure plus hosted LLM | Maximum demonstrability; fully accessible | Highest cost; requires auth, TLS, and all deferred controls to be complete; Ollama on GPU adds cost | Deferred; requires auth, secrets management, and infrastructure hardening |
 | Enterprise deployment blueprint | Documentation only | No live deployment; architecture design and migration plan | Demonstrates deployment-readiness thinking | Cannot be inspected live; requires trust in documentation | Captured in this document as the future architecture target |
 
 ---
@@ -266,7 +261,7 @@ The following checklist covers the controls required before the system transitio
 
 ## 11. Recommended Future Deployment Architecture
 
-The following architecture is the recommended target for Phase 21 cloud deployment. It preserves the service boundaries of the current Docker Compose design and maps each service to a cloud-native equivalent.
+The following architecture is the recommended target for full cloud deployment. It preserves the service boundaries of the current Docker Compose design and maps each service to a cloud-native equivalent.
 
 | Current component | Cloud equivalent |
 |---|---|
@@ -340,5 +335,3 @@ The following phrasings are approved for public-facing descriptions of the syste
 The local runtime is a complete and verifiable inspection package. The architecture, scoring logic, audit trail, and AI investigation layer are all inspectable in source code and confirmed by automated validation. The boundary between the current local package and a cloud deployment is documented, not hidden.
 
 ---
-
-*Document created: Phase 20DPLY-B3 (2026-06-19).*

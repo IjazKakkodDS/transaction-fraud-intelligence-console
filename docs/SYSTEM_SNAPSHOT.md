@@ -86,28 +86,51 @@ Intra-service communication uses the Docker Compose internal network (`redpanda:
 
 ```mermaid
 graph TD
-    T[Transaction Event] --> API[FastAPI: POST /predict]
-    API --> FE[Feature Extraction]
-    FE --> SC[4-Layer Hybrid Scoring]
-    SC --> DEC[Decision Router: BLOCK / REVIEW / APPROVE]
-    DEC --> PG[(PostgreSQL: predictions)]
-    API --> RP[Redpanda: transactions.raw]
-    RP --> SCO[Scoring Consumer]
-    SCO --> SC
-    DEC --> RQ[Review Queue]
-    RQ --> CD[Case Dossier]
-    CD --> AI[Investigation Brief Request]
-    AI --> RP2[Redpanda: cases.investigate]
-    RP2 --> IC[Investigation Consumer]
-    IC --> OL[Ollama: local LLM]
-    OL --> IR[(PostgreSQL: investigation_reports)]
-    CD --> WE[Workflow Event Dispatch]
-    WE --> N8N[n8n Automation]
-    WE --> AT[(PostgreSQL: workflow_events)]
-    CSV[Portfolio CSV] --> RSC[Portfolio Risk Scan: POST /risk-scan]
-    RSC --> PG2[(PostgreSQL: scan_results)]
-    PG2 --> EXP[Streaming CSV Export]
-    REL[Reliability Metrics] --> RM[GET /workflow/metrics]
+T[Transaction Event]
+API[FastAPI Predict]
+FE[Feature Extraction]
+SC[4 Layer Hybrid Scoring]
+DEC[Decision Router]
+PG[Postgres Predictions]
+RP[Redpanda Transactions]
+SCO[Scoring Consumer]
+RQ[Review Queue]
+CD[Case Dossier]
+AI[Investigation Brief]
+RP2[Redpanda Cases]
+IC[Investigation Consumer]
+OL[Ollama Local LLM]
+IR[Postgres Investigation Reports]
+WE[Workflow Event Dispatch]
+N8N[n8n Automation]
+AT[Postgres Workflow Events]
+CSV[Portfolio CSV]
+RSC[Portfolio Risk Scan]
+PG2[Postgres Scan Results]
+EXP[Streaming CSV Export]
+RM[Reliability Metrics]
+T --> API
+API --> FE
+FE --> SC
+SC --> DEC
+DEC --> PG
+API --> RP
+RP --> SCO
+SCO --> SC
+DEC --> RQ
+RQ --> CD
+CD --> AI
+AI --> RP2
+RP2 --> IC
+IC --> OL
+OL --> IR
+CD --> WE
+WE --> N8N
+WE --> AT
+CSV --> RSC
+RSC --> PG2
+PG2 --> EXP
+DEC --> RM
 ```
 
 ---
@@ -322,7 +345,7 @@ The reliability view is populated in both healthy and degraded states. This is a
 | Export time to first byte | ~6.987ms |
 | API RestartCount after export | 0 |
 | OOMKilled | false |
-| Deep pagination (page 1,000) | ~0.379ms |
+| Deep pagination (page 1,000) | ~0.379s |
 
 **Indexed pagination:** Composite ordered indexes on (scan_id, risk_score DESC, row_number ASC).
 
@@ -413,5 +436,3 @@ The governance path for each deferred control is documented. These reflect the a
 | Auth and RBAC architecture | docs/AUTH_RBAC_DESIGN.md |
 
 ---
-
-*Document created: Phase 20DPLY-B2 (2026-06-19).*

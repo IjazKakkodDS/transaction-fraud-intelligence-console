@@ -216,8 +216,7 @@ across the full intelligence stack.
 
 Detection evidence matrices confirm the 4-layer scoring engine identifies adversarial
 patterns that evade the base hybrid model alone. Corrected cluster ID isolation ensures
-adversarial patterns do not contaminate training-distribution validation. Architecture:
-[docs/ADVERSARIAL_FRAUD_DESIGN.md](docs/ADVERSARIAL_FRAUD_DESIGN.md).
+adversarial patterns do not contaminate training-distribution validation.
 
 ---
 
@@ -446,7 +445,6 @@ against the case record and triggers the workflow dispatch path.
 **Case-scoped audit trail:** workflow events filtered by case_id refresh immediately
 after n8n callback.
 
-Architecture: [docs/CASE_DOSSIER_2_DESIGN.md](docs/CASE_DOSSIER_2_DESIGN.md).
 
 ### Scan result promotion
 
@@ -508,7 +506,6 @@ Every investigation record in the database is tagged with `AGENT_VERSION`, creat
 immutable traceability chain between the analyst brief and the specific agent
 configuration that produced it.
 
-Architecture: [docs/AI_INVESTIGATION_BRIEF_DESIGN.md](docs/AI_INVESTIGATION_BRIEF_DESIGN.md).
 
 ### Workflow automation and audit
 

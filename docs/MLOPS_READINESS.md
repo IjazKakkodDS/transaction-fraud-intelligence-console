@@ -93,7 +93,6 @@ monitoring) is explicitly deferred and documented as a future roadmap — not a 
 - Security and access-control hardening — documented as a recommended production expansion path
 - `docs/CONSUMER_DURABILITY.md` — consumer offset management and idempotency design
 - `docs/AUTH_RBAC_DESIGN.md` — RBAC architecture and implementation prerequisites
-- `docs/AI_INVESTIGATION_BRIEF_DESIGN.md` — AI pipeline architecture and evidence contract
 
 ---
 

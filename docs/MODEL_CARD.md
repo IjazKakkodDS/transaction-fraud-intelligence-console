@@ -110,8 +110,8 @@ risk_score = clip(
 |---|---|---|
 | `base_score` | This model (`XGBClassifier`) × `MODEL_WEIGHT` + rule flag × `RULE_WEIGHT` | Hybrid model + deterministic rule combination |
 | `rich_boost` | Enriched signal features (device trust, velocity, geolocation anomaly) | Applied when enriched context is present |
-| `behavioural_boost` | Behavioural intelligence layer (Phase 13) | Account-level deviation signals |
-| `graph_boost` | Graph intelligence layer (Phase 15) | Mule fan-in/fan-out, shared-device cluster signals |
+| `behavioural_boost` | Behavioural intelligence layer | Account-level deviation signals |
+| `graph_boost` | Graph intelligence layer | Mule fan-in/fan-out, shared-device cluster signals |
 
 Analyst-visible reason codes produced alongside the score preserve interpretability at each layer. Analyst verdict is required before any operational enforcement action.
 
@@ -181,6 +181,6 @@ the decision, or any database record. It is a diagnostic surface, not a scoring 
 | MD5 checksum documented | Yes — `887033d57056c6a22480c0b9cea202ca` |
 | Rebuild deterministic | Yes — fixed seeds throughout generator and trainer |
 | Analyst enforcement required | Yes — no autonomous decision enforcement |
-| Model card version | Phase 20E |
+| Model card version | v1.0 |
 
 Release readiness is validated by `scripts/verify_release_readiness.py`, which checks artifact presence, checksums, feature schema, and documentation completeness.
