@@ -690,6 +690,14 @@ labelled-outcome calibration, access controls, and production hardening.
 
 ---
 
+## License
+
+This project is source-available for product inspection and technical evaluation only. All rights are reserved. No permission is granted to copy, modify, redistribute, host, deploy, sublicense, incorporate, or use the code without prior written permission from the author.
+
+See [LICENSE](LICENSE).
+
+---
+
 ## Author
 
 **Ijaz Kakkod**
