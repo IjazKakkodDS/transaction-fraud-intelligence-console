@@ -31,6 +31,21 @@ accountability record.
 
 ---
 
+## Reviewer Fast Path
+
+| Resource | Access |
+|---|---|
+| Live inspection console | https://transaction-fraud-intelligence-cons.vercel.app |
+| Swagger API | https://fraud-console-api.onrender.com/docs |
+| 10M benchmark evidence | [docs/RISK_SCAN_BENCHMARKS.md](docs/RISK_SCAN_BENCHMARKS.md) |
+| Model card | [docs/MODEL_CARD.md](docs/MODEL_CARD.md) |
+| System snapshot | [docs/SYSTEM_SNAPSHOT.md](docs/SYSTEM_SNAPSHOT.md) |
+| Full case study | [docs/PORTFOLIO_CASE_STUDY.md](docs/PORTFOLIO_CASE_STUDY.md) |
+| MLOps readiness | [docs/MLOPS_READINESS.md](docs/MLOPS_READINESS.md) |
+| Screenshot gallery | [Jump to screenshots](#screenshot-gallery) |
+
+---
+
 ## The Fraud Operations Gap
 
 | Fraud operations challenge | Why score-only detection falls short | Console response | Business value |
@@ -85,15 +100,37 @@ services, single command startup.
 
 ```mermaid
 graph TD
-A[Frontend Console]
-B[FastAPI Service]
-C[Scoring Logic]
-D[Postgres Database]
-E[Analyst Workflow]
+A[Analyst Console]
+B[FastAPI API]
+C[Scoring Engine]
+D[Model Risk]
+E[Rule Controls]
+F[Behaviour Signals]
+G[Graph Signals]
+H[Postgres Case Store]
+I[Review Queue]
+J[Case Dossier]
+K[Investigation Brief]
+L[Verdict Capture]
+M[Workflow Audit]
+N[Portfolio Scan]
 A --> B
 B --> C
+B --> N
 C --> D
-D --> E
+C --> E
+C --> F
+C --> G
+D --> H
+E --> H
+F --> H
+G --> H
+N --> H
+H --> I
+I --> J
+J --> K
+J --> L
+L --> M
 ```
 
 | Layer | Components |
@@ -268,15 +305,16 @@ graph TD
 A[Transaction Submitted]
 B[API Validation]
 C[Feature Extraction]
-D[Model Risk Signal]
-E[Rule Signals]
-F[Behavioural Signals]
-G[Graph Signals]
+D[Model Risk]
+E[Rule Controls]
+F[Behavioural Profile]
+G[Graph Intelligence]
 H[Score Composition]
-I[Risk Tier Assigned]
+I[Risk Tier]
 J[Reason Codes]
 K[Case Record]
 L[Review Queue]
+M[Audit Event]
 A --> B
 B --> C
 C --> D
@@ -291,6 +329,7 @@ H --> I
 I --> J
 J --> K
 K --> L
+K --> M
 ```
 
 ### 2. Analyst Case Dossier and Verdict
@@ -299,48 +338,59 @@ K --> L
 graph TD
 A[Review Queue]
 B[Case Dossier]
-C[Transaction Evidence]
-D[Risk Signals]
-E[Behaviour Evidence]
+C[Base Signals]
+D[Enriched Signals]
+E[Behavioural Evidence]
 F[Graph Evidence]
-G[Analyst Review]
-H[Verdict Capture]
-I[Workflow Event]
-J[Audit Trail]
+G[TreeSHAP Attribution]
+H[Investigation Brief]
+I[Analyst Review]
+J[Verdict Capture]
+K[Workflow Event]
+L[Audit Trail]
 A --> B
 B --> C
 B --> D
 B --> E
 B --> F
-C --> G
-D --> G
-E --> G
-F --> G
-G --> H
+B --> G
+B --> H
+C --> I
+D --> I
+E --> I
+F --> I
+G --> I
 H --> I
 I --> J
+J --> K
+K --> L
 ```
 
-### 3. AI Investigation Brief
+### 3. Advisory Investigation Brief
 
 ```mermaid
 graph TD
 A[Case Context]
 B[Evidence Payload]
-C[Brief Service]
-D[Investigation Brief]
-E[Analyst Review]
-F[Human Verdict]
-G[Audit Trail]
+C[Local LLM Profile]
+D[Advisory Brief]
+E[Schema Validation]
+F[Persisted Brief]
+G[Failure Bounded Record]
+H[Analyst Review]
+I[Human Verdict]
 A --> B
 B --> C
 C --> D
 D --> E
 E --> F
-F --> G
+E --> G
+F --> H
+G --> H
+H --> I
 ```
 
-*AI surfaces investigation context. Analyst keeps decision control. Every brief carries version-tracked investigation configuration.*
+*Advisory brief surfaces structured investigation context. Analyst keeps decision control. Every brief is version-tracked and failure-bounded.*
 
 ### 4. Portfolio Risk Scan
 
@@ -348,34 +398,42 @@ F --> G
 graph TD
 A[CSV Upload]
 B[Schema Validation]
-C[Batch Scoring]
-D[Risk Tiering]
-E[Benchmark Summary]
-F[Promoted Cases]
-G[Review Queue]
+C[Async Scan Job]
+D[Chunk Scoring]
+E[Tier Counters]
+F[Indexed Results]
+G[Pagination]
+H[Streaming Export]
+I[Promote to Case]
+J[Review Queue]
 A --> B
 B --> C
 C --> D
 D --> E
 D --> F
 F --> G
+F --> H
+F --> I
+I --> J
 ```
 
 ### 5. Workflow Automation and Audit
 
 ```mermaid
 graph TD
-A[Prediction Event]
-B[Investigation Event]
-C[Verdict Event]
-D[Workflow Events Table]
-E[Reliability Metrics]
-F[Reviewer Traceability]
-A --> D
-B --> D
+A[Analyst Verdict]
+B[Workflow Dispatch]
+C[n8n Local Workflow]
+D[Callback Event]
+E[Workflow Events Table]
+F[Reliability Metrics]
+G[Missing Callback Visible]
+A --> B
+B --> C
 C --> D
 D --> E
-D --> F
+E --> F
+F --> G
 ```
 
 ---
@@ -454,20 +512,9 @@ before the next scale step was attempted.
 
 ---
 
-## Business Impact for Fraud Risk Teams
+## Institution Deployment Expansion Path
 
-- **Portfolio-wide triage:** risk teams can score and prioritise complete transaction portfolios rather than relying on samples.
-- **Analyst efficiency:** priority tiers concentrate immediate review on the highest-risk segment while routing low-risk transactions to pass-through, sampling, or lower-frequency review.
-- **Investigation quality:** case dossiers convert model outputs into evidence-led investigation records with analyst verdicts and advisory investigation context.
-- **Governance and accountability:** workflow events, AI brief traceability, and verdict capture make fraud operations reviewable after the decision.
-
-Results are based on controlled synthetic portfolio benchmarks. Institution-specific deployment would calibrate thresholds, labels, and review policies against historical fraud outcomes.
-
----
-
-## Recommendations for Stronger Fraud Detection
-
-Institution-specific deployment would expand fraud detection capabilities across these areas:
+Institution-specific deployment would expand fraud detection and governance capabilities across these areas:
 
 | Recommendation | Fraud problem addressed | How the console supports it | Business value | Priority |
 |---|---|---|---|---|
