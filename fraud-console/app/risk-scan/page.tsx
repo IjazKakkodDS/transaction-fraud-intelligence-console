@@ -42,7 +42,7 @@ const VSTATUS_COLOR: Record<string, string> = {
 // ─── Formatting helpers ──────────────────────────────────────────────────────
 
 function fmtCurrency(n: number | null): string {
-  if (n === null) return "—";
+  if (n === null) return "N/A";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -52,12 +52,12 @@ function fmtCurrency(n: number | null): string {
 }
 
 function fmtScore(n: number | null): string {
-  if (n === null) return "—";
+  if (n === null) return "N/A";
   return n.toFixed(3);
 }
 
 function fmtCompactCurrency(n: number | null): string {
-  if (n === null) return "—";
+  if (n === null) return "N/A";
   if (Math.abs(n) >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
   if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
   if (Math.abs(n) >= 1e3) return `$${Math.round(n / 1e3)}K`;
@@ -65,13 +65,13 @@ function fmtCompactCurrency(n: number | null): string {
 }
 
 function fmtTs(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "N/A";
   return new Date(iso).toLocaleString();
 }
 
 /** Short relative timestamp for list views: "2h ago", "Jun 1, 3:22 PM", etc. */
 function fmtShortTs(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "N/A";
   const d   = new Date(iso);
   const now = new Date();
   const ms  = now.getTime() - d.getTime();
@@ -100,9 +100,9 @@ function fmtRuntime(
   startIso: string | null | undefined,
   endIso: string | null | undefined,
 ): string {
-  if (!startIso || !endIso) return "—";
+  if (!startIso || !endIso) return "N/A";
   const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
-  if (ms < 0) return "—";
+  if (ms < 0) return "N/A";
   const totalSec = Math.floor(ms / 1000);
   const h = Math.floor(totalSec / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
@@ -473,12 +473,12 @@ function RiskPatterns({ summary }: { summary: RiskScanSummary }) {
 // ─── Reasons cell ────────────────────────────────────────────────────────────
 
 function ReasonsCell({ reasons }: { reasons: string | null }) {
-  if (!reasons) return <span style={{ color: "#374151" }}>—</span>;
+  if (!reasons) return <span style={{ color: "#374151" }}>N/A</span>;
   const parts = reasons
     .split("|")
     .map((s) => s.trim())
     .filter(Boolean);
-  if (parts.length === 0) return <span style={{ color: "#374151" }}>—</span>;
+  if (parts.length === 0) return <span style={{ color: "#374151" }}>N/A</span>;
   const extra = parts.length - 1;
   return (
     <span
@@ -599,7 +599,7 @@ function ResultsTable({
                         {row.operational_priority}
                       </span>
                     ) : (
-                      <span style={{ color: "#374151" }}>—</span>
+                      <span style={{ color: "#374151" }}>N/A</span>
                     )}
                   </td>
 
@@ -621,7 +621,7 @@ function ResultsTable({
                       style={{ color: "#C9D1D9" }}
                       title={row.transaction_id ?? ""}
                     >
-                      {row.transaction_id ?? "—"}
+                      {row.transaction_id ?? "N/A"}
                     </span>
                   </td>
 
@@ -639,13 +639,13 @@ function ResultsTable({
 
                   {/* Country */}
                   <td style={{ padding: "8px 12px", color: "#8B949E" }}>
-                    {row.country ?? "—"}
+                    {row.country ?? "N/A"}
                   </td>
 
                   {/* Payment Method */}
                   <td style={{ padding: "8px 12px", color: "#8B949E", maxWidth: "120px" }}>
                     <span className="block truncate" title={row.payment_method ?? ""}>
-                      {row.payment_method ?? "—"}
+                      {row.payment_method ?? "N/A"}
                     </span>
                   </td>
 
@@ -666,7 +666,7 @@ function ResultsTable({
                         {fmtScore(row.risk_score)}
                       </span>
                     ) : (
-                      <span style={{ color: "#374151" }}>—</span>
+                      <span style={{ color: "#374151" }}>N/A</span>
                     )}
                   </td>
 
@@ -680,7 +680,7 @@ function ResultsTable({
                         {row.decision}
                       </span>
                     ) : (
-                      <span style={{ color: "#374151" }}>—</span>
+                      <span style={{ color: "#374151" }}>N/A</span>
                     )}
                   </td>
 
@@ -739,7 +739,7 @@ function ResultsTable({
                         {isPromoting ? "…" : "Promote"}
                       </button>
                     ) : (
-                      <span style={{ color: "#374151" }}>—</span>
+                      <span style={{ color: "#374151" }}>N/A</span>
                     )}
                   </td>
                 </tr>
@@ -1011,7 +1011,7 @@ function ScanDetailHeader({
             {fmtTs(completedAt)}
           </span>
         )}
-        {runtime !== "—" && (
+        {runtime !== "N/A" && (
           <span className="text-[11px]" style={{ color: "#4B5563" }}>
             <span style={{ color: "#6B7280" }}>Runtime </span>
             {runtime}
@@ -1177,7 +1177,7 @@ function RecentScansPanel({
                     }}
                     title={scan.filename ?? scan.scan_id}
                   >
-                    {scan.filename ?? "—"}
+                    {scan.filename ?? "N/A"}
                   </span>
                   <span
                     className="font-mono text-[9px] font-bold uppercase"

@@ -156,7 +156,7 @@ function DeterministicContext({ report }: { report: InvestigationReport }) {
             className="font-mono text-[15px] font-semibold tabular-nums"
             style={{ color: cell.value ? "#CBD5E1" : "#4B5563" }}
           >
-            {cell.value ?? "—"}
+            {cell.value ?? "N/A"}
           </p>
           <p
             className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]"

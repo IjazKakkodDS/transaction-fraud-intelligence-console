@@ -15,7 +15,7 @@ function fmtCurrencyFull(n: number): string {
 }
 
 function fmtCompact(n: number | null): string {
-  if (n === null) return "—";
+  if (n === null) return "N/A";
   if (Math.abs(n) >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
   if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
   if (Math.abs(n) >= 1e3) return `$${Math.round(n / 1e3)}K`;
@@ -26,9 +26,9 @@ function fmtRuntime(
   startIso: string | null | undefined,
   endIso: string | null | undefined,
 ): string {
-  if (!startIso || !endIso) return "—";
+  if (!startIso || !endIso) return "N/A";
   const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
-  if (ms < 0) return "—";
+  if (ms < 0) return "N/A";
   const totalSec = Math.floor(ms / 1000);
   const h = Math.floor(totalSec / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
@@ -61,7 +61,7 @@ function buildMarkdown(
   recentMatch: RecentScan | null,
   generatedAt: string,
 ): string {
-  const filename = summary.filename ?? recentMatch?.filename ?? "—";
+  const filename = summary.filename ?? recentMatch?.filename ?? "N/A";
   const createdAt  = summary.created_at  ?? recentMatch?.created_at  ?? null;
   const completedAt = summary.completed_at ?? recentMatch?.completed_at ?? null;
   const startedAt  = statusData?.started_at ?? recentMatch?.started_at ?? null;
@@ -175,7 +175,7 @@ export function ScanReportModal({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const filename   = summary.filename ?? recentMatch?.filename ?? "—";
+  const filename   = summary.filename ?? recentMatch?.filename ?? "N/A";
   const createdAt  = summary.created_at  ?? recentMatch?.created_at  ?? null;
   const completedAt = summary.completed_at ?? recentMatch?.completed_at ?? null;
   const startedAt  = statusData?.started_at ?? recentMatch?.started_at ?? null;

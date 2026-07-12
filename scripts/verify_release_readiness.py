@@ -221,23 +221,35 @@ for doc_path, phrases in STALE_PHRASES.items():
         )
 
 # ---------------------------------------------------------------------------
-# 9. Prose em/en dash absent from audited frontend source strings
+# 9. Public-surface punctuation hygiene scanner
 # ---------------------------------------------------------------------------
-print("\n--- Punctuation hygiene ---")
+print("\n--- Public-surface punctuation hygiene ---")
 _EM = "—"
-_DASH_TARGETS = [
-    ("fraud-console/app/workflow/metrics/page.tsx", f"Healthy {_EM} Limited"),
-    ("fraud-console/lib/api/client.ts", f"{_EM} ${{response.statusText}}"),
-    ("fraud-console/lib/api/riskScan.ts", f"{_EM} ${{response.statusText}}"),
+_EN = "–"
+_PUBLIC_TEXT_FILES = [
+    "README.md",
+    "LICENSE",
+    "docs/PORTFOLIO_CASE_STUDY.md",
+    "docs/MODEL_CARD.md",
+    "docs/MLOPS_READINESS.md",
+    "docs/RISK_SCAN_BENCHMARKS.md",
+    "docs/AUTH_RBAC_DESIGN.md",
+    "docs/CONSUMER_DURABILITY.md",
+    "docs/SYSTEM_SNAPSHOT.md",
+    "docs/DEPLOYMENT_STRATEGY.md",
 ]
-_dash_hits = [
-    p for p, pat in _DASH_TARGETS
-    if os.path.isfile(p) and pat in open(p, encoding="utf-8", errors="replace").read()
-]
+_dash_hits = []
+for _p in _PUBLIC_TEXT_FILES:
+    if not os.path.isfile(_p):
+        continue
+    with open(_p, encoding="utf-8", errors="replace") as _f:
+        for _lineno, _line in enumerate(_f, 1):
+            if _EM in _line or _EN in _line or "\\u2014" in _line or "\\u2013" in _line or "&mdash;" in _line or "&ndash;" in _line:
+                _dash_hits.append(f"{_p}:{_lineno}")
 check(
-    "no prose em dash in audited frontend source strings",
+    "no em/en dash in public reviewer documentation",
     len(_dash_hits) == 0,
-    f"found in: {_dash_hits}" if _dash_hits else "",
+    f"found: {_dash_hits[:5]}" if _dash_hits else "",
 )
 
 # ---------------------------------------------------------------------------

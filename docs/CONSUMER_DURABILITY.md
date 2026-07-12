@@ -1,8 +1,8 @@
 # Consumer Durability Architecture
 
 **Project:** Real-Time Fraud Intelligence Console
-**Phase:** Phase 19B — Consumer Durability Architecture
-**Status:** Reference document — read only. No implementation changes in this phase.
+**Phase:** Phase 19B: Consumer Durability Architecture
+**Status:** Reference document; read only. No implementation changes in this phase.
 
 ---
 
@@ -16,8 +16,8 @@ need to be addressed before institution-grade deployment in a regulated or share
 environment.
 
 This document does not implement any changes. Dead-letter topics, retry counters, consumer refactors,
-Kafka topology changes, database migrations, and alerting infrastructure are all explicitly deferred
-— the appropriate controls are designed here for reference and for future implementation phases.
+Kafka topology changes, database migrations, and alerting infrastructure are all explicitly deferred.
+The appropriate controls are designed here for reference and for future implementation phases.
 
 ---
 
@@ -26,7 +26,7 @@ Kafka topology changes, database migrations, and alerting infrastructure are all
 | Consumer | Module | Topic (in) | Topic (out) | Consumer Group |
 |---|---|---|---|---|
 | Scoring consumer | `src/events/consumer_scoring.py` | `transactions.raw` | `transactions.scored`, `cases.created` | `scoring-service` |
-| Investigation consumer | `src/investigation/consumer.py` | `cases.investigate` | _(none — writes to Postgres only)_ | `investigation-service` |
+| Investigation consumer | `src/investigation/consumer.py` | `cases.investigate` | _(none; writes to Postgres only)_ | `investigation-service` |
 
 Both consumers run as independent Python processes under `docker compose` with `restart: on-failure`.
 Both use `enable_auto_commit=False` and commit offsets manually after each message is fully
@@ -58,7 +58,7 @@ skipped. An `ERROR`-level log entry is written, but no retry mechanism exists. T
 comment at this path explicitly notes: _"A production system would route this to a dead-letter
 topic."_
 
-This is an intentional design decision for the local development stack — the consumer stays running
+This is an intentional design decision for the local development stack: the consumer stays running
 and continues to the next message rather than stalling. For production, see Section 6.
 
 ### 3.2 Idempotency
@@ -66,8 +66,8 @@ and continues to the next message rather than stalling. For production, see Sect
 Migration `0002_add_event_id_to_predictions.py` adds a unique constraint on `predictions.event_id`.
 `log_prediction()` in `src/db/postgres_logger.py` returns the new row id on success, or `None` if
 the `event_id` already exists (uniqueness violation). When `_persist()` returns `None`, `_process()`
-returns immediately and all downstream side effects — publishing to `transactions.scored` and
-`cases.created` — are skipped.
+returns immediately and all downstream side effects (publishing to `transactions.scored` and
+`cases.created`) are skipped.
 
 This guarantees **at-most-once downstream publication per unique event_id**, regardless of how many
 times the broker redelivers the same message.
@@ -77,7 +77,7 @@ times the broker redelivers the same message.
 After the DB write, the scoring consumer publishes to `transactions.scored` and (for REVIEW/BLOCK
 decisions) to `cases.created`. Both publishes use `.get(timeout=5)` to wait for broker
 acknowledgment. Critically, `KafkaError` exceptions from both publish calls are caught and swallowed
-**inside `_process()`** — they do not propagate to the outer consume loop. If either publish fails:
+**inside `_process()`**; they do not propagate to the outer consume loop. If either publish fails:
 
 - The error is logged at `ERROR` level.
 - Execution continues to the next step.
@@ -130,23 +130,23 @@ Unexpected exception:   Exception caught → offset NOT committed
 The investigation consumer makes a deliberate architectural choice that the scoring consumer does
 not: **unexpected errors do not commit the offset**. The message is left available for redelivery
 so a transient failure can be retried on the next consumer restart. The source code comment at this
-path reads: _"Do NOT commit the offset — leave the message available for redelivery so a transient
+path reads: _"Do NOT commit the offset; leave the message available for redelivery so a transient
 failure can be retried on the next consumer run."_
 
 ### 4.2 Poison-pill behavior
 
 Malformed JSON (`json.JSONDecodeError` wrapped as `ValueError`) and schema validation failures
 (`pydantic.ValidationError`) are treated as poison pills: the offset is committed and the message
-is skipped permanently. These messages are structurally invalid — no amount of retrying will make
+is skipped permanently. These messages are structurally invalid; no amount of retrying will make
 them processable.
 
-### 4.3 Investigation pipeline exception handling — Phase 18C context
+### 4.3 Investigation pipeline exception handling: Phase 18C context
 
 Phase 18C introduced `_classify_investigation_error()` and moved all exception handling inside
 `process_case()` in `src/investigation/service.py`. As of Phase 18C:
 
-- `process_case()` **never raises**. Every exception type — Ollama connectivity failures, LLM
-  content failures, and generic unexpected errors — is caught and converted into a FAILED
+- `process_case()` **never raises**. Every exception type (Ollama connectivity failures, LLM
+  content failures, and generic unexpected errors) is caught and converted into a FAILED
   `InvestigationReport` with a bounded, analyst-readable `error_message`.
 - A FAILED report is a **durable outcome**. `log_investigation()` persists the FAILED row to
   Postgres. The consumer's `consumer.commit()` executes after `log_investigation()` returns.
@@ -184,20 +184,20 @@ durability risk, and the production recommendation.
 
 | Failure Type | Consumer | Current Behavior | Durability Risk | Production Recommendation |
 |---|---|---|---|---|
-| Malformed JSON | Both | Poison pill → offset committed → message skipped permanently | Low — message is unprocessable; skipping is correct | Log to dead-letter topic for manual inspection |
-| Schema validation failure | Both | Poison pill → offset committed → message skipped permanently | Low — structurally invalid; skipping is correct | Log to dead-letter topic; alert on persistent volume |
-| DB transient failure (write) | Scoring | Caught by `except Exception` → offset committed → message permanently skipped | **High** — scored result is lost silently; no retry | Route to dead-letter topic; retry with exponential backoff before committing |
-| DB transient failure (write) | Investigation | `log_investigation()` raises → offset NOT committed → message retried on restart | Medium — message will retry on restart; no backoff | Add bounded retry counter; exponential backoff; DLQ after N failures |
-| Duplicate event delivery | Scoring | `log_prediction()` returns `None` → downstream skipped → offset committed | Low — idempotency key prevents duplicate DB row | No change needed; downstream publish loss is the remaining gap |
-| Kafka publish failure (`transactions.scored`) | Scoring | KafkaError swallowed inside `_process()` → offset committed | Medium — DB row persists but downstream consumers miss the event | Retry publish with backoff before swallowing; route to DLQ if retries exhausted |
-| Kafka publish failure (`cases.created`) | Scoring | KafkaError swallowed inside `_process()` → offset committed | Medium — case creation event lost from topic | Same as above |
-| Ollama unavailable | Investigation | `process_case()` catches → FAILED report returned → persisted → offset committed | Low — FAILED report is a durable outcome; analyst can retry from the UI | No change needed at this tier; monitor FAILED report rate as an Ollama health signal |
-| LLM invalid structured response | Investigation | `RuntimeError` from exhausted retries caught → FAILED report → persisted | Low — FAILED report persisted; bounded error message surfaced in UI | Monitor FAILED-by-content-failure rate; alert if above threshold |
-| Consumer crash before DB write | Both | Message redelivered; processed cleanly | Low — clean at-least-once delivery | No change needed |
-| Consumer crash after DB write, before offset commit | Scoring | Redelivered; idempotency key fires; downstream publish skipped; offset committed | Medium — event_id deduplicated correctly but downstream publish is permanently lost | Separate DB write from Kafka publish with explicit retry on publish |
-| Consumer crash after DB write, before offset commit | Investigation | Redelivered; `log_investigation()` may produce a duplicate row if no unique constraint on `investigation_id` | Low-Medium — `investigation_id` is a UUID generated per request; two rows for same investigation_id would appear; frontend returns latest | Add unique constraint on `investigations.investigation_id` |
-| Persistent Postgres outage | Scoring | Unexpected Exception → offset committed → messages permanently lost | **Critical** — all messages during outage are silently dropped | DLQ required; never commit on DB failure |
-| Persistent Postgres outage | Investigation | Offset not committed → infinite retry on restart | Medium — messages queue up; no forward progress; no backoff | Bounded retry with circuit breaker; DLQ after budget exhausted |
+| Malformed JSON | Both | Poison pill → offset committed → message skipped permanently | Low: message is unprocessable; skipping is correct | Log to dead-letter topic for manual inspection |
+| Schema validation failure | Both | Poison pill → offset committed → message skipped permanently | Low: structurally invalid; skipping is correct | Log to dead-letter topic; alert on persistent volume |
+| DB transient failure (write) | Scoring | Caught by `except Exception` → offset committed → message permanently skipped | **High**: scored result is lost silently; no retry | Route to dead-letter topic; retry with exponential backoff before committing |
+| DB transient failure (write) | Investigation | `log_investigation()` raises → offset NOT committed → message retried on restart | Medium: message will retry on restart; no backoff | Add bounded retry counter; exponential backoff; DLQ after N failures |
+| Duplicate event delivery | Scoring | `log_prediction()` returns `None` → downstream skipped → offset committed | Low: idempotency key prevents duplicate DB row | No change needed; downstream publish loss is the remaining gap |
+| Kafka publish failure (`transactions.scored`) | Scoring | KafkaError swallowed inside `_process()` → offset committed | Medium: DB row persists but downstream consumers miss the event | Retry publish with backoff before swallowing; route to DLQ if retries exhausted |
+| Kafka publish failure (`cases.created`) | Scoring | KafkaError swallowed inside `_process()` → offset committed | Medium: case creation event lost from topic | Same as above |
+| Ollama unavailable | Investigation | `process_case()` catches → FAILED report returned → persisted → offset committed | Low: FAILED report is a durable outcome; analyst can retry from the UI | No change needed at this tier; monitor FAILED report rate as an Ollama health signal |
+| LLM invalid structured response | Investigation | `RuntimeError` from exhausted retries caught → FAILED report → persisted | Low: FAILED report persisted; bounded error message surfaced in UI | Monitor FAILED-by-content-failure rate; alert if above threshold |
+| Consumer crash before DB write | Both | Message redelivered; processed cleanly | Low: clean at-least-once delivery | No change needed |
+| Consumer crash after DB write, before offset commit | Scoring | Redelivered; idempotency key fires; downstream publish skipped; offset committed | Medium: event_id deduplicated correctly but downstream publish is permanently lost | Separate DB write from Kafka publish with explicit retry on publish |
+| Consumer crash after DB write, before offset commit | Investigation | Redelivered; `log_investigation()` may produce a duplicate row if no unique constraint on `investigation_id` | Low-Medium: `investigation_id` is a UUID generated per request; two rows for same investigation_id would appear; frontend returns latest | Add unique constraint on `investigations.investigation_id` |
+| Persistent Postgres outage | Scoring | Unexpected Exception → offset committed → messages permanently lost | **Critical**: all messages during outage are silently dropped | DLQ required; never commit on DB failure |
+| Persistent Postgres outage | Investigation | Offset not committed → infinite retry on restart | Medium: messages queue up; no forward progress; no backoff | Bounded retry with circuit breaker; DLQ after budget exhausted |
 
 ---
 

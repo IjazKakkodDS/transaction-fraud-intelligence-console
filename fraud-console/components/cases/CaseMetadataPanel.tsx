@@ -27,7 +27,7 @@ function Row({
 }
 
 function RuleFlagChip({ value }: { value: number | null }) {
-  if (value === null) return <span style={{ color: "#4B5563" }}>—</span>;
+  if (value === null) return <span style={{ color: "#4B5563" }}>N/A</span>;
   const triggered = Boolean(value);
   return (
     <span

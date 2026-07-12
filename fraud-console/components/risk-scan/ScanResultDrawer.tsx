@@ -100,7 +100,7 @@ const GRAPH_LABELS: Record<string, string> = {
 // ── Format helpers ───────────────────────────────────────────────────────────
 
 function fmtCurrency(n: number | null): string {
-  if (n === null) return "—";
+  if (n === null) return "N/A";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -110,12 +110,12 @@ function fmtCurrency(n: number | null): string {
 }
 
 function fmtScore(n: number | null): string {
-  if (n === null) return "—";
+  if (n === null) return "N/A";
   return n.toFixed(3);
 }
 
 function fmtTs(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "N/A";
   return new Date(iso).toLocaleString();
 }
 

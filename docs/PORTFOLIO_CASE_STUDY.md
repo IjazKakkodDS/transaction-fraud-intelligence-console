@@ -253,9 +253,9 @@ review cases covering the showcase (BLOCK decision, evidence inspection) and rev
 (REVIEW / FALSE_POSITIVE verdict) paths, then navigates directly to the Case Dossier
 for the high-priority showcase case.
 
-The panel surfaces six capability dimensions — 4-layer scoring, evidence-led case
+The panel surfaces six capability dimensions (4-layer scoring, evidence-led case
 dossier, model attribution, AI investigation brief, analyst decision loop, and
-reliability and scale — with a nine-step workflow path strip mapping the end-to-end
+reliability and scale) with a nine-step workflow path strip mapping the end-to-end
 reviewer journey. Three secondary action links provide direct access to the Review
 Queue, the verified 10M Portfolio Risk Scan, and the live API documentation.
 
@@ -432,7 +432,7 @@ hardened AI investigation pipeline.
 **Model Attribution panel:** positioned between the grouped evidence and the AI
 investigation brief, the Model Attribution panel surfaces per-feature XGBoost
 contributions via `GET /cases/{case_id}/explain`, which uses XGBoost's built-in
-TreeSHAP (`pred_contribs=True`) — no external library required. All 9 feature
+TreeSHAP (`pred_contribs=True`); no external library required. All 9 feature
 contributions are ranked by magnitude with direction (increases or decreases risk)
 and the feature value used at scoring time. This is an explainability surface for the
 baseline XGBoost model specifically; it is distinct from the hybrid reason codes in

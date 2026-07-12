@@ -1,4 +1,4 @@
-# Model Card — Baseline Fraud Scoring Model
+# Model Card: Baseline Fraud Scoring Model
 
 ## 1. Model Overview
 
@@ -22,18 +22,18 @@
 | Approximate size | 106 KB |
 | MD5 | `887033d57056c6a22480c0b9cea202ca` |
 | SHA256 prefix | `bdd6a72ce2aca237...` |
-| Tracked in git | Yes — intentionally tracked because the artifact is small, deterministic, and required for fresh-clone Docker runtime |
+| Tracked in git | Yes: intentionally tracked because the artifact is small, deterministic, and required for fresh-clone Docker runtime |
 
 **Deterministic rebuild path:**
 
 ```bash
-# Step 1 — generate synthetic training data (deterministic, seed 42)
+# Step 1: generate synthetic training data (deterministic, seed 42)
 python data/synthetic/generate_transactions.py
 
-# Step 2 — train model (deterministic, random_state=42)
+# Step 2: train model (deterministic, random_state=42)
 python -m src.models.train_model
 
-# Step 3 — rebuild Docker image with new artifact
+# Step 3: rebuild Docker image with new artifact
 docker compose up --build
 ```
 
@@ -49,7 +49,7 @@ The model evaluates 9 binary and continuous input features derived by `src/featu
 |---|---|---|
 | `amount` | Continuous | Raw transaction amount |
 | `is_high_amount` | Binary | Amount exceeds high-value threshold (configurable via `HIGH_AMOUNT_THRESHOLD`) |
-| `is_night_transaction` | Binary | Transaction hour falls in 00:00–05:59 UTC |
+| `is_night_transaction` | Binary | Transaction hour falls in 00:00-05:59 UTC |
 | `is_international` | Binary | Transaction country differs from registered domestic region |
 | `is_high_risk_payment_method` | Binary | Payment method in high-risk set (e.g. prepaid, crypto rail) |
 | `is_high_risk_country` | Binary | Transaction country in elevated-risk region list |
@@ -85,8 +85,8 @@ Feature engineering is performed by `src/features/transaction_features.py`, whic
 | Rows | 1,000 synthetic transactions |
 | Fraud rate | 8% (80 fraud, 920 non-fraud) |
 | Generator seed | `random.seed(42)` |
-| CSV git status | Intentionally gitignored — generated file, recreatable from source |
-| Generator git status | Tracked — source code, not a generated artifact |
+| CSV git status | Intentionally gitignored: generated file, recreatable from source |
+| Generator git status | Tracked: source code, not a generated artifact |
 
 The generator produces a controlled synthetic dataset with realistic fraud signal distributions: elevated fraud rates at night, in high-risk regions, with high-risk payment methods, and at elevated amounts. It is not a representation of any institution's historical fraud population.
 
@@ -140,8 +140,8 @@ The Fraud Intelligence Console exposes per-case model attribution via `GET /case
 | Property | Value |
 |---|---|
 | Method | XGBoost native TreeSHAP (`Booster.predict(DMatrix, pred_contribs=True)`) |
-| Dependency | None — built into XGBoost; no `shap` library required |
-| Output space | Log-odds (logit) — not probability |
+| Dependency | None: built into XGBoost; no `shap` library required |
+| Output space | Log-odds (logit), not probability |
 | Scope | Baseline XGBoost model only |
 
 **What it shows:**
@@ -175,12 +175,12 @@ the decision, or any database record. It is a diagnostic surface, not a scoring 
 
 | Item | Status |
 |---|---|
-| Artifact tracked in git | Yes — via `.gitignore` exception (`!saved_models/fraud_model.pkl`) |
-| Generator tracked in git | Yes — via `.gitignore` exception (`!data/synthetic/generate_transactions.py`) |
-| Generated CSV gitignored | Yes — `data/synthetic/transactions.csv` remains excluded |
-| MD5 checksum documented | Yes — `887033d57056c6a22480c0b9cea202ca` |
-| Rebuild deterministic | Yes — fixed seeds throughout generator and trainer |
-| Analyst enforcement required | Yes — no autonomous decision enforcement |
+| Artifact tracked in git | Yes: via `.gitignore` exception (`!saved_models/fraud_model.pkl`) |
+| Generator tracked in git | Yes: via `.gitignore` exception (`!data/synthetic/generate_transactions.py`) |
+| Generated CSV gitignored | Yes: `data/synthetic/transactions.csv` remains excluded |
+| MD5 checksum documented | Yes: `887033d57056c6a22480c0b9cea202ca` |
+| Rebuild deterministic | Yes: fixed seeds throughout generator and trainer |
+| Analyst enforcement required | Yes: no autonomous decision enforcement |
 | Model card version | v1.0 |
 
 Release readiness is validated by `scripts/verify_release_readiness.py`, which checks artifact presence, checksums, feature schema, and documentation completeness.

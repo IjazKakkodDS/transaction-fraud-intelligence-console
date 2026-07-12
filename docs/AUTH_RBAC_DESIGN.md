@@ -211,8 +211,8 @@ already in the stack).
 Two paths:
 
 - **Interactive users:** `POST /auth/token` accepts `username` + `password` (OAuth2
-  `PasswordRequestForm`). Returns short-lived access token (15–60 min) and long-lived refresh
-  token (7–30 days). Refresh tokens are stored in the `users` table as a hashed value.
+  `PasswordRequestForm`). Returns short-lived access token (15 to 60 min) and long-lived refresh
+  token (7 to 30 days). Refresh tokens are stored in the `users` table as a hashed value.
 - **Service accounts:** Long-lived API keys (32-byte random tokens, stored as bcrypt hashes in
   a `service_accounts` table). Presented in the `Authorization: Bearer` header. No rotation
   by expiry. Rotation is manual and triggered by key compromise or periodic policy.
@@ -375,8 +375,8 @@ and audit-logged.
 
 ### 9.2 Token expiry and refresh strategy
 
-Access tokens carry a short lifespan (15–60 minutes) to limit the exposure window of a leaked
-token. Refresh tokens carry a longer lifespan (7–30 days) but are stored as hashes and can be
+Access tokens carry a short lifespan (15 to 60 minutes) to limit the exposure window of a leaked
+token. Refresh tokens carry a longer lifespan (7 to 30 days) but are stored as hashes and can be
 individually revoked. Redis (already in the `docker-compose.yml` stack but currently unused by the
 application) is the recommended store for a revoked JTI cache, enabling immediate access token
 invalidation if a compromise is detected before natural expiry.

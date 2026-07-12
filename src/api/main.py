@@ -371,7 +371,7 @@ def get_prediction(transaction_id: str):
         raise HTTPException(
             status_code=404,
             detail=f"No prediction found for transaction_id={transaction_id}. "
-                   "Scoring may still be in progress — retry shortly.",
+                   "Scoring may still be in progress; retry shortly.",
         )
     return prediction
 
@@ -765,7 +765,7 @@ def trigger_investigation(case_id: int):
     if producer is None:
         raise HTTPException(
             status_code=503,
-            detail="Investigation queue unavailable — Kafka is not configured or unreachable.",
+            detail="Investigation queue unavailable: Kafka is not configured or unreachable.",
         )
 
     try:
@@ -784,7 +784,7 @@ def trigger_investigation(case_id: int):
         )
         raise HTTPException(
             status_code=503,
-            detail="Failed to queue investigation — broker error.",
+            detail="Failed to queue investigation: broker error.",
         )
 
     logger.info(
@@ -1008,7 +1008,7 @@ def notify_case_workflow(case_id: int):
         _log_workflow_dispatch_failure(
             case_id=case_id,
             reason="n8n webhook unreachable",
-            error_message=f"{exc} — url={N8N_WEBHOOK_URL}",
+            error_message=f"{exc}; url={N8N_WEBHOOK_URL}",
             payload=payload,
         )
         raise HTTPException(

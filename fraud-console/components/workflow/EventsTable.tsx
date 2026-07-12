@@ -52,7 +52,7 @@ function SourceBadge({ source }: { source: string }) {
 }
 
 function PriorityBadge({ priority }: { priority: string | null }) {
-  if (!priority) return <span style={{ color: "#4B5563" }}>—</span>;
+  if (!priority) return <span style={{ color: "#4B5563" }}>N/A</span>;
   const upper = priority.toUpperCase();
   const styles: Record<string, React.CSSProperties> = {
     HIGH:   { color: "#FF4D4D", background: "rgba(255,77,77,0.08)",   border: "1px solid rgba(255,77,77,0.22)"   },
@@ -200,7 +200,7 @@ export function EventsTable({ events }: EventsTableProps) {
                             #{event.case_id}
                           </Link>
                         ) : (
-                          <span className="text-[12px]" style={{ color: "#4B5563" }}>—</span>
+                          <span className="text-[12px]" style={{ color: "#4B5563" }}>N/A</span>
                         )}
                       </td>
                       <td className="whitespace-nowrap px-5 py-3 text-[12px]" style={{ color: "#6B7280" }}>
@@ -215,7 +215,7 @@ export function EventsTable({ events }: EventsTableProps) {
                       <td className="px-5 py-3 text-[12px]" style={{ color: "#4B5563" }}>
                         {displayMessage
                           ? <span className="line-clamp-2" title={displayMessage}>{displayMessage}</span>
-                          : <span style={{ color: "#374151" }}>—</span>}
+                          : <span style={{ color: "#374151" }}>N/A</span>}
                       </td>
                     </tr>
                   );

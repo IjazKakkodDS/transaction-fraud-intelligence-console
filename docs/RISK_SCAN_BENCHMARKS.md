@@ -488,17 +488,17 @@ before any non-benchmark use.
 
 | Option | Action | Trade-off |
 |---|---|---|
-| **A — Preserve everything** | No change; keep all 22.7M rows | Safest for evidence; 19 GB database remains |
-| **B — Keep large scans only** | Delete result rows for scans below 1M (IDs 66–77) after approval | Frees ~200k rows, negligible space saving — not worth the risk |
-| **C — Keep 10M + 7.5M + 5M only** | Delete rows for scans 66–77 after approval; preserve IDs 68, 78, 79 | Frees ~192k rows; DB stays at ~19 GB (dominated by large scans) |
-| **D — Archive then TRUNCATE all** | Export all remaining scan summaries to Markdown; TRUNCATE results table | Smallest DB footprint; irreversible without re-running benchmarks |
-| **E — Keep as-is until demo/video** | No action now; clean after final portfolio screenshots are captured | Recommended if UI demos have not yet been recorded against live 10M data |
+| **A: Preserve everything** | No change; keep all 22.7M rows | Safest for evidence; 19 GB database remains |
+| **B: Keep large scans only** | Delete result rows for scans below 1M (IDs 66-77) after approval | Frees ~200k rows, negligible space saving; not worth the risk |
+| **C: Keep 10M + 7.5M + 5M only** | Delete rows for scans 66-77 after approval; preserve IDs 68, 78, 79 | Frees ~192k rows; DB stays at ~19 GB (dominated by large scans) |
+| **D: Archive then TRUNCATE all** | Export all remaining scan summaries to Markdown; TRUNCATE results table | Smallest DB footprint; irreversible without re-running benchmarks |
+| **E: Keep as-is until demo/video** | No action now; clean after final portfolio screenshots are captured | Recommended if UI demos have not yet been recorded against live 10M data |
 
 **Recommended: Option E for now, then Option C after demo/video is complete.**
 
 The 10M and 7.5M benchmark scans are live in the database and accessible from the frontend.
 Recording a product walkthrough or case study demo against real scan data is best done before
-any cleanup. The small development scans (IDs 66–77) can be deleted later — they are
+any cleanup. The small development scans (IDs 66-77) can be deleted later; they are
 verification artifacts, not portfolio evidence.
 
 ---

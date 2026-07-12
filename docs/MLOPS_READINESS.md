@@ -1,4 +1,4 @@
-# MLOps Readiness — Fraud Intelligence Console
+# MLOps Readiness: Fraud Intelligence Console
 
 ---
 
@@ -10,10 +10,10 @@ path not yet taken. It is written for engineering leads, data science reviewers,
 architecture reviewers who want to understand the operationalisation posture of the
 platform before assessing it for institution-specific deployment.
 
-The target maturity for this release is **L2+ / L2.5** — release engineering, artifact
+The target maturity for this release is **L2+ / L2.5**: release engineering, artifact
 governance, and CI validation are implemented. Full enterprise L3 (MLflow experiment
 tracking, feature store, automated retraining, canary deployment, production drift
-monitoring) is explicitly deferred and documented as a future roadmap — not a hidden gap.
+monitoring) is explicitly deferred and documented as a future roadmap; not a hidden gap.
 
 ---
 
@@ -25,7 +25,7 @@ monitoring) is explicitly deferred and documented as a future roadmap — not a 
 | Release Engineering | L2+ | GitHub Actions CI (compile, release readiness checks, model load, evidence smoke checks, frontend build), local E2E gate |
 | Model Artifact Governance | L2+ | Artifact tracked in git, MD5 checksum documented, MODEL_CARD.md, deterministic rebuild path, feature schema validation at CI |
 | Model Lifecycle Automation | L2 | Manual retrain path documented and tested (deterministic, seed 42); no automated retraining trigger or drift-detection gate |
-| Full Enterprise MLOps (L3) | Future | MLflow, feature store, drift monitoring, A/B deployment, canary rollout — documented as future roadmap |
+| Full Enterprise MLOps (L3) | Future | MLflow, feature store, drift monitoring, A/B deployment, canary rollout (documented as future roadmap) |
 
 ---
 
@@ -34,7 +34,7 @@ monitoring) is explicitly deferred and documented as a future roadmap — not a 
 ### Release Engineering
 - **GitHub Actions CI** (`.github/workflows/ci.yml`): two parallel jobs on every push and
   pull request to `master`/`main`
-- **Python compile check**: `python -m compileall src/ -q` — catches syntax errors across
+- **Python compile check**: `python -m compileall src/ -q`; catches syntax errors across
   the full backend package before any test or validator runs
 - **Release readiness validator** (`scripts/verify_release_readiness.py`):
   required files, model artifact loadability, MD5 checksum, 12 screenshot checks, old
@@ -42,14 +42,14 @@ monitoring) is explicitly deferred and documented as a future roadmap — not a 
   and stale phrase scan across public-facing docs
 - **Model load verification in CI**: `joblib.load` + type check on every CI run
 - **Investigation smoke checks in CI**: `verify_investigation_failure.py` and
-  `verify_investigation_evidence.py` — no Ollama, no DB, no network required
+  `verify_investigation_evidence.py`; no Ollama, no DB, no network required
 - **Frontend production build in CI**: `npm ci` + ESLint + `next build --webpack`
 - **Local E2E release gate**: `npm run test:e2e` (11 checks, headless Chromium) against the
-  live Docker Compose stack — documented as the required pre-push local gate
+  live Docker Compose stack (documented as the required pre-push local gate)
 
 ### Model Artifact Governance
 - **Artifact tracked in git**: `saved_models/fraud_model.pkl` tracked via `.gitignore`
-  exception — small (≈106 KB), deterministic, required for fresh-clone Docker runtime
+  exception; small (≈106 KB), deterministic, required for fresh-clone Docker runtime
 - **Checksum registry**: MD5 `887033d57056c6a22480c0b9cea202ca` documented in
   `docs/MODEL_CARD.md` and verified in CI on every run
 - **Feature schema contract**: 9 expected features stored in `model.feature_names_in_`;
@@ -64,7 +64,7 @@ monitoring) is explicitly deferred and documented as a future roadmap — not a 
 
 ### Model Explainability
 - **Per-case model attribution**: `GET /cases/{case_id}/explain` returns per-feature
-  contribution values using XGBoost's built-in TreeSHAP (`pred_contribs=True`) — no
+  contribution values using XGBoost's built-in TreeSHAP (`pred_contribs=True`); no
   external `shap` library required; XGBoost is already a required dependency
 - **Attribution scope**: baseline XGBoost model only; contributions are in log-odds space
 - **Case Dossier integration**: "Model Attribution" panel displays all 9 feature contributions
@@ -76,11 +76,11 @@ monitoring) is explicitly deferred and documented as a future roadmap — not a 
   each such field so reviewers can assess per-case attribution accuracy
 - **Separation from hybrid reason codes**: attribution explains the base ML model; the hybrid
   reason codes in the Case Dossier evidence groups explain the full 4-layer decision (rules,
-  rich signals, behavioural, graph) — these are distinct explainability surfaces
+  rich signals, behavioural, graph); these are distinct explainability surfaces
 
 ### Audit and Traceability
 - **AGENT_VERSION traceability**: every AI investigation record tagged with the agent
-  configuration version — immutable AI audit trail in PostgreSQL
+  configuration version; immutable AI audit trail in PostgreSQL
 - **Analyst-in-the-loop enforcement**: no autonomous decision enforcement; analyst verdict
   required before any operational action
 - **Consumer offset governance**: asymmetric durability design documented in
@@ -89,10 +89,10 @@ monitoring) is explicitly deferred and documented as a future roadmap — not a 
   queryable audit event with case linkage
 
 ### Governance Documentation
-- `docs/MODEL_CARD.md` — model artifact contract and feature schema
-- Security and access-control hardening — documented as a recommended production expansion path
-- `docs/CONSUMER_DURABILITY.md` — consumer offset management and idempotency design
-- `docs/AUTH_RBAC_DESIGN.md` — RBAC architecture and implementation prerequisites
+- `docs/MODEL_CARD.md`: model artifact contract and feature schema
+- Security and access-control hardening: documented as a recommended production expansion path
+- `docs/CONSUMER_DURABILITY.md`: consumer offset management and idempotency design
+- `docs/AUTH_RBAC_DESIGN.md`: RBAC architecture and implementation prerequisites
 
 ---
 
@@ -133,7 +133,7 @@ intelligence boosts before a decision tier is assigned.
 ## 5. What This Release Is Not Claiming
 
 The following controls are **not** implemented in this release. They are identified as
-enterprise expansion controls — appropriate for institution-specific deployment — not as
+enterprise expansion controls (appropriate for institution-specific deployment), not as
 hidden gaps in the current release.
 
 | Control | Status | Notes |
@@ -180,16 +180,16 @@ synthetic benchmark data, and a portfolio-grade demonstration of a production-st
 intelligence architecture. Within that boundary, the MLOps controls are complete:
 
 - Every CI run validates the model artifact, checksum, feature schema, and full release
-  readiness in under 3 minutes — before any code reaches the default branch
+  readiness in under 3 minutes, before any code reaches the default branch
 - The model artifact is small, deterministic, and reproducible from tracked source in a
-  single command sequence — no download step, no external registry dependency
+  single command sequence; no download step, no external registry dependency
 - The governance documentation package is written for the deployment reviewers who will
   expand these controls: engineering leads, compliance teams, and risk architecture teams
 - The analyst-in-the-loop enforcement design (no autonomous decision enforcement) is
   the correct architecture for a regulated fraud decisioning context regardless of
   deployment scale
 
-The L2+/L2.5 maturity target is not a limitation — it is an accurate, defensible
+The L2+/L2.5 maturity target is not a limitation; it is an accurate, defensible
 description of a release that is production-style in architecture, benchmark-validated
 in performance, and governance-ready in documentation.
 
@@ -208,7 +208,7 @@ Before every push to the default branch, all of the following must pass:
 | Evidence smoke | `python scripts/verify_investigation_evidence.py` | Evidence grouping contract |
 | Frontend lint | `cd fraud-console && npm run lint` | ESLint across frontend source |
 | Frontend build | `cd fraud-console && npm run build` | Full Next.js production bundle |
-| E2E Playwright | `cd fraud-console && npm run test:e2e` | 11 checks against live stack (local gate — requires Docker Compose) |
+| E2E Playwright | `cd fraud-console && npm run test:e2e` | 11 checks against live stack (local gate; requires Docker Compose) |
 
 CI (`.github/workflows/ci.yml`) automates all gates except E2E, which requires the full
 Docker Compose stack. E2E is the local pre-push gate.
