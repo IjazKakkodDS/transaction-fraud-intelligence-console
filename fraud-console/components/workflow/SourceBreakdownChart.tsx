@@ -14,14 +14,19 @@ const SOURCE_COLORS: Record<string, string> = {
   Automation: "#A78BFA",
   API: "#22D3EE",
   Manual: "#8B949E",
+  Inspection: "#FB923C",
+  Unknown: "#475569",
 };
+
+const SOURCE_ORDER = ["Automation", "API", "Manual", "Inspection", "Unknown"] as const;
 
 function getSourceLabel(source: string): string {
   const lower = source.toLowerCase();
-  if (lower.includes("n8n")) return "Automation";
-  if (lower.includes("fastapi") || lower.includes("api")) return "API";
-  if (lower.includes("manual")) return "Manual";
-  return formatLabel(source);
+  if (lower.includes("n8n") || lower.includes("automation") || lower.includes("callback")) return "Automation";
+  if (lower.includes("fastapi") || lower.includes("api") || lower.includes("backend") || lower.includes("service")) return "API";
+  if (lower.includes("manual") || lower.includes("analyst") || lower.includes("operator")) return "Manual";
+  if (lower.includes("inspection")) return "Inspection";
+  return "Unknown";
 }
 
 export function SourceBreakdownChart({ data }: { data: SourceBreakdownItem[] }) {
@@ -34,8 +39,9 @@ export function SourceBreakdownChart({ data }: { data: SourceBreakdownItem[] }) 
     }, {})
   );
   const total = aggregated.reduce((sum, item) => sum + item.count, 0);
-  const automation = aggregated.find((item) => item.source === "Automation")?.count ?? 0;
-  const automationCoverage = total > 0 ? Math.round((automation / total) * 100) : 0;
+  const topSource = aggregated.length > 0
+    ? aggregated.reduce((a, b) => (a.count >= b.count ? a : b))
+    : null;
 
   return (
     <div className="card p-5">
@@ -85,17 +91,20 @@ export function SourceBreakdownChart({ data }: { data: SourceBreakdownItem[] }) 
               </PieChart>
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-[24px] font-semibold tabular-nums" style={{ color: "#C9D1D9" }}>
-                  {automationCoverage}%
+                  {total}
                 </span>
                 <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#94A3B8" }}>
-                  Automation
+                  {topSource ? topSource.source : "Events"}
                 </span>
               </div>
               </>
             )}
           </MeasuredChartFrame>
           <div className="grid grid-cols-3 gap-2">
-            {["Automation", "API", "Manual"].map((source) => {
+            {SOURCE_ORDER.filter((source) => {
+              const count = aggregated.find((item) => item.source === source)?.count ?? 0;
+              return count > 0 || ["Automation", "API", "Manual"].includes(source);
+            }).map((source) => {
               const count = aggregated.find((item) => item.source === source)?.count ?? 0;
               return (
                 <div

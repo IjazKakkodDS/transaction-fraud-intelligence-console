@@ -88,7 +88,7 @@ export function MetricsGrid({ metrics }: MetricsGridProps) {
         />
       </div>
       {/* Pipeline pulse */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <PulseCard
           label="Total Events"
           value={metrics.total_workflow_events}
@@ -97,12 +97,17 @@ export function MetricsGrid({ metrics }: MetricsGridProps) {
         <PulseCard
           label="Automation Events"
           value={metrics.total_n8n_events}
-          helper="Events emitted by automation workflows"
+          helper="Events emitted by n8n automation"
+        />
+        <PulseCard
+          label="Inspection Events"
+          value={metrics.total_inspection_events}
+          helper="Events from the synthetic inspection dataset"
         />
         <PulseCard
           label="Manual Events"
           value={metrics.total_manual_events}
-          helper="Operator or test-originated events"
+          helper="Operator or analyst-originated events"
         />
         <PulseCard
           label="Escalations"

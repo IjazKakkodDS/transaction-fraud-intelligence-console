@@ -532,11 +532,17 @@ def get_workflow_metrics() -> dict:
                 COALESCE(COUNT(*), 0)                                                              AS total_workflow_events,
                 COALESCE(SUM(CASE WHEN status = 'SUCCESS'               THEN 1 ELSE 0 END), 0)    AS total_success_events,
                 COALESCE(SUM(CASE WHEN status = 'FAILED'                THEN 1 ELSE 0 END), 0)    AS total_failed_events,
-                COALESCE(SUM(CASE WHEN source = 'n8n'                   THEN 1 ELSE 0 END), 0)    AS total_n8n_events,
-                COALESCE(SUM(CASE WHEN source = 'manual'                THEN 1 ELSE 0 END), 0)    AS total_manual_events,
+                COALESCE(SUM(CASE WHEN LOWER(source) LIKE '%n8n%'
+                               OR LOWER(source) LIKE '%automation%'
+                               OR LOWER(source) LIKE '%callback%'      THEN 1 ELSE 0 END), 0)    AS total_n8n_events,
+                COALESCE(SUM(CASE WHEN LOWER(source) LIKE '%manual%'
+                               OR LOWER(source) LIKE '%analyst%'
+                               OR LOWER(source) LIKE '%operator%'      THEN 1 ELSE 0 END), 0)    AS total_manual_events,
+                COALESCE(SUM(CASE WHEN LOWER(source) LIKE '%inspection%'
+                                                                        THEN 1 ELSE 0 END), 0)    AS total_inspection_events,
                 COALESCE(SUM(CASE WHEN case_id IS NOT NULL              THEN 1 ELSE 0 END), 0)    AS total_case_specific_events,
                 COALESCE(SUM(CASE WHEN case_id IS NULL                  THEN 1 ELSE 0 END), 0)    AS total_global_events,
-                COALESCE(SUM(CASE WHEN workflow_action = 'ESCALATE_TO_FRAUD_OPS'
+                COALESCE(SUM(CASE WHEN LOWER(workflow_action) LIKE '%escalat%'
                                                                         THEN 1 ELSE 0 END), 0)    AS total_escalation_events,
                 COALESCE(SUM(CASE WHEN workflow_action = 'STALE_CASE_REMINDER'
                                                                         THEN 1 ELSE 0 END), 0)    AS total_stale_reminders,
@@ -578,6 +584,7 @@ def get_workflow_metrics() -> dict:
         "total_failed_events":          int(scalars["total_failed_events"]),
         "total_n8n_events":             int(scalars["total_n8n_events"]),
         "total_manual_events":          int(scalars["total_manual_events"]),
+        "total_inspection_events":      int(scalars["total_inspection_events"]),
         "total_case_specific_events":   int(scalars["total_case_specific_events"]),
         "total_global_events":          int(scalars["total_global_events"]),
         "total_escalation_events":      int(scalars["total_escalation_events"]),

@@ -92,6 +92,7 @@ export const WorkflowMetricsSchema = z.object({
   total_failed_events: z.number(),
   total_n8n_events: z.number(),
   total_manual_events: z.number(),
+  total_inspection_events: z.number(),
   total_case_specific_events: z.number(),
   total_global_events: z.number(),
   total_escalation_events: z.number(),

@@ -17,12 +17,18 @@ function Skeleton({ className }: { className?: string }) {
   );
 }
 
-type HealthVerdict = "Healthy" | "Degraded" | "Critical" | "HostedProfile";
+type HealthVerdict = "Healthy" | "HealthyLimited" | "Degraded" | "Critical" | "HostedProfile";
 
-function getHealthVerdict(total: number, successRate: number, dispatchFailures: number): HealthVerdict {
+function getHealthVerdict(
+  total: number,
+  successRate: number,
+  dispatchFailures: number,
+  n8nEvents: number,
+): HealthVerdict {
   if (total === 0) return "HostedProfile";
   if (successRate < 70 || dispatchFailures > 3) return "Critical";
   if (successRate < 90 || dispatchFailures > 0) return "Degraded";
+  if (n8nEvents === 0) return "HealthyLimited";
   return "Healthy";
 }
 
@@ -38,6 +44,17 @@ const HEALTH_CONFIG: Record<
     card: {
       border: "1px solid rgba(16,185,129,0.22)",
       background: "rgba(16,185,129,0.04)",
+    },
+  },
+  HealthyLimited: {
+    dot: "#10B981",
+    labelColor: "#F59E0B",
+    label: "Healthy — Limited Automation Coverage",
+    message:
+      "Audit-event persistence is healthy. n8n automation is intentionally excluded from the hosted inspection profile. Validate full workflow automation in the local Docker Compose runtime.",
+    card: {
+      border: "1px solid rgba(245,158,11,0.18)",
+      background: "rgba(245,158,11,0.03)",
     },
   },
   Degraded: {
@@ -81,14 +98,14 @@ function fmtRate(numerator: number, total: number): string {
 function ReliabilityStatusStrip({ metrics }: { metrics: WorkflowMetrics }) {
   const total = metrics.total_workflow_events;
   const successRate = total > 0 ? (metrics.total_success_events / total) * 100 : 0;
-  const verdict = getHealthVerdict(total, successRate, metrics.total_dispatch_failures);
+  const verdict = getHealthVerdict(total, successRate, metrics.total_dispatch_failures, metrics.total_n8n_events);
   const cfg = HEALTH_CONFIG[verdict];
 
   const rates = [
-    { label: "Success Rate",          value: fmtRate(metrics.total_success_events,   total) },
-    { label: "Failure Rate",          value: fmtRate(metrics.total_failed_events,    total) },
-    { label: "Dispatch Failure Rate", value: fmtRate(metrics.total_dispatch_failures, total) },
-    { label: "Automation Coverage",   value: fmtRate(metrics.total_n8n_events,       total) },
+    { label: "Success Rate",                value: fmtRate(metrics.total_success_events,    total) },
+    { label: "Failure Rate",                value: fmtRate(metrics.total_failed_events,     total) },
+    { label: "Dispatch Failure Rate",       value: fmtRate(metrics.total_dispatch_failures, total) },
+    { label: "Hosted Automation Coverage",  value: fmtRate(metrics.total_n8n_events,        total) },
   ];
 
   return (
@@ -155,7 +172,8 @@ function OperationalDiagnosis({ metrics }: { metrics: WorkflowMetrics }) {
   const successRate = total > 0 ? (metrics.total_success_events / total) * 100 : 0;
   const failureRate = total > 0 ? (failed / total) * 100 : 0;
   const dispatchFailureRate = total > 0 ? (dispatchFailures / total) * 100 : 0;
-  const verdict = getHealthVerdict(total, successRate, dispatchFailures);
+  const verdict = getHealthVerdict(total, successRate, dispatchFailures, metrics.total_n8n_events);
+  const isInspectionOnly = metrics.total_n8n_events === 0 && total > 0;
   const topFailingAction = [...metrics.events_by_workflow_action]
     .filter((item) => item.workflow_action.toUpperCase().includes("FAILED"))
     .sort((a, b) => b.count - a.count)[0];
@@ -168,7 +186,9 @@ function OperationalDiagnosis({ metrics }: { metrics: WorkflowMetrics }) {
     total === 0
       ? "No workflow events have been recorded yet, so automation reliability cannot be assessed."
       : !hasFailures
-      ? `Automation reliability is healthy with ${successRate.toFixed(1)}% of workflow events completing successfully.`
+      ? isInspectionOnly
+        ? `Workflow audit-event persistence is healthy, with all ${total} recorded events completing successfully. Full automation coverage is limited in the hosted inspection profile.`
+        : `Automation reliability is healthy with ${successRate.toFixed(1)}% of workflow events completing successfully.`
       : verdict === "Critical"
       ? `Automation reliability is currently critical because dispatch failures represent ${dispatchFailureRate.toFixed(1)}% of recorded workflow events.`
       : `Automation reliability is degraded with ${failureRate.toFixed(1)}% of workflow events failing.`;
@@ -176,13 +196,17 @@ function OperationalDiagnosis({ metrics }: { metrics: WorkflowMetrics }) {
     total === 0
       ? "Workflow telemetry will become meaningful once dispatch and escalation activity is recorded."
       : !hasFailures
-      ? "Escalation workflows are active and current automation signals are completing as expected."
+      ? isInspectionOnly
+        ? "Case actions and audit records are available for review. n8n dispatch and callback coverage are not exercised in the hosted inspection profile."
+        : "Escalation workflows are active and current automation signals are completing as expected."
       : "Escalation workflows are active, but failed dispatches may delay downstream fraud operations handoff.";
   const recommendation =
     total === 0
       ? "Generate workflow activity before treating reliability metrics as operational evidence."
       : !hasFailures
-      ? "Continue monitoring workflow events and audit evidence for drift in automation health."
+      ? isInspectionOnly
+        ? "Continue monitoring event persistence in the hosted environment and validate full workflow automation in the local Docker Compose runtime."
+        : "Continue monitoring workflow events and audit evidence for drift in automation health."
       : verdict === "Critical"
       ? "Review failed dispatch events in the Audit Trail before treating workflow automation as production-ready."
       : "Review recent failed workflow events and confirm escalation handoffs are reaching the intended destination.";
@@ -252,7 +276,7 @@ function ReliabilityTargetPanel({ metrics }: { metrics: WorkflowMetrics }) {
       color: dispatchFailureRate === 0 ? "#10B981" : "#FF4D4D",
     },
     {
-      label: "Automation Coverage",
+      label: "Hosted Automation Coverage",
       target: "70%+",
       current: automationCoverage,
       status: automationCoverage >= 70 ? "Strong" : "Limited",
@@ -266,7 +290,7 @@ function ReliabilityTargetPanel({ metrics }: { metrics: WorkflowMetrics }) {
       <div className="mb-4">
         <p className="section-label">Reliability Targets</p>
         <p className="mt-1 text-[12px]" style={{ color: "#94A3B8" }}>
-          Reliability target tracking for workflow automation health.
+          Reliability target tracking for workflow automation health. n8n automation is excluded from the hosted inspection profile.
         </p>
       </div>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
