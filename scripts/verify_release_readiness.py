@@ -221,6 +221,26 @@ for doc_path, phrases in STALE_PHRASES.items():
         )
 
 # ---------------------------------------------------------------------------
+# 9. Prose em/en dash absent from audited frontend source strings
+# ---------------------------------------------------------------------------
+print("\n--- Punctuation hygiene ---")
+_EM = "—"
+_DASH_TARGETS = [
+    ("fraud-console/app/workflow/metrics/page.tsx", f"Healthy {_EM} Limited"),
+    ("fraud-console/lib/api/client.ts", f"{_EM} ${{response.statusText}}"),
+    ("fraud-console/lib/api/riskScan.ts", f"{_EM} ${{response.statusText}}"),
+]
+_dash_hits = [
+    p for p, pat in _DASH_TARGETS
+    if os.path.isfile(p) and pat in open(p, encoding="utf-8", errors="replace").read()
+]
+check(
+    "no prose em dash in audited frontend source strings",
+    len(_dash_hits) == 0,
+    f"found in: {_dash_hits}" if _dash_hits else "",
+)
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 total = len(results)

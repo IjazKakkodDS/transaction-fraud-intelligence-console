@@ -40,7 +40,7 @@ export async function uploadRiskScan(
   });
 
   if (!response.ok) {
-    let detail = `HTTP ${response.status} — ${response.statusText}`;
+    let detail = `HTTP ${response.status}: ${response.statusText}`;
     try {
       const json = await response.json();
       if (typeof json?.detail === "string") detail = json.detail;

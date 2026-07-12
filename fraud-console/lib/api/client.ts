@@ -41,7 +41,7 @@ export async function apiFetch<T = unknown>(
 
   // Non-2xx — extract FastAPI detail string if available, then throw.
   if (!response.ok) {
-    let detail = `HTTP ${response.status} — ${response.statusText}`;
+    let detail = `HTTP ${response.status}: ${response.statusText}`;
     try {
       const json = await response.json();
       if (typeof json?.detail === "string") detail = json.detail;

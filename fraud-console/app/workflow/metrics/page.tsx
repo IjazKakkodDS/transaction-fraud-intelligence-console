@@ -49,7 +49,7 @@ const HEALTH_CONFIG: Record<
   HealthyLimited: {
     dot: "#10B981",
     labelColor: "#F59E0B",
-    label: "Healthy — Limited Automation Coverage",
+    label: "Healthy: Limited Automation Coverage",
     message:
       "Audit-event persistence is healthy. n8n automation is intentionally excluded from the hosted inspection profile. Validate full workflow automation in the local Docker Compose runtime.",
     card: {
