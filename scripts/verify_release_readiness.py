@@ -253,6 +253,50 @@ check(
 )
 
 # ---------------------------------------------------------------------------
+# 10. OpenAPI-visible route docstring punctuation (AST-based; no DB needed)
+# ---------------------------------------------------------------------------
+print("\n--- OpenAPI route docstring punctuation ---")
+import ast as _ast
+
+_MAIN_PY = "src/api/main.py"
+_route_doc_hits = []
+_route_doc_count = 0
+
+try:
+    _source = open(_MAIN_PY, encoding="utf-8").read()
+    _tree = _ast.parse(_source)
+    for _node in _ast.walk(_tree):
+        if isinstance(_node, (_ast.FunctionDef, _ast.AsyncFunctionDef)):
+            for _dec in _node.decorator_list:
+                _is_app = (
+                    isinstance(_dec, _ast.Call)
+                    and isinstance(_dec.func, _ast.Attribute)
+                    and isinstance(_dec.func.value, _ast.Name)
+                    and _dec.func.value.id == "app"
+                )
+                if _is_app:
+                    _doc = _ast.get_docstring(_node)
+                    if _doc:
+                        _route_doc_count += 1
+                        if "—" in _doc or "–" in _doc:
+                            _route_doc_hits.append(
+                                f"{_node.name}: {_doc[:60]!r}"
+                            )
+    check(
+        "no em/en dash in route handler docstrings (OpenAPI-visible)",
+        len(_route_doc_hits) == 0,
+        f"found: {_route_doc_hits[:3]}" if _route_doc_hits else "",
+    )
+    check(
+        "route handler docstring count is non-zero (AST scan is live)",
+        _route_doc_count >= 10,
+        f"found {_route_doc_count} (expected >= 10)",
+    )
+except Exception as _ast_exc:
+    check("no em/en dash in route handler docstrings (OpenAPI-visible)", False, str(_ast_exc))
+    check("route handler docstring count is non-zero (AST scan is live)", False, str(_ast_exc))
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 total = len(results)

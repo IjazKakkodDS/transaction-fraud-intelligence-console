@@ -361,7 +361,7 @@ def get_prediction(transaction_id: str):
 
     Returns the most recent prediction row for the given transaction_id, or
     404 if scoring has not completed yet. Clients should retry with backoff
-    when 404 is returned — the scoring consumer may still be processing.
+    when 404 is returned; the scoring consumer may still be processing.
 
     Intended as the polling counterpart to POST /predict in async-only mode
     (SYNC_SCORING_ENABLED=false), but works in both modes.
@@ -519,10 +519,10 @@ def get_investigation(case_id: int):
     Retrieve the latest investigation report for a case.
 
     Responses:
-      200 COMPLETE    — full investigation row
-      200 FAILED      — {"status": "FAILED", "error_message": "..."}
-      202 IN_PROGRESS — {"status": "IN_PROGRESS"}
-      404             — no investigation has been triggered for this case_id
+      200 COMPLETE:    full investigation row
+      200 FAILED:      {"status": "FAILED", "error_message": "..."}
+      202 IN_PROGRESS: {"status": "IN_PROGRESS"}
+      404:             no investigation has been triggered for this case_id
     """
     investigation = get_latest_investigation(case_id)
 
@@ -631,7 +631,7 @@ def explain_case(case_id: int):
     """
     Return per-feature model attribution for the baseline XGBoost model.
 
-    Uses XGBoost's built-in TreeSHAP (pred_contribs=True) — no external
+    Uses XGBoost's built-in TreeSHAP (pred_contribs=True); no external
     shap library required. Contributions are in log-odds (logit) space:
     positive values increase the model's fraud probability estimate; negative
     values decrease it. The bias term represents the model's base log-odds.
@@ -746,9 +746,9 @@ def trigger_investigation(case_id: int):
     asynchronously. Poll GET /cases/{case_id}/investigation for the result.
 
     Responses:
-      202 — investigation accepted and queued
-      404 — case_id not found in predictions table
-      503 — Kafka unavailable; investigation could not be queued
+      202: investigation accepted and queued
+      404: case_id not found in predictions table
+      503: Kafka unavailable; investigation could not be queued
     """
     case = get_prediction_by_id(case_id)
     if case is None:
@@ -816,8 +816,8 @@ def create_workflow_audit_event(body: WorkflowAuditEventRequest):
     a daily summary) and no case validation is performed.
 
     Responses:
-      200 — event logged successfully
-      404 — case_id provided but not found in predictions table
+      200: event logged successfully
+      404: case_id provided but not found in predictions table
     """
     if body.case_id is not None:
         case = get_prediction_by_id(body.case_id)
@@ -903,8 +903,8 @@ def list_stale_cases(minutes: int = 120):
     the specified number of minutes and no analyst verdict has been recorded.
 
     Responses:
-      200 — list of stale cases (may be empty)
-      400 — minutes must be a positive integer
+      200: list of stale cases (may be empty)
+      400: minutes must be a positive integer
     """
     if minutes <= 0:
         raise HTTPException(
@@ -930,10 +930,10 @@ def notify_case_workflow(case_id: int):
     by an analyst or automated trigger after a case is scored or investigated.
 
     Responses:
-      200 — payload sent successfully
-      404 — case_id not found in predictions table
-      502 — n8n webhook returned a non-2xx response
-      503 — N8N_WEBHOOK_URL is not configured
+      200: payload sent successfully
+      404: case_id not found in predictions table
+      502: n8n webhook returned a non-2xx response
+      503: N8N_WEBHOOK_URL is not configured
     """
     case = get_prediction_by_id(case_id)
     if case is None:
@@ -1100,7 +1100,7 @@ async def create_async_risk_scan(
 @app.post("/risk-scan/upload")
 async def upload_risk_scan(file: UploadFile = File(...)):
     """
-    LEGACY synchronous upload endpoint — hard-capped by bytes and at 500 rows
+    LEGACY synchronous upload endpoint; hard-capped by bytes and at 500 rows
     by validator.MAX_ROWS.
 
     This endpoint reads a small file into memory, validates, scores, and returns
@@ -1110,11 +1110,11 @@ async def upload_risk_scan(file: UploadFile = File(...)):
     Use POST /risk-scan (HTTP 202) for async chunked processing of larger datasets.
 
     Responses:
-      200 — scan complete; scan_id and row counts returned
-      400 — CSV structure invalid (missing required columns, row limit exceeded)
-      413 — legacy endpoint byte cap exceeded
-      422 — file bytes cannot be parsed as CSV
-      500 — unexpected scoring or persistence failure
+      200: scan complete; scan_id and row counts returned
+      400: CSV structure invalid (missing required columns, row limit exceeded)
+      413: legacy endpoint byte cap exceeded
+      422: file bytes cannot be parsed as CSV
+      500: unexpected scoring or persistence failure
     """
     filename = file.filename or "upload.csv"
     file_bytes = await file.read(LEGACY_RISK_SCAN_UPLOAD_MAX_BYTES + 1)
@@ -1220,10 +1220,10 @@ def list_recent_risk_scans(limit: int = 10):
     for paginated row access.
 
     Query params:
-      limit   1–50, default 10
+      limit   1-50, default 10
 
     Responses:
-      200 — list of scan headers (may be empty)
+      200: list of scan headers (may be empty)
     """
     return get_recent_portfolio_scans(limit=limit)
 
@@ -1234,8 +1234,8 @@ def get_risk_scan_status(scan_id: str):
     Return scan processing status and row-count summary.
 
     Responses:
-      200 — scan record found
-      404 — scan_id not found
+      200: scan record found
+      404: scan_id not found
     """
     scan = get_portfolio_scan_status(scan_id)
     if scan is None:
@@ -1275,9 +1275,9 @@ def get_risk_scan_summary(scan_id: str):
     exposure totals, and top risk patterns.
 
     Responses:
-      200 — scan found and complete
-      400 — scan exists but is not COMPLETE
-      404 — scan_id not found
+      200: scan found and complete
+      400: scan exists but is not COMPLETE
+      404: scan_id not found
     """
     scan = get_portfolio_scan(scan_id)
     if scan is None:
@@ -1349,9 +1349,9 @@ def get_risk_scan_results(
     Results are ordered by risk_score DESC NULLS LAST, then row_number ASC.
 
     Responses:
-      200 — raw result list when page/page_size are omitted
-      200 — paginated envelope when page or page_size is provided
-      404 — scan_id not found
+      200: raw result list when page/page_size are omitted
+      200: paginated envelope when page or page_size is provided
+      404: scan_id not found
     """
     scan = get_portfolio_scan(scan_id)
     if scan is None:
@@ -1386,10 +1386,10 @@ def promote_scan_result(scan_id: str, result_id: int):
     Does not trigger AI investigation or workflow dispatch automatically.
 
     Responses:
-      200 — promoted; case_id and dossier path returned
-      400 — result is not VALID, or result does not belong to this scan
-      404 — scan or result not found
-      409 — already promoted, or transaction already exists in predictions
+      200: promoted; case_id and dossier path returned
+      400: result is not VALID, or result does not belong to this scan
+      404: scan or result not found
+      409: already promoted, or transaction already exists in predictions
     """
     scan = get_portfolio_scan(scan_id)
     if scan is None:
@@ -1470,9 +1470,9 @@ def export_risk_scan_csv(scan_id: str, tier: str | None = None):
     Omitting `tier` returns all rows (default behaviour, unchanged).
 
     Responses:
-      200 — text/csv attachment (streamed in batches)
-      400 — scan is not COMPLETE
-      404 — scan_id not found
+      200: text/csv attachment (streamed in batches)
+      400: scan is not COMPLETE
+      404: scan_id not found
     """
     scan = get_portfolio_scan(scan_id)
     if scan is None:

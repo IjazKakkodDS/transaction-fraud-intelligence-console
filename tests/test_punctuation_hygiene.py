@@ -87,3 +87,61 @@ class TestPublicDocsPunctuation:
                 assert not path.startswith(excluded_prefix), (
                     f"Public doc list accidentally includes excluded path: {path}"
                 )
+
+
+class TestOpenAPIPunctuation:
+    """Verify FastAPI route handler docstrings (OpenAPI-visible) contain no em/en dashes.
+
+    Uses AST parsing so no DB connection or app import is required.
+    """
+
+    MAIN_PY = "src/api/main.py"
+
+    def _route_docstrings(self):
+        import ast
+        source = open(self.MAIN_PY, encoding="utf-8").read()
+        tree = ast.parse(source)
+        results = []
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                for dec in node.decorator_list:
+                    is_app_route = (
+                        isinstance(dec, ast.Call)
+                        and isinstance(dec.func, ast.Attribute)
+                        and isinstance(dec.func.value, ast.Name)
+                        and dec.func.value.id == "app"
+                    )
+                    if is_app_route:
+                        doc = ast.get_docstring(node)
+                        if doc:
+                            results.append((node.name, doc))
+        return results
+
+    def test_route_docstrings_no_em_en_dash(self):
+        hits = [
+            f"{name}: {doc[:60]!r}"
+            for name, doc in self._route_docstrings()
+            if EM_DASH in doc or EN_DASH in doc
+        ]
+        assert hits == [], f"Em/en dash in route handler docstrings: {hits}"
+
+    def test_route_handler_count(self):
+        docs = self._route_docstrings()
+        assert len(docs) >= 10, (
+            f"AST scan found only {len(docs)} documented routes; expected >= 10"
+        )
+
+    def test_fastapi_title_no_dash(self):
+        import ast
+        source = open(self.MAIN_PY, encoding="utf-8").read()
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                func = node.func
+                if isinstance(func, ast.Name) and func.id == "FastAPI":
+                    for kw in node.keywords:
+                        if kw.arg == "title" and isinstance(kw.value, ast.Constant):
+                            title = kw.value.value
+                            assert EM_DASH not in title and EN_DASH not in title
+                            assert "Fraud Intelligence Console" in title
+                            return
