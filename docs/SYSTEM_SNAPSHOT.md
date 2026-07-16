@@ -17,7 +17,7 @@
 | Event broker | Redpanda (Kafka-compatible, single-node local) |
 | Workflow automation | n8n |
 | Local LLM | Ollama (host-resident; mistral:latest or equivalent) |
-| Release readiness | 37/37 checks PASS |
+| Release readiness | 40/40 checks PASS |
 | E2E test coverage | 11/11 Playwright checks PASS |
 
 ---
@@ -359,7 +359,7 @@ The reliability view is populated in both healthy and degraded states. This is a
 
 | Check | Result |
 |---|---|
-| Release readiness (scripts/verify_release_readiness.py) | 37/37 PASS |
+| Release readiness (scripts/verify_release_readiness.py) | 40/40 PASS |
 | E2E Playwright checks | 11/11 PASS |
 | Next.js lint | PASS |
 | Next.js build | PASS (8 routes) |

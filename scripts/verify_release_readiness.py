@@ -237,6 +237,8 @@ _PUBLIC_TEXT_FILES = [
     "docs/CONSUMER_DURABILITY.md",
     "docs/SYSTEM_SNAPSHOT.md",
     "docs/DEPLOYMENT_STRATEGY.md",
+    "docs/DEPLOYMENT_PLAN.md",
+    "docs/RICH_SYNTHETIC_BANKING_SCHEMA.md",
 ]
 _dash_hits = []
 for _p in _PUBLIC_TEXT_FILES:

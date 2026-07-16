@@ -173,7 +173,7 @@ invisible to static rules.
 
 Behavioural signals surface as amber chips in the Case Dossier. A transaction that is
 individually unremarkable may still be high-risk if it deviates sharply from the
-entity's established pattern. Architecture: [docs/BEHAVIOURAL_INTELLIGENCE_DESIGN.md](docs/BEHAVIOURAL_INTELLIGENCE_DESIGN.md).
+entity's established pattern.
 
 ### Dirty Data and Stream Resilience (Phase 14)
 
@@ -184,7 +184,6 @@ The ingestion and scoring pipeline was validated against realistic input degrada
 - Consumer restart recovery: message redelivery after unexpected failure handled correctly per consumer type
 - Stream resilience verified under controlled dirty-data injection scenarios
 
-Architecture: [docs/DIRTY_DATA_RESILIENCE.md](docs/DIRTY_DATA_RESILIENCE.md).
 
 ### Graph / Mule-Network Intelligence (Phase 15)
 
@@ -192,14 +191,14 @@ The graph layer detects coordinated fraud patterns through shared-entity topolog
 
 | Signal | Description |
 |---|---|
-| `MULE_FAN_IN_PATTERN` | Transactions converging on a common receiving entity -- mule account pattern |
-| `MULE_FAN_OUT_PATTERN` | Transactions dispersing from a single originating entity -- distribution pattern |
+| `MULE_FAN_IN_PATTERN` | Transactions converging on a common receiving entity (mule account pattern) |
+| `MULE_FAN_OUT_PATTERN` | Transactions dispersing from a single originating entity (distribution pattern) |
 | Shared device indicator | Multiple user accounts sharing a common device identifier |
 | Shared identity indicator | Connected identity clusters across the transaction network |
 
 Nine graph indicators are computed per transaction. `graph_boost` contributes to the
 4-layer risk score independently of model and behavioural signals. Graph signals surface
-as violet chips in the Case Dossier. Architecture: [docs/GRAPH_INTELLIGENCE_DESIGN.md](docs/GRAPH_INTELLIGENCE_DESIGN.md).
+as violet chips in the Case Dossier.
 
 ### Adversarial Synthetic Fraud Simulation (Phase 16)
 

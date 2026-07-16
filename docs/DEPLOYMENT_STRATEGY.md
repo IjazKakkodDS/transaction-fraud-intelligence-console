@@ -26,13 +26,13 @@ Kafka, Ollama, and n8n are intentionally excluded from the hosted free-tier prof
 | Hosted inspection URL | https://transaction-fraud-intelligence-cons.vercel.app |
 | Data | Synthetic data only. No real transaction records, no real cardholder data, no PII. |
 | Repo size | 7.1 MB object store |
-| Release readiness | 37/37 automated checks PASS |
+| Release readiness | 40/40 automated checks PASS |
 | E2E coverage | 11/11 Playwright checks PASS |
 | Screenshot evidence | 12 Playwright-captured PNGs in docs/screenshots/ |
 
 ---
 
-## 3. Why Local-First Is the Correct Current Strategy
+## 3. Current Deployment Posture Rationale
 
 **The architecture is inspectable without a live URL.**
 
@@ -40,23 +40,11 @@ The codebase, Docker Compose configuration, source code, scoring logic, and docu
 
 **Local inspection is reproducible and verifiable.**
 
-A reviewer can run `python scripts/verify_release_readiness.py` (37/37 PASS), run `npm run lint` and `npm run build` (both PASS), and clone the repository to confirm model artifacts, schemas, and scoring logic are exactly as documented. A static hosted page or a screenshot-only portfolio cannot offer that level of verification.
+A reviewer can run `python scripts/verify_release_readiness.py` (40/40 PASS), run `npm run lint` and `npm run build` (both PASS), and clone the repository to confirm model artifacts, schemas, and scoring logic are exactly as documented. A static hosted page or a screenshot-only portfolio cannot offer that level of verification.
 
-**The deployment prerequisites are not yet complete.**
+**Profile B provides a live hosted demonstrability layer.**
 
-The following are not implemented and must be in place before any shared or internet-facing deployment:
-- Authentication and RBAC (design in docs/AUTH_RBAC_DESIGN.md; implementation deferred for institution-specific deployment)
-- TLS and HTTPS
-- Production secret management (not flat `.env` files)
-- Rate limiting and API gateway controls
-- Monitoring, alerting, and log aggregation
-- Managed infrastructure for PostgreSQL, Redpanda, and Redis at production scale
-
-Deploying without these controls would undermine the professional credibility of the system. The local-first posture preserves that credibility while the remaining controls are planned.
-
-**The video artifact covers the hosted demo gap.**
-
-The narrated product walkthrough (v9-subtitled, approximately 12 minutes 47 seconds) documents the complete analyst experience, including live scoring, case dossier navigation, AI investigation brief generation, portfolio risk scan execution, workflow audit trail, and reliability metrics. Once uploaded to a hosting platform (LinkedIn, YouTube unlisted, Google Drive), the video provides the demonstrability that a live hosted URL would otherwise provide.
+The hosted inspection environment (Vercel, Render, Neon Postgres) provides live scoring, analyst triage, case review, and portfolio risk scans without local setup. Kafka, Ollama, and n8n are intentionally excluded from the hosted free-tier profile. Full-stack local deployment remains the verification path for all benchmark results documented in this repository.
 
 ---
 
@@ -131,7 +119,6 @@ The repository constitutes a complete inspection package:
 | Screenshots (12 PNGs) | Tracked | docs/screenshots/ |
 | System snapshot | Complete | docs/SYSTEM_SNAPSHOT.md |
 | Experience flow guide | Complete | docs/EXPERIENCE_FLOW.md |
-| Integration API blueprint | Complete | docs/INTEGRATION_API_BLUEPRINT.md |
 | Portfolio case study | Complete | docs/PORTFOLIO_CASE_STUDY.md |
 | Consumer durability design | Complete | docs/CONSUMER_DURABILITY.md |
 | Auth and RBAC design | Complete | docs/AUTH_RBAC_DESIGN.md |
@@ -323,13 +310,12 @@ The following phrasings are approved for public-facing descriptions of the syste
 
 **What to confirm about deployment readiness:**
 
-1. `python scripts/verify_release_readiness.py` passes 37/37 checks
+1. `python scripts/verify_release_readiness.py` passes 40/40 checks
 2. `git ls-files | grep -i .mp4` returns nothing (no video binaries tracked)
 3. `.env` is excluded from git (confirmed by release readiness check)
 4. `docs/AUTH_RBAC_DESIGN.md` documents the designed access control model
 5. `docs/SECURITY_POSTURE.md` documents the current posture and hardening path
 6. `docs/CONSUMER_DURABILITY.md` documents the current consumer design and production gaps
-7. `docs/INTEGRATION_API_BLUEPRINT.md` documents the proposed integration facade
 
 **What the current deployment boundary means for portfolio review:**
 The local runtime is a complete and verifiable inspection package. The architecture, scoring logic, audit trail, and AI investigation layer are all inspectable in source code and confirmed by automated validation. The boundary between the current local package and a cloud deployment is documented, not hidden.

@@ -489,7 +489,7 @@ def get_daily_fraud_summary() -> dict:
             SELECT
                 COALESCE(COUNT(*), 0)                                                         AS total_workflow_events,
                 COALESCE(SUM(CASE WHEN workflow_action = 'ESCALATE_TO_FRAUD_OPS'
-                                  THEN 1 ELSE 0 END), 0)                                      AS total_escalation_events,
+                                  THEN 1 ELSE 0 END), 0)                                      AS automation_escalation_events,
                 COALESCE(SUM(CASE WHEN workflow_action = 'STALE_CASE_REMINDER'
                                   THEN 1 ELSE 0 END), 0)                                      AS total_stale_reminders,
                 MAX(created_at)                                                                AS latest_workflow_event_at
@@ -510,7 +510,7 @@ def get_daily_fraud_summary() -> dict:
         "false_positive":            int(pred["false_positive"]),
         "average_risk_score":        float(pred["average_risk_score"]) if pred["average_risk_score"] is not None else 0.0,
         "total_workflow_events":     int(wf["total_workflow_events"]),
-        "total_escalation_events":   int(wf["total_escalation_events"]),
+        "automation_escalation_events": int(wf["automation_escalation_events"]),
         "total_stale_reminders":     int(wf["total_stale_reminders"]),
         "latest_workflow_event_at":  latest_wf_at.isoformat() if latest_wf_at is not None else None,
     }

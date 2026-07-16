@@ -91,7 +91,7 @@ leave disconnected:
 | Fraud governance | Every decision, automation action, and AI output is persisted with version traceability |
 
 **Services:** FastAPI (backend), Next.js 16 (analyst console), PostgreSQL 16 (persistence),
-Redpanda (event broker), Redis (cache), scoring consumer, investigation consumer -- seven
+Redpanda (event broker), Redis (cache), scoring consumer, investigation consumer: seven
 services, single command startup.
 
 ---
@@ -169,7 +169,7 @@ against historical fraud outcomes.
 | 10K rich scan: P0+P1 priority review share | 24.55% (2,455 of 10,000 transactions) | Measured |
 | 10K rich scan: P3 low-risk routing | 70.12% (7,012 transactions) | Measured |
 | E2E Playwright checks | 11 / 11 passed | Measured |
-| Release readiness checks | 37 / 37 passed | Measured |
+| Release readiness checks | 40 / 40 passed | Measured |
 | Scoring intelligence layers | 4 | Implemented |
 | Backend API endpoints | 27 | Implemented |
 | Frontend analyst console | Multi-page analyst workflow covering intake, queue, cases, portfolio scan, audit, and reliability views | Implemented |
@@ -453,7 +453,7 @@ intelligence. The exact signal composition is documented in the model governance
 can be calibrated for institution-specific labelled outcomes.
 
 Decision tiers: APPROVE below 0.3, REVIEW 0.3 to 0.7, BLOCK above 0.7. Each layer
-contributes independently -- a transaction flagged only by graph topology can reach REVIEW
+contributes independently; a transaction flagged only by graph topology can reach REVIEW
 or BLOCK without triggering behavioural or rule signals.
 
 These thresholds are validated within the synthetic benchmark and adversarial simulation
@@ -620,7 +620,7 @@ schema, and checksum.
 
 | Check | Result |
 |---|---|
-| Release readiness (37 automated checks) | 37 / 37 PASS |
+| Release readiness (40 automated checks) | 40 / 40 PASS |
 | Frontend TypeScript build | PASS |
 | E2E Playwright checks (11 checks, headless Chromium, live stack) | 11 / 11 PASS |
 | Detailed health endpoint | GET /health/detailed: components report per runtime profile |

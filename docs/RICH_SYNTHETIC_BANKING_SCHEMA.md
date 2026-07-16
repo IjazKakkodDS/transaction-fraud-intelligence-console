@@ -98,7 +98,7 @@ operational context.
 | `channel` | string | No | Transaction entry channel. Values: `mobile_app`, `web`, `api`, `in_store`, `atm`, `phone`. |
 | `payment_method` | string | Yes | Payment rail. Values: `credit_card`, `debit_card`, `digital_wallet`, `bank_transfer`. Unchanged from current schema. |
 | `device_id` | string | No | Device identifier. Empty or absent triggers the `No device identifier present` reason code. Unchanged from current schema. |
-| `device_trust_score` | float [0.0–1.0] | No | Institution-assigned device trust score. Score < 0.4 is treated as an unrecognised or low-trust device. |
+| `device_trust_score` | float [0.0-1.0] | No | Institution-assigned device trust score. Score < 0.4 is treated as an unrecognised or low-trust device. |
 | `ip_country` | string (ISO 3166-1 alpha-2) | No | Country resolved from the transaction IP address. May differ from `billing_country` on VPN or proxy. |
 | `billing_country` | string (ISO 3166-1 alpha-2) | No | Country on file for the account's billing address. Replaces the existing `country` column for rich-mode records; `country` remains the required alias. |
 | `shipping_country` | string (ISO 3166-1 alpha-2) | No | Destination country for e-commerce orders. Relevant for card-not-present fraud detection. |
@@ -109,7 +109,7 @@ operational context.
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `merchant_category` | string | No | Merchant category code group. Values: `grocery`, `electronics`, `gaming`, `travel`, `food`, `retail`, `healthcare`, `gambling`, `crypto`, `utilities`. Unchanged from current schema; `gambling` and `crypto` are new high-risk additions. |
-| `merchant_risk_score` | float [0.0–1.0] | No | Institution-assigned risk score for the receiving merchant. Score >= 0.7 triggers the `High-risk merchant` reason code. |
+| `merchant_risk_score` | float [0.0-1.0] | No | Institution-assigned risk score for the receiving merchant. Score >= 0.7 triggers the `High-risk merchant` reason code. |
 | `merchant_country` | string (ISO 3166-1 alpha-2) | No | Country of the merchant's registered entity. May differ from `ip_country` and `billing_country`. |
 | `counterparty_age_days` | integer | No | Number of days since the customer first transacted with this merchant or payee. 0 = first transaction ever with this payee. |
 | `new_payee_flag` | boolean | No | True when `counterparty_age_days` is 0 or the payee has not previously received a payment from this account. Explicit flag avoids re-deriving from age. |
@@ -463,8 +463,8 @@ Require full re-authentication. Notify the cardholder.
 | Priority | Score Range | Scenario Families |
 |---|---|---|
 | P0 Critical | >= 0.80 | Account Takeover, New Payee Transfer, Mule Account Behaviour |
-| P1 High | 0.60 – 0.79 | Card Testing, High-Velocity Spend, Unusual Geography, Dormant Account Reactivation, Cross-Border High-Value, Device Mismatch, Suspicious Repeated Attempts, Merchant Risk Spike (high) |
-| P2 Medium | 0.30 – 0.59 | Refund / Chargeback Abuse, Merchant Risk Spike (low) |
+| P1 High | 0.60-0.79 | Card Testing, High-Velocity Spend, Unusual Geography, Dormant Account Reactivation, Cross-Border High-Value, Device Mismatch, Suspicious Repeated Attempts, Merchant Risk Spike (high) |
+| P2 Medium | 0.30-0.59 | Refund / Chargeback Abuse, Merchant Risk Spike (low) |
 | P3 Low | < 0.30 | Legitimate transactions |
 
 ---
@@ -576,7 +576,7 @@ python scripts/verify_rich_banking_csv.py C:\tmp\rich-10k.csv
 **Output:** 42-column CSV (38 rich schema fields + 4 legacy compatibility aliases)
 **Default mix:** 70% normal, 30% fraud across 12 scenario families
 **Reproducibility:** fixed seed produces identical output across runs
-**Generated CSVs:** gitignored — never committed to version control
+**Generated CSVs:** gitignored; never committed to version control
 
 ### Phase 12F-3 -- Scenario-Aware Scoring and Reason Mapping (complete)
 

@@ -1,4 +1,4 @@
-# Fraud Intelligence Console — Deployment Plan
+﻿# Fraud Intelligence Console: Deployment Plan
 
 ---
 
@@ -18,17 +18,17 @@ not provisioned environments.
 
 | Item | Status |
 |---|---|
-| GitHub Actions CI | Implemented — `.github/workflows/ci.yml` |
-| Release readiness validator | Implemented — `scripts/verify_release_readiness.py` (release readiness checks) |
-| Model artifact governance | Implemented — `docs/MODEL_CARD.md`, MD5 tracked |
-| MLOps readiness documentation | Implemented — `docs/MLOPS_READINESS.md` |
-| Review seeding endpoint | Implemented — `POST /cases/seed-review` |
-| Model attribution endpoint | Implemented — `GET /cases/{case_id}/explain` |
-| CORS environment-configurable | Implemented — `ALLOWED_ORIGINS` env var (Phase 20I) |
-| `NEXT_PUBLIC_API_BASE_URL` | Implemented — frontend reads from environment |
+| GitHub Actions CI | Implemented: `.github/workflows/ci.yml` |
+| Release readiness validator | Implemented: `scripts/verify_release_readiness.py` (release readiness checks) |
+| Model artifact governance | Implemented: `docs/MODEL_CARD.md`, MD5 tracked |
+| MLOps readiness documentation | Implemented: `docs/MLOPS_READINESS.md` |
+| Review seeding endpoint | Implemented: `POST /cases/seed-review` |
+| Model attribution endpoint | Implemented: `GET /cases/{case_id}/explain` |
+| CORS environment-configurable | Implemented: `ALLOWED_ORIGINS` env var (Phase 20I) |
+| `NEXT_PUBLIC_API_BASE_URL` | Implemented: frontend reads from environment |
 | Docker Compose full-stack runtime | Primary local product package |
-| Cloud demo profile | Documented below — not provisioned |
-| Enterprise / AWS blueprint | Documented below — future roadmap |
+| Cloud demo profile | Documented below: not provisioned |
+| Enterprise / AWS blueprint | Documented below: future roadmap |
 
 **CORS blocker resolved.** `ALLOWED_ORIGINS` is now read from the environment. The
 local full-stack default (`http://localhost:3000,http://127.0.0.1:3000`) applies when
@@ -48,13 +48,13 @@ docker compose run --rm api alembic upgrade head   # first run only
 
 | Service | Image | Port | Role |
 |---|---|---|---|
-| `api` | Custom Dockerfile (python:3.11-slim) | 8000 | FastAPI — all HTTP endpoints |
+| `api` | Custom Dockerfile (python:3.11-slim) | 8000 | FastAPI: all HTTP endpoints |
 | `postgres` | postgres:16-alpine | 5432 | Primary persistence |
 | `redis` | redis:7-alpine | 6379 | Cache layer |
 | `redpanda` | redpandadata/redpanda:v24.1.1 | 9092, 8082 | Kafka-compatible event broker |
-| `redpanda-init` | redpandadata/redpanda:v24.1.1 | — | One-shot topic bootstrap |
-| `scoring-consumer` | Custom Dockerfile (shared with api) | — | Async scoring worker |
-| `investigation-consumer` | Custom Dockerfile (shared with api) | — | AI investigation worker |
+| `redpanda-init` | redpandadata/redpanda:v24.1.1 | (none) | One-shot topic bootstrap |
+| `scoring-consumer` | Custom Dockerfile (shared with api) | (none) | Async scoring worker |
+| `investigation-consumer` | Custom Dockerfile (shared with api) | (none) | AI investigation worker |
 | `n8n` | n8nio/n8n:latest | 5678 | Workflow automation |
 
 The Next.js frontend runs separately:
@@ -74,7 +74,7 @@ brief generation; all other product surfaces function without it.
 
 ## Deployment Profiles
 
-### Profile A — Full Local Product Mode
+### Profile A: Full Local Product Mode
 
 The primary product package. All capabilities available when the full stack is running.
 
@@ -94,7 +94,7 @@ attribution (`GET /cases/{case_id}/explain`), AI investigation briefs, workflow 
 audit trail, reliability metrics, portfolio risk scan.
 
 **Model artifact:** `saved_models/fraud_model.pkl` is tracked in git (≈106 KB,
-deterministic, required for the Docker image at build time — `docker compose build`
+deterministic, required for the Docker image at build time: `docker compose build`
 copies it into the container).
 
 **Recommended for:** technical review, full product evaluation, E2E Playwright testing,
@@ -102,7 +102,7 @@ demo walkthrough, stakeholder deep-dive.
 
 ---
 
-### Profile B — Cloud Demo Mode
+### Profile B: Cloud Demo Mode
 
 Lightweight cloud-accessible review surface. Kafka/Redpanda and Ollama investigation are
 treated as local-only for the first cloud demo; the sync scoring path eliminates the
@@ -113,11 +113,11 @@ consumer dependency.
 | Next.js frontend | Vercel (zero-configuration Next.js deployment) |
 | FastAPI backend | Render, Railway, or AWS (containerized via existing Dockerfile) |
 | PostgreSQL | Managed Postgres (Render Postgres, Supabase, Neon, Railway Postgres) |
-| Redis | Managed Redis (Upstash, Redis Cloud) — optional for first cloud demo |
-| Kafka / Redpanda | Disabled for first cloud demo — `KAFKA_BOOTSTRAP_SERVERS` unset |
-| Scoring | Synchronous inline — `SYNC_SCORING_ENABLED=true` |
+| Redis | Managed Redis (Upstash, Redis Cloud): optional for first cloud demo |
+| Kafka / Redpanda | Disabled for first cloud demo: `KAFKA_BOOTSTRAP_SERVERS` unset |
+| Scoring | Synchronous inline: `SYNC_SCORING_ENABLED=true` |
 | Ollama / investigation | Local-only; investigation briefs from local DB persist in cloud DB |
-| n8n | Optional — set `N8N_WEBHOOK_URL` to n8n Cloud or self-hosted webhook URL |
+| n8n | Optional: set `N8N_WEBHOOK_URL` to n8n Cloud or self-hosted webhook URL |
 
 **Required environment variables for cloud demo:**
 
@@ -143,7 +143,7 @@ docker run --env DATABASE_URL=<managed-url> <image> alembic upgrade head
 
 ---
 
-### Profile C — Enterprise / AWS Blueprint
+### Profile C: Enterprise / AWS Blueprint
 
 Full production-grade deployment. Documented as an implementation-ready blueprint for
 institution-specific deployment. Not currently provisioned.
@@ -155,24 +155,24 @@ institution-specific deployment. Not currently provisioned.
 | PostgreSQL | Amazon RDS (PostgreSQL 16) |
 | Kafka / Redpanda | Amazon MSK, Redpanda Cloud, or self-managed Redpanda on EC2 |
 | Scoring consumer | ECS service (shared Dockerfile with API) |
-| Investigation consumer | ECS service — requires hosted LLM endpoint (see below) |
+| Investigation consumer | ECS service: requires hosted LLM endpoint (see below) |
 | LLM / Ollama | Hosted LLM API (Anthropic Claude API, OpenAI API, or GPU-backed Ollama on EC2) |
 | n8n | n8n Cloud or self-hosted n8n on EC2 / ECS |
 | Secrets management | AWS Secrets Manager or Parameter Store |
-| Auth / RBAC | Implementation deferred — see `docs/AUTH_RBAC_DESIGN.md` |
-| Monitoring | CloudWatch, or Prometheus/Grafana stack — see `docs/MLOPS_READINESS.md` |
+| Auth / RBAC | Implementation deferred: see `docs/AUTH_RBAC_DESIGN.md` |
+| Monitoring | CloudWatch, or Prometheus/Grafana stack: see `docs/MLOPS_READINESS.md` |
 | CORS | `ALLOWED_ORIGINS` set to production frontend URL |
 
 **Hosted LLM requirement:** the investigation consumer connects to `OLLAMA_BASE_URL`.
 For enterprise deployment, replace with a hosted endpoint (Anthropic API, OpenAI API,
-or a GPU-backed Ollama instance on EC2). Update `OLLAMA_BASE_URL` accordingly — no
+or a GPU-backed Ollama instance on EC2). Update `OLLAMA_BASE_URL` accordingly; no
 consumer code change required if the endpoint is Ollama-compatible; update
 `src/investigation/reasoner.py` if using a different API contract.
 
 **This profile is documented as a future deployment blueprint.** It reflects the correct
 enterprise architecture for institution-specific regulated deployment. Auth/RBAC
 hardening, drift monitoring, canary deployment, and model-risk governance review are
-prerequisites for regulated production use — documented in `docs/AUTH_RBAC_DESIGN.md`,
+prerequisites for regulated production use, documented in `docs/AUTH_RBAC_DESIGN.md`,
 `docs/SECURITY_POSTURE.md`, and `docs/MLOPS_READINESS.md`.
 
 ---
@@ -183,7 +183,7 @@ prerequisites for regulated production use — documented in `docs/AUTH_RBAC_DES
 
 | Variable | Required | Default | Notes |
 |---|---|---|---|
-| `DATABASE_URL` | Yes | — | Full PostgreSQL connection string |
+| `DATABASE_URL` | Yes | (none) | Full PostgreSQL connection string |
 | `ALLOWED_ORIGINS` | No | `http://localhost:3000,http://127.0.0.1:3000` | Comma-separated frontend origins for CORS middleware. Set to deployed frontend URL for cloud deployment. |
 | `APP_ENV` | No | development | Set to `production` for deployed environments |
 | `LOG_LEVEL` | No | INFO | |
@@ -207,8 +207,8 @@ prerequisites for regulated production use — documented in `docs/AUTH_RBAC_DES
 
 | Variable | Required | Default | Notes |
 |---|---|---|---|
-| `DATABASE_URL` | Yes | — | Same as API |
-| `KAFKA_BOOTSTRAP_SERVERS` | Yes | — | Consumer will not start if unset |
+| `DATABASE_URL` | Yes | (none) | Same as API |
+| `KAFKA_BOOTSTRAP_SERVERS` | Yes | (none) | Consumer will not start if unset |
 | `SYNC_SCORING_ENABLED` | No | true | Should match API setting |
 | `MODEL_PATH` | No | `saved_models/fraud_model.pkl` | Must be present inside the container |
 | Scoring threshold vars | No | Same defaults as API | `MODEL_WEIGHT`, `RULE_WEIGHT`, `REVIEW_THRESHOLD`, `BLOCK_THRESHOLD`, etc. |
@@ -217,8 +217,8 @@ prerequisites for regulated production use — documented in `docs/AUTH_RBAC_DES
 
 | Variable | Required | Default | Notes |
 |---|---|---|---|
-| `DATABASE_URL` | Yes | — | Same as API |
-| `KAFKA_BOOTSTRAP_SERVERS` | Yes | — | Broker address |
+| `DATABASE_URL` | Yes | (none) | Same as API |
+| `KAFKA_BOOTSTRAP_SERVERS` | Yes | (none) | Broker address |
 | `OLLAMA_BASE_URL` | Yes | `http://host.docker.internal:11434` | Primary deployment blocker for cloud; replace with hosted LLM endpoint |
 | `OLLAMA_MODEL` | No | `mistral:latest` | |
 | `OLLAMA_TIMEOUT` | No | 300 | |
@@ -273,7 +273,7 @@ curl http://localhost:8000/health/detailed
 #    http://localhost:8000/docs               - FastAPI Swagger API documentation
 
 # 7. Run release readiness gate
-python scripts/verify_release_readiness.py   # 37 checks; all must pass
+python scripts/verify_release_readiness.py   # 40 checks; all must pass
 
 # 8. Run E2E Playwright suite (requires live stack)
 cd fraud-console
@@ -332,9 +332,9 @@ are documented as known prerequisites, not hidden gaps.
 | Hosted LLM endpoint | Required for cloud investigation | Replace `host.docker.internal:11434` with cloud-accessible LLM API |
 | n8n hostname configuration | Required | `N8N_HOST`, `WEBHOOK_URL` must be updated to deployed hostname |
 | Secrets management | Required | AWS Secrets Manager, Doppler, or platform-native secrets |
-| Production monitoring | Future L3 | Prometheus, Grafana, OpenTelemetry — see `docs/MLOPS_READINESS.md` |
+| Production monitoring | Future L3 | Prometheus, Grafana, OpenTelemetry: see `docs/MLOPS_READINESS.md` |
 | Drift monitoring | Future L3 | Statistical distribution tracking against production baseline |
-| Auth enforcement at API layer | Required | JWT middleware, per-endpoint RBAC — see `docs/AUTH_RBAC_DESIGN.md` |
+| Auth enforcement at API layer | Required | JWT middleware, per-endpoint RBAC: see `docs/AUTH_RBAC_DESIGN.md` |
 
 ---
 

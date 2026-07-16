@@ -57,7 +57,7 @@ export const DailySummarySchema = z.object({
   false_positive: z.number(),
   average_risk_score: z.number(),
   total_workflow_events: z.number(),
-  total_escalation_events: z.number(),
+  automation_escalation_events: z.number(),
   total_stale_reminders: z.number(),
   latest_workflow_event_at: z.string().nullable(),
 });
