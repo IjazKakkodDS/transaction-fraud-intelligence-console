@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 560">
+  <title>Case Investigation Lifecycle</title>
+  <desc>Case investigation lifecycle: evidence assembly, local LLM inference, schema validation, failure-bounded persistence, analyst review, and verdict.</desc>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto">
+      <polygon points="0,0 10,5 0,10" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="1400" height="560" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
+  <rect x="0" y="0" width="1400" height="46" rx="8" fill="#0F172A"/>
+  <rect x="0" y="34" width="1400" height="12" fill="#0F172A"/>
+  <text x="700" y="30" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="20" font-weight="700" fill="#F1F5F9">Case Investigation Lifecycle</text>
+  <rect x="10" y="52" width="1380" height="74" rx="4" fill="#FFF1F2"/>
+  <text x="20" y="65" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#BE123C" letter-spacing="1.4">EVIDENCE ASSEMBLY</text>
+  <rect x="10" y="136" width="1380" height="74" rx="4" fill="#FEF3C7"/>
+  <text x="20" y="149" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#92400E" letter-spacing="1.4">LLM INFERENCE</text>
+  <rect x="10" y="220" width="1380" height="146" rx="4" fill="#F0FDF4"/>
+  <text x="20" y="233" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#15803D" letter-spacing="1.4">VALIDATION &amp; PERSISTENCE</text>
+  <rect x="10" y="376" width="1380" height="168" rx="4" fill="#EFF6FF"/>
+  <text x="20" y="389" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#1D4ED8" letter-spacing="1.4">ANALYST CONTROL</text>
+  <rect x="10" y="58" width="410" height="58" rx="6" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="1.5"/>
+  <text x="215" y="82" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#1E40AF">Case Context</text>
+  <text x="215" y="98" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#1E40AF" opacity="0.85">Transaction · features · decision · risk score</text>
+  <rect x="500" y="58" width="400" height="58" rx="6" fill="#FECACA" stroke="#DC2626" stroke-width="1.5"/>
+  <text x="700" y="82" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#7F1D1D">Evidence Payload</text>
+  <text x="700" y="98" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#7F1D1D" opacity="0.85">Base · enriched · behavioural · graph signals grouped</text>
+  <rect x="980" y="58" width="410" height="58" rx="6" fill="#FEF9C3" stroke="#A16207" stroke-width="1.5"/>
+  <text x="1185" y="82" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#713F12">RAG Retrieval</text>
+  <text x="1185" y="98" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#713F12" opacity="0.85">Playbook and policy knowledge base queried</text>
+  <rect x="200" y="144" width="460" height="58" rx="6" fill="#FEE2E2" stroke="#B91C1C" stroke-width="1.5"/>
+  <text x="430" y="168" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#7F1D1D">Local LLM Profile</text>
+  <text x="430" y="184" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#7F1D1D" opacity="0.85">Ollama inference (local runtime only)</text>
+  <rect x="740" y="144" width="460" height="58" rx="6" fill="#E2E8F0" stroke="#475569" stroke-width="1.5"/>
+  <text x="970" y="168" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#0F172A">Prompt Assembly</text>
+  <text x="970" y="184" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#0F172A" opacity="0.85">Evidence groups + playbook context structured</text>
+  <rect x="200" y="228" width="460" height="58" rx="6" fill="#E9D5FF" stroke="#9333EA" stroke-width="1.5"/>
+  <text x="430" y="252" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">Advisory Brief</text>
+  <text x="430" y="268" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">Recommendation · confidence · rationale · risk factors</text>
+  <rect x="740" y="228" width="460" height="58" rx="6" fill="#E2E8F0" stroke="#475569" stroke-width="1.5"/>
+  <text x="970" y="252" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#0F172A">Schema Validation</text>
+  <text x="970" y="268" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#0F172A" opacity="0.85">Structured output contract enforced</text>
+  <rect x="80" y="318" width="440" height="62" rx="6" fill="#BBF7D0" stroke="#059669" stroke-width="1.5"/>
+  <text x="300" y="344" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#064E3B">Persisted Brief (COMPLETE)</text>
+  <text x="300" y="360" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#064E3B" opacity="0.85">AGENT_VERSION tagged · durable record</text>
+  <rect x="600" y="318" width="440" height="62" rx="6" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1.5"/>
+  <text x="820" y="344" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#6B7280">Bounded Failure Record (FAILED)</text>
+  <text x="820" y="360" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#6B7280" opacity="0.85">Analyst-readable failure · durable FAILED state</text>
+  <rect x="200" y="400" width="460" height="62" rx="6" fill="#BFDBFE" stroke="#2563EB" stroke-width="1.5"/>
+  <text x="430" y="426" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#1E3A8A">Analyst Review</text>
+  <text x="430" y="442" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#1E3A8A" opacity="0.85">Brief is advisory only — analyst retains decision control</text>
+  <rect x="740" y="400" width="460" height="62" rx="6" fill="#FDE68A" stroke="#D97706" stroke-width="1.5"/>
+  <text x="970" y="426" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#451A03">Human Verdict</text>
+  <text x="970" y="442" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#451A03" opacity="0.85">CONFIRMED_FRAUD · FALSE_POSITIVE · APPROVED</text>
+  <text x="700" y="488" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" fill="#6B7280" font-style="italic">AI assists investigation briefing. Analyst decision is authoritative. Every brief carries AGENT_VERSION for traceability.</text>
+  <path d="M215,116 C215,128 430,128 430,144" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M700,116 C700,128 970,128 970,144" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M1185,116 C1185,128 970,128 970,144" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M430,202 C430,215 430,228 430,228" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M970,202 C970,215 970,228 970,228" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <line x1="660" y1="257" x2="740" y2="257" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <path d="M970,286 C970,302 300,302 300,318" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M970,286 C970,302 820,302 820,318" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M300,380 C300,392 430,392 430,400" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M820,380 C820,392 430,392 430,400" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <line x1="660" y1="431" x2="740" y2="431" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+</svg>

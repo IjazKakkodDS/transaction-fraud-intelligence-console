@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 680">
+  <title>Deployment Profiles</title>
+  <desc>Side-by-side comparison of Profile A (local full runtime) and Profile B (hosted inspection runtime).</desc>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto">
+      <polygon points="0,0 10,5 0,10" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="1400" height="680" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
+  <rect x="0" y="0" width="1400" height="46" rx="8" fill="#0F172A"/>
+  <rect x="0" y="34" width="1400" height="12" fill="#0F172A"/>
+  <text x="700" y="30" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="20" font-weight="700" fill="#F1F5F9">Deployment Profiles</text>
+  <rect x="40" y="52" width="630" height="40" rx="4" fill="#1E293B"/>
+  <text x="355" y="78" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="16" font-weight="700" fill="#F1F5F9">Profile A — Local Full Runtime</text>
+  <rect x="730" y="52" width="630" height="40" rx="4" fill="#0C4A6E"/>
+  <text x="1045" y="78" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="16" font-weight="700" fill="#BAE6FD">Profile B — Hosted Inspection Runtime</text>
+  <line x1="700" y1="52" x2="700" y2="664" stroke="#E2E8F0" stroke-width="2" stroke-dasharray="4,4"/>
+  <rect x="40" y="108" width="590" height="48" rx="6" fill="#BFDBFE" stroke="#2563EB" stroke-width="1.5"/>
+  <text x="335" y="127" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#1E3A8A">Next.js 16</text>
+  <text x="335" y="143" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#1E3A8A" opacity="0.85">Analyst frontend</text>
+  <rect x="514" y="122" width="108" height="20" rx="10" fill="#059669"/>
+  <text x="568" y="135" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">ACTIVE</text>
+  <rect x="40" y="164" width="590" height="48" rx="6" fill="#DDD6FE" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="335" y="183" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">FastAPI + Scoring</text>
+  <text x="335" y="199" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">REST API · 4-layer scoring</text>
+  <rect x="514" y="178" width="108" height="20" rx="10" fill="#059669"/>
+  <text x="568" y="191" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">ACTIVE</text>
+  <rect x="40" y="220" width="590" height="48" rx="6" fill="#BBF7D0" stroke="#059669" stroke-width="1.5"/>
+  <text x="335" y="239" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#064E3B">PostgreSQL 16</text>
+  <text x="335" y="255" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#064E3B" opacity="0.85">Cases · events · scan results</text>
+  <rect x="514" y="234" width="108" height="20" rx="10" fill="#059669"/>
+  <text x="568" y="247" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">ACTIVE</text>
+  <rect x="40" y="276" width="590" height="48" rx="6" fill="#BBF7D0" stroke="#059669" stroke-width="1.5"/>
+  <text x="335" y="295" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#064E3B">Redis</text>
+  <text x="335" y="311" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#064E3B" opacity="0.85">Cache layer</text>
+  <rect x="514" y="290" width="108" height="20" rx="10" fill="#059669"/>
+  <text x="568" y="303" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">ACTIVE</text>
+  <rect x="40" y="332" width="590" height="48" rx="6" fill="#A5F3FC" stroke="#0891B2" stroke-width="1.5"/>
+  <text x="335" y="351" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#083344">Redpanda (Kafka)</text>
+  <text x="335" y="367" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#083344" opacity="0.85">Scoring · investigation topics</text>
+  <rect x="514" y="346" width="108" height="20" rx="10" fill="#059669"/>
+  <text x="568" y="359" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">ACTIVE</text>
+  <rect x="40" y="388" width="590" height="48" rx="6" fill="#FECACA" stroke="#DC2626" stroke-width="1.5"/>
+  <text x="335" y="407" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#7F1D1D">Scoring Consumer</text>
+  <text x="335" y="423" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#7F1D1D" opacity="0.85">4-layer scoring pipeline</text>
+  <rect x="514" y="402" width="108" height="20" rx="10" fill="#059669"/>
+  <text x="568" y="415" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">ACTIVE</text>
+  <rect x="40" y="444" width="590" height="48" rx="6" fill="#FEE2E2" stroke="#B91C1C" stroke-width="1.5"/>
+  <text x="335" y="463" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#7F1D1D">Investigation Consumer</text>
+  <text x="335" y="479" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#7F1D1D" opacity="0.85">Ollama-backed AI briefs</text>
+  <rect x="514" y="458" width="108" height="20" rx="10" fill="#059669"/>
+  <text x="568" y="471" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">ACTIVE</text>
+  <rect x="40" y="500" width="590" height="48" rx="6" fill="#FBCFE8" stroke="#DB2777" stroke-width="1.5"/>
+  <text x="335" y="519" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#831843">n8n Workflow</text>
+  <text x="335" y="535" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#831843" opacity="0.85">Fraud escalation automation</text>
+  <rect x="514" y="514" width="108" height="20" rx="10" fill="#059669"/>
+  <text x="568" y="527" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">ACTIVE</text>
+  <rect x="40" y="556" width="590" height="48" rx="6" fill="#FEE2E2" stroke="#B91C1C" stroke-width="1.5"/>
+  <text x="335" y="575" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#7F1D1D">Ollama (Local LLM)</text>
+  <text x="335" y="591" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#7F1D1D" opacity="0.85">Mistral · investigation briefs</text>
+  <rect x="514" y="570" width="108" height="20" rx="10" fill="#059669"/>
+  <text x="568" y="583" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">ACTIVE</text>
+  <rect x="730" y="108" width="590" height="48" rx="6" fill="#BFDBFE" stroke="#2563EB" stroke-width="1.5"/>
+  <text x="1025" y="127" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#1E3A8A">Vercel</text>
+  <text x="1025" y="143" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#1E3A8A" opacity="0.85">Next.js frontend · CDN-distributed</text>
+  <rect x="1204" y="122" width="108" height="20" rx="10" fill="#059669"/>
+  <text x="1258" y="135" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">ACTIVE</text>
+  <rect x="730" y="164" width="590" height="48" rx="6" fill="#DDD6FE" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="1025" y="183" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">Render (FastAPI)</text>
+  <text x="1025" y="199" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">REST API · synchronous scoring</text>
+  <rect x="1204" y="178" width="108" height="20" rx="10" fill="#059669"/>
+  <text x="1258" y="191" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">ACTIVE</text>
+  <rect x="730" y="220" width="590" height="48" rx="6" fill="#BBF7D0" stroke="#059669" stroke-width="1.5"/>
+  <text x="1025" y="239" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#064E3B">Neon (PostgreSQL)</text>
+  <text x="1025" y="255" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#064E3B" opacity="0.85">Managed cloud Postgres</text>
+  <rect x="1204" y="234" width="108" height="20" rx="10" fill="#059669"/>
+  <text x="1258" y="247" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">ACTIVE</text>
+  <rect x="730" y="276" width="590" height="48" rx="6" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1.5"/>
+  <text x="1025" y="295" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#6B7280">Redis</text>
+  <text x="1025" y="311" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#6B7280" opacity="0.85">Not hosted</text>
+  <rect x="1204" y="290" width="108" height="20" rx="10" fill="#9CA3AF"/>
+  <text x="1258" y="303" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">HOSTED-DISABLED</text>
+  <rect x="730" y="332" width="590" height="48" rx="6" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1.5"/>
+  <text x="1025" y="351" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#6B7280">Kafka / Redpanda</text>
+  <text x="1025" y="367" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#6B7280" opacity="0.85">Not hosted · sync-only path</text>
+  <rect x="1204" y="346" width="108" height="20" rx="10" fill="#9CA3AF"/>
+  <text x="1258" y="359" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">HOSTED-DISABLED</text>
+  <rect x="730" y="388" width="590" height="48" rx="6" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1.5"/>
+  <text x="1025" y="407" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#6B7280">Scoring Consumer</text>
+  <text x="1025" y="423" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#6B7280" opacity="0.85">Disabled · sync path active</text>
+  <rect x="1204" y="402" width="108" height="20" rx="10" fill="#9CA3AF"/>
+  <text x="1258" y="415" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">HOSTED-DISABLED</text>
+  <rect x="730" y="444" width="590" height="48" rx="6" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1.5"/>
+  <text x="1025" y="463" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#6B7280">Investigation Consumer</text>
+  <text x="1025" y="479" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#6B7280" opacity="0.85">Disabled · no Ollama</text>
+  <rect x="1204" y="458" width="108" height="20" rx="10" fill="#9CA3AF"/>
+  <text x="1258" y="471" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">HOSTED-DISABLED</text>
+  <rect x="730" y="500" width="590" height="48" rx="6" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1.5"/>
+  <text x="1025" y="519" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#6B7280">n8n Workflow</text>
+  <text x="1025" y="535" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#6B7280" opacity="0.85">Disabled · no hosted callbacks</text>
+  <rect x="1204" y="514" width="108" height="20" rx="10" fill="#9CA3AF"/>
+  <text x="1258" y="527" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">HOSTED-DISABLED</text>
+  <rect x="730" y="556" width="590" height="48" rx="6" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="1.5"/>
+  <text x="1025" y="575" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#6B7280">Ollama / LLM</text>
+  <text x="1025" y="591" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#6B7280" opacity="0.85">Disabled · hosted-disabled</text>
+  <rect x="1204" y="570" width="108" height="20" rx="10" fill="#9CA3AF"/>
+  <text x="1258" y="583" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#FFFFFF">HOSTED-DISABLED</text>
+  <rect x="40" y="624" width="630" height="36" rx="4" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="355" y="647" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" fill="#374151" font-weight="600">docker compose up — 7 services · single command</text>
+  <rect x="730" y="624" width="630" height="36" rx="4" fill="#F0F9FF" stroke="#BAE6FD" stroke-width="1"/>
+  <text x="1045" y="647" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" fill="#0C4A6E" font-weight="600">Inspection runtime · Profile B · No production SLA</text>
+</svg>

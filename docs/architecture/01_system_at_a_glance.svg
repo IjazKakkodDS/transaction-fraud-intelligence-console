@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 668">
+  <title>System at a Glance</title>
+  <desc>Complete product architecture: analyst console, FastAPI, hybrid scoring, case store, analyst operations, and portfolio scan.</desc>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto">
+      <polygon points="0,0 10,5 0,10" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="1400" height="668" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
+  <rect x="0" y="0" width="1400" height="46" rx="8" fill="#0F172A"/>
+  <rect x="0" y="34" width="1400" height="12" fill="#0F172A"/>
+  <text x="700" y="30" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="20" font-weight="700" fill="#F1F5F9">System at a Glance</text>
+  <rect x="10" y="52" width="1380" height="78" rx="4" fill="#EFF6FF"/>
+  <text x="20" y="65" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#1D4ED8" letter-spacing="1.4">EXPERIENCE LAYER</text>
+  <rect x="10" y="146" width="1380" height="78" rx="4" fill="#F5F3FF"/>
+  <text x="20" y="159" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#6D28D9" letter-spacing="1.4">SERVICE LAYER</text>
+  <rect x="10" y="240" width="1380" height="178" rx="4" fill="#FFF1F2"/>
+  <text x="20" y="253" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#BE123C" letter-spacing="1.4">DECISION INTELLIGENCE</text>
+  <rect x="10" y="434" width="1380" height="78" rx="4" fill="#F0FDF4"/>
+  <text x="20" y="447" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#15803D" letter-spacing="1.4">DATA &amp; PERSISTENCE LAYER</text>
+  <rect x="10" y="528" width="1380" height="124" rx="4" fill="#FFFBEB"/>
+  <text x="20" y="541" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#B45309" letter-spacing="1.4">ANALYST OPERATIONS</text>
+  <rect x="480" y="62" width="440" height="58" rx="6" fill="#BFDBFE" stroke="#2563EB" stroke-width="1.5"/>
+  <text x="700" y="86" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#1E3A8A">Analyst Console</text>
+  <text x="700" y="102" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#1E3A8A" opacity="0.85">Next.js 16 · 8 routes</text>
+  <rect x="430" y="156" width="540" height="58" rx="6" fill="#DDD6FE" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="700" y="180" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">FastAPI REST API</text>
+  <text x="700" y="196" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">27 endpoints · scoring · cases · scan · workflow</text>
+  <rect x="10" y="250" width="290" height="58" rx="6" fill="#FECACA" stroke="#DC2626" stroke-width="1.5"/>
+  <text x="155" y="274" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#7F1D1D">Model Risk</text>
+  <text x="155" y="290" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#7F1D1D" opacity="0.85">XGBoost · weight 0.6</text>
+  <rect x="373" y="250" width="290" height="58" rx="6" fill="#FED7AA" stroke="#EA580C" stroke-width="1.5"/>
+  <text x="518" y="274" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#7C2D12">Rule Controls</text>
+  <text x="518" y="290" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#7C2D12" opacity="0.85">Deterministic · weight 0.4</text>
+  <rect x="736" y="250" width="290" height="58" rx="6" fill="#FEF9C3" stroke="#A16207" stroke-width="1.5"/>
+  <text x="881" y="274" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#713F12">Behavioural Intelligence</text>
+  <text x="881" y="290" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#713F12" opacity="0.85">Entity deviation signals</text>
+  <rect x="1099" y="250" width="290" height="58" rx="6" fill="#DCFCE7" stroke="#16A34A" stroke-width="1.5"/>
+  <text x="1244" y="274" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#14532D">Graph Intelligence</text>
+  <text x="1244" y="290" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#14532D" opacity="0.85">Mule-network topology</text>
+  <rect x="10" y="344" width="1380" height="62" rx="6" fill="#E2E8F0" stroke="#475569" stroke-width="1.5"/>
+  <text x="700" y="370" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#0F172A">Risk Score   ·   Decision Tier   ·   Reason Codes</text>
+  <text x="700" y="386" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#0F172A" opacity="0.85">APPROVE  &lt; 0.30          REVIEW  0.30 – 0.70          BLOCK  ≥ 0.70</text>
+  <rect x="160" y="444" width="440" height="58" rx="6" fill="#BBF7D0" stroke="#059669" stroke-width="1.5"/>
+  <text x="380" y="468" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#064E3B">PostgreSQL Case Store</text>
+  <text x="380" y="484" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#064E3B" opacity="0.85">Cases · investigations · verdicts · events</text>
+  <rect x="760" y="444" width="440" height="58" rx="6" fill="#A5F3FC" stroke="#0891B2" stroke-width="1.5"/>
+  <text x="980" y="468" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#083344">Portfolio Scan Results</text>
+  <text x="980" y="484" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#083344" opacity="0.85">Indexed results · tier counters · export</text>
+  <rect x="10" y="538" width="248" height="54" rx="6" fill="#FDE68A" stroke="#D97706" stroke-width="1.5"/>
+  <text x="134" y="560" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#451A03">Review Queue</text>
+  <text x="134" y="576" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#451A03" opacity="0.85">P0–P3 priority · sort by risk</text>
+  <rect x="272" y="538" width="248" height="54" rx="6" fill="#FDE68A" stroke="#D97706" stroke-width="1.5"/>
+  <text x="396" y="560" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#451A03">Case Dossier 2.0</text>
+  <text x="396" y="576" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#451A03" opacity="0.85">Evidence · attribution · AI brief</text>
+  <rect x="534" y="538" width="248" height="54" rx="6" fill="#E9D5FF" stroke="#9333EA" stroke-width="1.5"/>
+  <text x="658" y="560" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">Investigation Brief</text>
+  <text x="658" y="576" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">AI advisory · version-tracked</text>
+  <rect x="796" y="538" width="248" height="54" rx="6" fill="#FDE68A" stroke="#D97706" stroke-width="1.5"/>
+  <text x="920" y="560" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#451A03">Verdict Capture</text>
+  <text x="920" y="576" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#451A03" opacity="0.85">CONFIRMED · FALSE_POSITIVE · APPROVED</text>
+  <rect x="1058" y="538" width="248" height="54" rx="6" fill="#FBCFE8" stroke="#DB2777" stroke-width="1.5"/>
+  <text x="1182" y="560" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#831843">Workflow Audit</text>
+  <text x="1182" y="576" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#831843" opacity="0.85">Dispatch events · callback</text>
+  <rect x="796" y="608" width="248" height="46" rx="6" fill="#E9D5FF" stroke="#9333EA" stroke-width="1.5"/>
+  <text x="920" y="626" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">Reliability Metrics</text>
+  <text x="920" y="642" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">SLO monitoring · health verdict</text>
+  <line x1="700" y1="120" x2="700" y2="156" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <path d="M700,214 C700,228 155,236 155,250" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M700,214 C700,228 518,236 518,250" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M700,214 C700,228 881,236 881,250" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M700,214 C700,228 1244,236 1244,250" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <line x1="155" y1="308" x2="155" y2="344" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="518" y1="308" x2="518" y2="344" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="881" y1="308" x2="881" y2="344" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="1244" y1="308" x2="1244" y2="344" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <path d="M380,406 C380,425 380,434 380,444" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M980,406 C980,425 980,434 980,444" stroke="#475569" stroke-width="2" fill="none" stroke-dasharray="6,3" marker-end="url(#ah)"/>
+  <path d="M970,185 C1200,185 1200,214 1200,244" stroke="#475569" stroke-width="2" fill="none" stroke-dasharray="6,3" marker-end="url(#ah)"/>
+  <path d="M380,502 C380,520 134,528 134,538" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M380,502 C380,520 396,528 396,538" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M380,502 C380,520 658,528 658,538" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M380,502 C380,520 920,528 920,538" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M380,502 C380,520 1182,528 1182,538" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <line x1="258" y1="565" x2="272" y2="565" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="520" y1="565" x2="534" y2="565" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="920" y1="592" x2="920" y2="608" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+</svg>

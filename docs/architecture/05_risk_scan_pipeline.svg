@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 612">
+  <title>Portfolio Risk Scan Pipeline</title>
+  <desc>Async bulk scan: CSV upload, chunked scoring, tier counters, indexed results, pagination, streaming export, case promotion.</desc>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto">
+      <polygon points="0,0 10,5 0,10" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="1400" height="612" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
+  <rect x="0" y="0" width="1400" height="46" rx="8" fill="#0F172A"/>
+  <rect x="0" y="34" width="1400" height="12" fill="#0F172A"/>
+  <text x="700" y="30" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="20" font-weight="700" fill="#F1F5F9">Portfolio Risk Scan Pipeline</text>
+  <rect x="10" y="52" width="1380" height="74" rx="4" fill="#EFF6FF"/>
+  <text x="20" y="65" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#1D4ED8" letter-spacing="1.4">UPLOAD &amp; VALIDATION</text>
+  <rect x="10" y="136" width="1380" height="74" rx="4" fill="#FEF3C7"/>
+  <text x="20" y="149" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#92400E" letter-spacing="1.4">ASYNC PROCESSING</text>
+  <rect x="10" y="220" width="1380" height="74" rx="4" fill="#FFF1F2"/>
+  <text x="20" y="233" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#BE123C" letter-spacing="1.4">SCORING</text>
+  <rect x="10" y="304" width="1380" height="74" rx="4" fill="#F0FDF4"/>
+  <text x="20" y="317" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#15803D" letter-spacing="1.4">PERSISTENCE</text>
+  <rect x="10" y="388" width="1380" height="74" rx="4" fill="#ECFEFF"/>
+  <text x="20" y="401" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#0E7490" letter-spacing="1.4">RESULTS ACCESS</text>
+  <rect x="10" y="472" width="1380" height="124" rx="4" fill="#FFFBEB"/>
+  <text x="20" y="485" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#B45309" letter-spacing="1.4">OUTPUT PATHS</text>
+  <rect x="120" y="58" width="500" height="58" rx="6" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="1.5"/>
+  <text x="370" y="82" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#1E40AF">CSV Upload</text>
+  <text x="370" y="98" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#1E40AF" opacity="0.85">POST /risk-scan · HTTP 202 + scan_id returned</text>
+  <rect x="780" y="58" width="500" height="58" rx="6" fill="#DDD6FE" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="1030" y="82" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">Schema Validation</text>
+  <text x="1030" y="98" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">Field types · required columns · row sanitisation</text>
+  <rect x="120" y="144" width="500" height="58" rx="6" fill="#FDE68A" stroke="#D97706" stroke-width="1.5"/>
+  <text x="370" y="168" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#451A03">Async Scan Job</text>
+  <text x="370" y="184" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#451A03" opacity="0.85">Background task · scan_id persisted · scan_id polling</text>
+  <rect x="780" y="144" width="500" height="58" rx="6" fill="#A5F3FC" stroke="#0891B2" stroke-width="1.5"/>
+  <text x="1030" y="168" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#083344">Chunked Processing</text>
+  <text x="1030" y="184" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#083344" opacity="0.85">2,000-row chunks · memory-bounded per chunk</text>
+  <rect x="10" y="228" width="680" height="58" rx="6" fill="#FECACA" stroke="#DC2626" stroke-width="1.5"/>
+  <text x="350" y="252" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#7F1D1D">4-Layer Scoring</text>
+  <text x="350" y="268" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#7F1D1D" opacity="0.85">Model + rules + behavioural + graph per row</text>
+  <rect x="710" y="228" width="680" height="58" rx="6" fill="#FED7AA" stroke="#EA580C" stroke-width="1.5"/>
+  <text x="1050" y="252" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#7C2D12">Tier Assignment</text>
+  <text x="1050" y="268" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#7C2D12" opacity="0.85">P0 Critical · P1 High · P2 Medium · P3 Low</text>
+  <rect x="10" y="312" width="680" height="58" rx="6" fill="#BBF7D0" stroke="#059669" stroke-width="1.5"/>
+  <text x="350" y="336" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#064E3B">Running Summary Counters</text>
+  <text x="350" y="352" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#064E3B" opacity="0.85">P0–P3 counts · exposure totals updated per chunk</text>
+  <rect x="710" y="312" width="680" height="58" rx="6" fill="#BBF7D0" stroke="#059669" stroke-width="1.5"/>
+  <text x="1050" y="336" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#064E3B">Indexed Scan Results</text>
+  <text x="1050" y="352" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#064E3B" opacity="0.85">Composite index (scan_id, risk_score, tier)</text>
+  <rect x="400" y="396" width="600" height="58" rx="6" fill="#A5F3FC" stroke="#0891B2" stroke-width="1.5"/>
+  <text x="700" y="420" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#083344">Progress Polling</text>
+  <text x="700" y="436" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#083344" opacity="0.85">GET /risk-scan/{scan_id}/status · real-time incremental</text>
+  <rect x="10" y="480" width="400" height="56" rx="6" fill="#A5F3FC" stroke="#0891B2" stroke-width="1.5"/>
+  <text x="210" y="503" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#083344">Paginated Results</text>
+  <text x="210" y="519" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#083344" opacity="0.85">GET /risk-scan/{id}/results · P0/P1/P3 filter</text>
+  <rect x="490" y="480" width="400" height="56" rx="6" fill="#A5F3FC" stroke="#0891B2" stroke-width="1.5"/>
+  <text x="690" y="503" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#083344">Streaming CSV Export</text>
+  <text x="690" y="519" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#083344" opacity="0.85">GET /risk-scan/{id}/export · server-side cursor</text>
+  <rect x="970" y="480" width="420" height="56" rx="6" fill="#FDE68A" stroke="#D97706" stroke-width="1.5"/>
+  <text x="1180" y="503" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#451A03">Promote to Case</text>
+  <text x="1180" y="519" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#451A03" opacity="0.85">Individual row → Case Dossier · Review Queue</text>
+  <rect x="10" y="548" width="1380" height="50" rx="4" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="700" y="567" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="12" fill="#64748B" font-weight="600">Hosted Profile B (Render) supports bounded inspection scans. 10M-row benchmark evidence is from controlled local environment benchmark runs.</text>
+  <text x="700" y="585" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#9CA3AF">The hosted environment validates async architecture, progress polling, pagination, and export. Full benchmark replication requires the local Docker Compose stack.</text>
+  <line x1="370" y1="116" x2="370" y2="144" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="1030" y1="116" x2="1030" y2="144" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <path d="M370,202 C370,215 350,228 350,228" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M1030,202 C1030,215 1050,228 1050,228" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <line x1="350" y1="286" x2="350" y2="312" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="1050" y1="286" x2="1050" y2="312" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <path d="M1050,370 C1050,382 700,388 700,396" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M350,370 C350,382 210,472 210,480" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M1050,370 C1050,382 690,472 690,480" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M1050,370 C1050,382 1180,472 1180,480" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+</svg>

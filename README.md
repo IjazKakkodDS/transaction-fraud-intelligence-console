@@ -98,40 +98,7 @@ services, single command startup.
 
 ## System at a Glance
 
-```mermaid
-graph TD
-A[Analyst Console]
-B[FastAPI API]
-C[Scoring Engine]
-D[Model Risk]
-E[Rule Controls]
-F[Behaviour Signals]
-G[Graph Signals]
-H[Postgres Case Store]
-I[Review Queue]
-J[Case Dossier]
-K[Investigation Brief]
-L[Verdict Capture]
-M[Workflow Audit]
-N[Portfolio Scan]
-A --> B
-B --> C
-B --> N
-C --> D
-C --> E
-C --> F
-C --> G
-D --> H
-E --> H
-F --> H
-G --> H
-N --> H
-H --> I
-I --> J
-J --> K
-J --> L
-L --> M
-```
+![System at a Glance: analyst console, FastAPI, hybrid scoring engine, PostgreSQL case store, analyst operations, and portfolio scan pipeline](docs/architecture/01_system_at_a_glance.svg)
 
 | Layer | Components |
 |---|---|
@@ -300,141 +267,25 @@ These flows show how the console converts fraud signals into operational decisio
 
 ### 1. Transaction Intake and Scoring
 
-```mermaid
-graph TD
-A[Transaction Submitted]
-B[API Validation]
-C[Feature Extraction]
-D[Model Risk]
-E[Rule Controls]
-F[Behavioural Profile]
-G[Graph Intelligence]
-H[Score Composition]
-I[Risk Tier]
-J[Reason Codes]
-K[Case Record]
-L[Review Queue]
-M[Audit Event]
-A --> B
-B --> C
-C --> D
-C --> E
-C --> F
-C --> G
-D --> H
-E --> H
-F --> H
-G --> H
-H --> I
-I --> J
-J --> K
-K --> L
-K --> M
-```
+![Transaction Intake and Scoring: submission, API validation, feature extraction, four-layer scoring, score composition, risk tier, reason codes, case record](docs/architecture/02_scoring_architecture.svg)
 
 ### 2. Analyst Case Dossier and Verdict
 
-```mermaid
-graph TD
-A[Review Queue]
-B[Case Dossier]
-C[Base Signals]
-D[Enriched Signals]
-E[Behavioural Evidence]
-F[Graph Evidence]
-G[TreeSHAP Attribution]
-H[Investigation Brief]
-I[Analyst Review]
-J[Verdict Capture]
-K[Workflow Event]
-L[Audit Trail]
-A --> B
-B --> C
-B --> D
-B --> E
-B --> F
-B --> G
-B --> H
-C --> I
-D --> I
-E --> I
-F --> I
-G --> I
-H --> I
-I --> J
-J --> K
-K --> L
-```
+![Analyst Case Dossier and Verdict: review queue, evidence groups, analyst review, verdict capture, workflow dispatch, audit trail](docs/architecture/03_intelligence_pipeline.svg)
 
 ### 3. Advisory Investigation Brief
 
-```mermaid
-graph TD
-A[Case Context]
-B[Evidence Payload]
-C[Local LLM Profile]
-D[Advisory Brief]
-E[Schema Validation]
-F[Persisted Brief]
-G[Failure Bounded Record]
-H[Analyst Review]
-I[Human Verdict]
-A --> B
-B --> C
-C --> D
-D --> E
-E --> F
-E --> G
-F --> H
-G --> H
-H --> I
-```
+![Advisory Investigation Brief: evidence assembly, local LLM inference, schema validation, failure-bounded persistence, analyst review, human verdict](docs/architecture/04_case_lifecycle.svg)
 
 *Advisory brief surfaces structured investigation context. Analyst keeps decision control. Every brief is version-tracked and failure-bounded.*
 
 ### 4. Portfolio Risk Scan
 
-```mermaid
-graph TD
-A[CSV Upload]
-B[Schema Validation]
-C[Async Scan Job]
-D[Chunk Scoring]
-E[Tier Counters]
-F[Indexed Results]
-G[Pagination]
-H[Streaming Export]
-I[Promote to Case]
-J[Review Queue]
-A --> B
-B --> C
-C --> D
-D --> E
-D --> F
-F --> G
-F --> H
-F --> I
-I --> J
-```
+![Portfolio Risk Scan Pipeline: CSV upload, async scan job, chunked scoring, tier counters, indexed results, pagination, streaming export, case promotion](docs/architecture/05_risk_scan_pipeline.svg)
 
 ### 5. Workflow Automation and Audit
 
-```mermaid
-graph TD
-A[Analyst Verdict]
-B[Workflow Dispatch]
-C[n8n Local Workflow]
-D[Callback Event]
-E[Workflow Events Table]
-F[Reliability Metrics]
-G[Missing Callback Visible]
-A --> B
-B --> C
-C --> D
-D --> E
-E --> F
-F --> G
-```
+![Deployment Profiles: Profile A local full runtime with nine services via Docker Compose, Profile B hosted inspection runtime on Vercel, Render, and Neon](docs/architecture/06_deployment_profiles.svg)
 
 ---
 
