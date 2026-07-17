@@ -15,7 +15,7 @@ Portfolio Risk Scan benchmark, adversarial simulation across five fraud pattern 
 ## 1. Executive Summary
 
 The Transaction Fraud Intelligence Console is a decision intelligence platform covering the complete
-case lifecycle -- from multi-layer transaction scoring through analyst triage,
+case lifecycle: from multi-layer transaction scoring through analyst triage,
 AI-assisted investigation, workflow automation, audit trail generation, and
 portfolio-scale bulk risk scanning.
 
@@ -25,9 +25,9 @@ cache, scoring consumer, investigation consumer, n8n workflow automation, and a 
 analyst interface. Twenty-seven API endpoints cover the full operational surface from
 transaction intake to governance-ready health monitoring.
 
-The scoring engine implements four independently-computed intelligence layers -- hybrid
+The scoring engine implements four independently-computed intelligence layers (hybrid
 ML/rule base, enriched transaction risk signals, behavioural deviation profiling, and
-graph mule-network detection -- combined into a single bounded risk score with
+graph mule-network detection) combined into a single bounded risk score with
 analyst-visible reason codes. Each intelligence layer can independently drive a case
 to REVIEW or BLOCK tier.
 
@@ -61,7 +61,7 @@ silently.
 Static scoring engines miss coordinated fraud patterns. Behavioural deviation from
 entity norms, mule-network topology across shared devices and identities, and
 adversarial structuring attacks require intelligence layers that profile relationships
-and history -- not just individual transaction features.
+and history, not just individual transaction features.
 
 Portfolio-scale risk scanning introduces a third problem: bulk transaction files cannot
 be scored synchronously without exhausting API memory and blocking normal case
@@ -91,14 +91,14 @@ pagination, and server-side streaming export.
 
 | Service | Role |
 |---|---|
-| FastAPI (Python) | REST API -- 27 endpoints covering scoring, case management, investigation, workflow, metrics, risk scan, model attribution, and health monitoring |
-| PostgreSQL 16 | Persistence -- cases, predictions, investigations, workflow events, portfolio scans, scan results |
-| Redpanda (Kafka-compatible) | Event stream -- transaction events, scored case events, 4 topics |
+| FastAPI (Python) | REST API: 27 endpoints covering scoring, case management, investigation, workflow, metrics, risk scan, model attribution, and health monitoring |
+| PostgreSQL 16 | Persistence: cases, predictions, investigations, workflow events, portfolio scans, scan results |
+| Redpanda (Kafka-compatible) | Event stream: transaction events, scored case events, 4 topics |
 | Redis | Cache |
-| Scoring consumer | Kafka consumer -- 4-layer scoring (base + rich + behavioural + graph), creates case records |
-| Investigation consumer | Kafka consumer -- AI investigation reports per case via Ollama local inference |
-| n8n | Workflow automation -- fraud case escalation workflow, HTTP callback to FastAPI audit endpoint |
-| Next.js 16 | Analyst interface -- 8 routes, TypeScript, TanStack Query, Recharts |
+| Scoring consumer | Kafka consumer: 4-layer scoring (base + rich + behavioural + graph), creates case records |
+| Investigation consumer | Kafka consumer: AI investigation reports per case via Ollama local inference |
+| n8n | Workflow automation: fraud case escalation workflow, HTTP callback to FastAPI audit endpoint |
+| Next.js 16 | Analyst interface: 8 routes, TypeScript, TanStack Query, Recharts |
 
 ### Data flow (real-time path)
 
@@ -343,7 +343,7 @@ The path from the 10k verified checkpoint to the 10M benchmark was a series of t
 architectural interventions, each motivated by a real bottleneck exposed at a specific
 scale.
 
-### 500k -- O(N squared) summary recomputation
+### 500k: O(N squared) summary recomputation
 
 The 500k run exposed a progressive throughput degradation. Each chunk's completion
 triggered a full recompute of tier counts across all previously processed rows.
@@ -352,7 +352,7 @@ At 500k rows, this recomputation cost grew to dominate processing time.
 **Fix:** Running summary counters. Each chunk update increments persistent counter
 columns rather than recomputing from scratch. Throughput degradation eliminated.
 
-### 2.5M -- PostgreSQL table bloat and export risk
+### 2.5M: PostgreSQL table bloat and export risk
 
 The 2.5M run exposed Postgres dead-space accumulation from prior benchmark churn.
 The table carried ~19 GB of dead rows from previously completed scans.
@@ -360,7 +360,7 @@ The table carried ~19 GB of dead rows from previously completed scans.
 **Fix:** VACUUM FULL and dead-space reclaim. Export stability improved. This also
 motivated a DB archive/cleanup strategy for large benchmark environments.
 
-### 5M -- Large CSV export failure
+### 5M: Large CSV export failure
 
 The first 5M export failed after ~26m55s with an empty server reply and an API restart.
 The export path was using the UI pagination helper internally, including count and offset
@@ -370,7 +370,7 @@ work on each iteration, which buffered too much state.
 the UI pagination path. The hardened 5M export completed with immediate first byte,
 no restart, no OOM. This fix became the foundation for all subsequent scale exports.
 
-### 7.5M -- Sort and query scale on result table
+### 7.5M: Sort and query scale on result table
 
 The 7.5M run surfaced DB sort latency: result queries scanned by `scan_id` and sorted
 millions of rows without index support. Page 1 queries included expensive sort nodes.
@@ -380,7 +380,7 @@ millions of rows without index support. Page 1 queries included expensive sort n
 `(scan_id, tier, risk_score DESC, row_number ASC)` for filtered queries.
 Large sort nodes and disk spill eliminated before the 10M run.
 
-### 10M -- Benchmark passed
+### 10M: Benchmark passed
 
 After ingestion, export, dedup, and index hardening, the 10M benchmark passed:
 10,000,000 rows processed, zero invalid, zero skipped, stable pagination through deep
@@ -394,7 +394,7 @@ pages, 1.64 GiB export completed cleanly, API remained stable throughout.
 | 2.5M | Postgres table bloat | DB cleanup and dead-space reclaim |
 | 5M | Large export failure (API restart) | Server-side cursor streaming export |
 | 7.5M | Sort/query latency at scale | Composite ordered index hardening |
-| 10M | Passed -- all hardening verified |  |
+| 10M | Passed: all hardening verified |  |
 
 ---
 
@@ -418,14 +418,14 @@ into a structured lifecycle view:
 |---|---|
 | Base signals | ML risk score, decision tier, deterministic rule flag, 9-feature signal factors |
 | Enriched signals | Rich risk indicators from expanded feature combinations |
-| Behavioural indicators | `BEHAVIOURAL_AMOUNT_DEVIATION`, `BEHAVIOURAL_VELOCITY_DEVIATION`, `BEHAVIOURAL_PROFILE_SHIFT` -- amber chips |
-| Graph indicators | `MULE_FAN_IN_PATTERN`, `MULE_FAN_OUT_PATTERN`, shared device, shared identity -- violet chips |
+| Behavioural indicators | `BEHAVIOURAL_AMOUNT_DEVIATION`, `BEHAVIOURAL_VELOCITY_DEVIATION`, `BEHAVIOURAL_PROFILE_SHIFT` (amber chips) |
+| Graph indicators | `MULE_FAN_IN_PATTERN`, `MULE_FAN_OUT_PATTERN`, shared device, shared identity (violet chips) |
 
 **Lifecycle timeline:** creation, investigation, verdict, and workflow dispatch events
-with timestamps -- full traceability across the case lifecycle.
+with timestamps, providing full traceability across the case lifecycle.
 
 **AI investigation brief:** structured recommendation, confidence rating, risk factors,
-mitigating factors, triggered rules, referenced playbooks, rationale -- produced by the
+mitigating factors, triggered rules, referenced playbooks, and rationale, produced by the
 hardened AI investigation pipeline.
 
 **Model Attribution panel:** positioned between the grouped evidence and the AI
@@ -455,7 +455,7 @@ review lifecycle.
 
 ## 11. AI Investigation Pipeline
 
-### Phase 18 -- Investigation Brief Hardening
+### Phase 18: Investigation Brief Hardening
 
 The AI investigation pipeline delivers per-case briefs with production-grade
 reliability controls and a complete AI audit trail.
@@ -496,7 +496,7 @@ Case promoted to investigation
 | Control | Description |
 |---|---|
 | Evidence-grouped prompting | Evidence delivered to the LLM in the same taxonomy displayed in the Case Dossier |
-| `AGENT_VERSION` traceability | Every investigation record tagged with agent configuration version -- immutable AI audit trail |
+| `AGENT_VERSION` traceability | Every investigation record tagged with agent configuration version: immutable AI audit trail |
 | Bounded failure messages | Ollama connectivity failure, LLM content failure, and unexpected errors each produce a specific, analyst-readable message |
 | Honest no-guidance handling | When no matching playbook document exists, the prompt explicitly states this rather than allowing confabulation |
 | FAILED-state persistence | Investigation failures write a durable FAILED record to PostgreSQL; analyst can retry from the Case Dossier UI |
@@ -548,12 +548,37 @@ The Reliability Metrics page computes live health from workflow event records:
 | Operational Diagnosis | Three-column contextual card: diagnosis, reliability impact, recommended action |
 | Charts | Action breakdown (horizontal bar), source breakdown (vertical bar), reliability outcome (donut) |
 
-### Demo reliability state
+### Current hosted inspection state
 
-The demo seed state preserves 10 dispatch failures, producing a Critical health verdict
-(54.5% success rate, below the 70% floor; 10 dispatch failures, exceeding the
-3-failure threshold). This is intentional: a system that correctly classifies and
-surfaces degraded automation behaviour demonstrates operational maturity.
+The hosted environment (Render, Profile B) runs without n8n, Kafka-backed workflow
+execution, or Ollama. Workflow events are sourced from the inspection dataset. The
+current hosted reliability state:
+
+| Metric | Value |
+|---|---|
+| Total workflow events | 18 |
+| Successful events | 18 |
+| Failed events | 0 |
+| Dispatch failures | 0 |
+| Escalation events | 6 |
+| Inspection-source events | 18 |
+| Hosted automation events | 0 |
+| Event success rate | 100% |
+| Hosted automation coverage | 0% |
+| Health verdict | Healthy: Limited Automation Coverage |
+
+Hosted Profile B intentionally excludes n8n, Kafka-backed workflow execution, and
+Ollama. The hosted environment validates event persistence, auditability, and
+reliability visibility. The local Docker Compose runtime remains the full automation
+path.
+
+### Failure-injection reliability design (historical test evidence)
+
+The Reliability Metrics page was designed to classify and surface degraded automation
+state, not only healthy state. A failure-injection scenario (10 dispatch failures,
+54.5% success rate below the 70% floor, exceeding the 3-failure threshold) produces
+a Critical health verdict. This validates that the reliability monitoring layer
+surfaces operational degradation rather than obscuring it.
 
 ---
 
@@ -565,14 +590,14 @@ XGBoost classifier was trained on synthetic data with a controlled fraud rate an
 known feature distributions. Synthetic training accuracy reflects the data generation
 distribution, not real-world fraud detection robustness.
 
-The 4-layer intelligence architecture -- behavioural profiling, graph mule-network
-detection, and adversarial simulation -- validates the system's capability to detect
+The 4-layer intelligence architecture (behavioural profiling, graph mule-network
+detection, and adversarial simulation) validates the system's capability to detect
 fraud patterns beyond static feature scoring. Threshold selection is validated within
 the controlled synthetic benchmark and adversarial simulation environment.
 
-The engineering patterns applied -- async processing, server-side pagination and
+The engineering patterns applied (async processing, server-side pagination and
 export, indexed query hardening, event-driven audit architecture, structured AI
-investigation with AGENT_VERSION traceability, consumer durability design -- are
+investigation with AGENT_VERSION traceability, consumer durability design) are
 applicable to a regulated deployment context with the appropriate institutional
 controls in place.
 
@@ -585,19 +610,19 @@ controls in place.
 | Capability | Operational value |
 |---|---|
 | 4-Layer Fraud Scoring | Base ML/rule + rich signals + behavioural profiling + graph topology, each contributing independently to a bounded risk score |
-| Behavioural Intelligence | Entity-level deviation detection: amount, velocity, and profile shift -- invisible to static rules alone |
-| Graph Mule-Network Detection | Fan-in / fan-out pattern detection across shared device and identity clusters -- identifies coordinated fraud rings |
+| Behavioural Intelligence | Entity-level deviation detection: amount, velocity, and profile shift, invisible to static rules alone |
+| Graph Mule-Network Detection | Fan-in / fan-out pattern detection across shared device and identity clusters, identifying coordinated fraud rings |
 | Adversarial Simulation | Five-family detection validation confirms intelligence layers catch patterns that evade the base model |
 | Async Portfolio Risk Scan | Score portfolios of millions of transactions without blocking real-time case operations |
 | Indexed pagination at 10M scale | Analysts can review, filter, and export large result sets without system degradation |
 | Server-side streaming export | 1.64 GiB CSV exported without API restart or memory pressure |
 | Guided Investigation Command Panel | Structured reviewer entry point: `POST /cases/seed-review` provisions canonical review cases; six capability cards and nine-step workflow path orient reviewers to each intelligence surface |
-| Case Dossier 2.0 | Grouped evidence, lifecycle timeline, behavioural and graph chips, model attribution, AI brief, verdict capture -- full analyst context in one workspace |
-| Model Attribution | `GET /cases/{case_id}/explain` via XGBoost native TreeSHAP (`pred_contribs=True`) -- 9 feature contributions ranked by magnitude; separates base ML model attribution from hybrid reason codes |
+| Case Dossier 2.0 | Grouped evidence, lifecycle timeline, behavioural and graph chips, model attribution, AI brief, verdict capture: full analyst context in one workspace |
+| Model Attribution | `GET /cases/{case_id}/explain` via XGBoost native TreeSHAP (`pred_contribs=True`): 9 feature contributions ranked by magnitude; separates base ML model attribution from hybrid reason codes |
 | AI Investigation Brief | Evidence-grouped prompting, AGENT_VERSION traceability, bounded failure handling, structured LLM report persisted per case |
 | End-to-end audit trail | Every automation dispatch produces a durable, queryable event record |
 | Reliability monitoring | The system surfaces its own automation health with SLO-style targets |
-| Operational health endpoint | GET /health/detailed -- per-component Postgres, Kafka, Ollama status |
+| Operational health endpoint | GET /health/detailed: per-component Postgres, Kafka, Ollama status |
 | Governance documentation package | Consumer durability, auth/RBAC design, and security posture documented for institution-specific deployment review |
 
 ### Executive value by audience
@@ -695,7 +720,7 @@ Deploying this system to a regulated financial services environment requires:
 - **Model-risk review and operational approval:** institution-specific governance
   and model-risk management processes apply before regulated deployment
 
-These requirements are not deficiencies -- they are standard deployment prerequisites
+These requirements are not deficiencies; they are standard deployment prerequisites
 for any financial services risk system. They are documented in the governance package
 and in the public MLOps readiness and deployment documentation.
 
@@ -712,6 +737,6 @@ and in the public MLOps readiness and deployment documentation.
 - Hardened AI investigation pipeline with AGENT_VERSION traceability, bounded
   failure handling, and FAILED-state persistence
 - A governance documentation package covering consumer durability, auth/RBAC design,
-  and security posture -- designed for institution-specific deployment review
+  and security posture, designed for institution-specific deployment review
 - End-to-end operational thinking: not just a model, but the complete decision
   intelligence layer around it

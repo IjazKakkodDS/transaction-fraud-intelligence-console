@@ -221,7 +221,7 @@ of the portfolio rather than a flat, undifferentiated alert list.
 | 10K legacy scan | 10,000 | 24.59% (2,459 transactions) | 75.41% (7,541 transactions) | Consistent priority routing behaviour across a compact synthetic portfolio | Consistent tier routing established at baseline scale |
 | 10K rich banking scan | 10,000 | 24.55% (2,455 transactions) | 70.12% (7,012 transactions) | Rich signal tier routing with P0-P1 priority concentration and P3 low-risk handling | Rich signal layer confirmed on synthetic banking scenarios |
 | 5M benchmark | 5,000,000 | 24.45% (1,222,251 transactions) | 75.55% (3,777,749 transactions) | $6.98B total exposure scored; $5.06B surfaced in P0 critical tier | Review queue concentrated on 1 in 4 transactions; $5.06B critical-tier surfaced |
-| 10M benchmark | 10,000,000 | 100% assigned P1 or P3 | -- | $25.1B total exposure scored; $24.5B surfaced in high-priority tier | $25 billion portfolio scored, tiered, and exported in a single async run |
+| 10M benchmark | 10,000,000 | 100% assigned P1 or P3 | N/A | $25.1B total exposure scored; $24.5B surfaced in high-priority tier | $25 billion portfolio scored, tiered, and exported in a single async run |
 
 All benchmark figures are from controlled synthetic portfolios.
 

@@ -537,7 +537,7 @@ and stored for future use; they do not cause errors.
 
 ## Implementation Plan
 
-### Phase 12F-1 -- Rich Schema Design (this document)
+### Phase 12F-1: Rich Schema Design (this document)
 
 - Field dictionary defined across 7 categories (38 total fields)
 - 12 scenario families defined with field signatures, priority tiers, and reason codes
@@ -545,7 +545,7 @@ and stored for future use; they do not cause errors.
 - Compatibility strategy documented
 - No code changes required
 
-### Phase 12F-2 -- Rich Generator Implementation (complete)
+### Phase 12F-2: Rich Generator Implementation (complete)
 
 **Script:** `scripts/generate_rich_banking_csv.py`
 **Verify:** `scripts/verify_rich_banking_csv.py`
@@ -578,11 +578,11 @@ python scripts/verify_rich_banking_csv.py C:\tmp\rich-10k.csv
 **Reproducibility:** fixed seed produces identical output across runs
 **Generated CSVs:** gitignored; never committed to version control
 
-### Phase 12F-3 -- Scenario-Aware Scoring and Reason Mapping (complete)
+### Phase 12F-3: Scenario-Aware Scoring and Reason Mapping (complete)
 
 **Modified files:**
-- `src/features/transaction_features.py` -- rich feature extraction and reason codes
-- `src/triage/investigator.py` -- rich signal boost applied to risk_score
+- `src/features/transaction_features.py`: rich feature extraction and reason codes
+- `src/triage/investigator.py`: rich signal boost applied to risk_score
 
 **Rich features extracted (all with column-existence guards):**
 
@@ -631,7 +631,7 @@ Suspicious repeated attempts detected.
 **Verified results (1k rich CSV, seed=42):**
 - P0: 198, P1: 39, P2: 61, P3: 702 (rich scoring active)
 - Rich codes confirmed in P0/P1/P2 rows
-- Legacy 10k CSV: P0: 1546, P1: 913, P2: 0, P3: 7541 (unchanged -- no rich boost)
+- Legacy 10k CSV: P0: 1546, P1: 913, P2: 0, P3: 7541 (unchanged; no rich boost)
 - E2E 9/9 passed, Next.js build clean
 
 **Compatibility invariants preserved:**
@@ -640,7 +640,7 @@ Suspicious repeated attempts detected.
 - `scanner.py` result payload unchanged
 - All rich features degrade to 0 when source columns absent (legacy CSVs unaffected)
 
-### Phase 12G-3 -- Decision Engine Explainability Audit (complete)
+### Phase 12G-3: Decision Engine Explainability Audit (complete)
 
 **Purpose:** Document the current decision engine contract so model output, deterministic
 rules, rich signal boosts, operational priorities, and reason codes are explainable before any
@@ -749,7 +749,7 @@ matching the Phase 12D-5 reference with no rich codes and no rich boost.
 - Phase 12G-4 will review rule/model/rich signal weights before any scoring change.
 - Phase 12G-5 will lock the reason-code taxonomy for future case dossier and report surfaces.
 
-### Phase 12G-4 -- Rule / Model / Rich Signal Weight Review (complete)
+### Phase 12G-4: Rule / Model / Rich Signal Weight Review (complete)
 
 **Purpose:** Review the current scoring weights and thresholds for explainability, stability,
 and professional positioning before any future decision-engine changes.
@@ -805,7 +805,7 @@ Future production calibration would require institution-specific labelled fraud 
 analysis, false-positive and false-negative review, segment-level fairness and stability checks,
 and governance approval. Phase 12G-4 does not tune weights to improve synthetic distributions.
 
-### Phase 12G-5 -- Reason-Code Taxonomy Lock (complete)
+### Phase 12G-5: Reason-Code Taxonomy Lock (complete)
 
 **Purpose:** Lock the active reason-code vocabulary emitted by `generate_reasons()` and rendered
 by the risk scan drawer. Earlier schema sections may describe broader design vocabulary; the
@@ -894,7 +894,7 @@ ground-truth production fraud labels and should not be treated as calibrated mod
 - Future AI Investigation Brief work should align generated explanations to this locked
   taxonomy before expanding reason-code language.
 
-### Phase 12F-4 -- UI Support for Richer Fields (complete)
+### Phase 12F-4: UI Support for Richer Fields (complete)
 
 **Approach:** Rich individual fields are not persisted in `portfolio_scan_results`. The
 `reasons` pipe-delimited string is the sole carrier of rich scenario information in the
@@ -903,9 +903,9 @@ result payload. The drawer was updated to extract maximum analyst value from rea
 **`ScanResultDrawer.tsx` changes:**
 
 Reason codes are classified client-side into three groups:
-- **Legacy signals** (7 existing codes) -- rendered as red chips, unchanged
-- **Rich signal codes** (8 Phase 12F-3 codes) -- rendered as amber chips
-- **Scenario family label** (e.g., "Card testing velocity pattern") -- extracted and
+- **Legacy signals** (7 existing codes): rendered as red chips, unchanged
+- **Rich signal codes** (8 Phase 12F-3 codes): rendered as amber chips
+- **Scenario family label** (e.g., "Card testing velocity pattern"): extracted and
   displayed in a separate "Scenario" section showing the pattern name in cyan
 
 The "Scenario" section only renders when a scenario label is present in reasons. Legacy
@@ -922,8 +922,8 @@ CSV cells) are treated as absent. Analysts see no "Device ID: NaN" entry.
 | Row source | Scenario section | Reason chip styles |
 |---|---|---|
 | Legacy scan (10M benchmark) | Hidden | All chips red (unchanged) |
-| Rich scan -- normal row | Hidden | Red chips only (no rich signals) |
-| Rich scan -- fraud row | Visible (pattern name in cyan) | Red legacy + amber rich chips |
+| Rich scan: normal row | Hidden | Red chips only (no rich signals) |
+| Rich scan: fraud row | Visible (pattern name in cyan) | Red legacy + amber rich chips |
 
 **Analyst view example (card_testing row):**
 ```
@@ -935,7 +935,7 @@ Risk Signals:    High-risk payment method [red]
                  Multiple failed attempts preceding this transaction [amber]
 ```
 
-### Phase 12F-5 -- Demo Dataset Generation and Verification (complete)
+### Phase 12F-5: Demo Dataset Generation and Verification (complete)
 
 **Rich demo scan verified end-to-end across the full 12F pipeline.**
 
@@ -1035,7 +1035,7 @@ Rich scan loaded at:
 #### Legacy compatibility confirmed
 
 10k legacy benchmark CSV (seed=42) scan produced:
-P0: 1,546 / P1: 913 / P2: 0 / P3: 7,541 -- exact match to Phase 12D-5 benchmark.
+P0: 1,546 / P1: 913 / P2: 0 / P3: 7,541: exact match to Phase 12D-5 benchmark.
 No rich codes present. No boost applied.
 
 #### Export
