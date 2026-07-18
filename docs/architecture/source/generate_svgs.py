@@ -3,6 +3,14 @@
 Architecture diagram generator — Real-Time Transaction Fraud Intelligence Console.
 Produces 6 production SVG diagrams in docs/architecture/.
 Run from the repository root: python docs/architecture/source/generate_svgs.py
+
+Vertical layout contract (all diagrams):
+  0–46      main title band
+  58        first zone top (12px clearance under title band)
+  zone top + 0–30    reserved heading band (label baseline at zone top + 19)
+  zone top + 30      first node row
+  zone bottom − 12   content bottom padding
+  canvas H − 16      last content bottom margin
 """
 
 import os, pathlib
@@ -97,54 +105,51 @@ def ftr(): return '</svg>\n'
 # Diagram 1 — System at a Glance
 # ─────────────────────────────────────────────────────────────────────────────
 def d1():
-    W,H = 1400,668
+    W,H = 1400,758
     o = hdr(W,H,"System at a Glance",
             "Complete product architecture: analyst console, FastAPI, hybrid scoring, case store, analyst operations, and portfolio scan.")
 
     # ── zone backgrounds ──────────────────────────────────────────────────────
     zones = [
-        (10,52,1380,78,"#EFF6FF","EXPERIENCE LAYER","#1D4ED8"),
-        (10,146,1380,78,"#F5F3FF","SERVICE LAYER","#6D28D9"),
-        (10,240,1380,178,"#FFF1F2","DECISION INTELLIGENCE","#BE123C"),
-        (10,434,1380,78,"#F0FDF4","DATA & PERSISTENCE LAYER","#15803D"),
-        (10,528,1380,124,"#FFFBEB","ANALYST OPERATIONS","#B45309"),
+        (10,58,1380,100,"#EFF6FF","EXPERIENCE LAYER","#1D4ED8"),
+        (10,168,1380,100,"#F5F3FF","SERVICE LAYER","#6D28D9"),
+        (10,278,1380,186,"#FFF1F2","DECISION INTELLIGENCE","#BE123C"),
+        (10,474,1380,100,"#F0FDF4","DATA & PERSISTENCE LAYER","#15803D"),
+        (10,584,1380,158,"#FFFBEB","ANALYST OPERATIONS","#B45309"),
     ]
     for zx,zy,zw,zh,zc,zl_,zcol in zones:
         o += f'  <rect x="{zx}" y="{zy}" width="{zw}" height="{zh}" rx="4" fill="{zc}"/>\n'
-        o += zl(zx+10,zy+13,zl_,zcol)
+        o += zl(zx+10,zy+19,zl_,zcol)
 
     # ── nodes ─────────────────────────────────────────────────────────────────
     # Experience
-    o += nd(480,62,440,58,"Analyst Console","Next.js 16 · 8 routes","experience")
+    o += nd(480,88,440,58,"Analyst Console","Next.js 16 · 8 routes","experience")
 
     # Service
-    o += nd(430,156,540,58,"FastAPI REST API","27 endpoints · scoring · cases · scan · workflow","service")
+    o += nd(430,198,540,58,"FastAPI REST API","27 endpoints · scoring · cases · scan · workflow","service")
 
-    # Intelligence — 4 nodes spread across x=10..1380
-    # widths 290 each, gaps ~113px: x = 10,313,616,919  right=209,502,805,1108... actually:
-    # 4×290=1160, space=1380-1160=220, 3 gaps=73 each
-    # x: 10, 10+290+73=373, 373+290+73=736, 736+290+73=1099  right: 300,663,1026,1389 ✓
+    # Intelligence — 4 nodes, width 290, x = 10 / 373 / 736 / 1099 (73px gaps)
     intel = [
         (10, "Model Risk","XGBoost · weight 0.6","model"),
         (373,"Rule Controls","Deterministic · weight 0.4","rule"),
         (736,"Behavioural Intelligence","Entity deviation signals","behav"),
         (1099,"Graph Intelligence","Mule-network topology","graph"),
     ]
-    iw,ih,iy = 290,58,250
+    iw,ih,iy = 290,58,308
     for ix,il,is_,isty in intel:
         o += nd(ix,iy,iw,ih,il,is_,isty)
 
     # Fusion
-    o += nd(10,344,1380,62,"Risk Score   ·   Decision Tier   ·   Reason Codes",
+    o += nd(10,390,1380,62,"Risk Score   ·   Decision Tier   ·   Reason Codes",
             "APPROVE  < 0.30          REVIEW  0.30 – 0.70          BLOCK  ≥ 0.70","fusion")
 
     # Data
-    o += nd(160,444,440,58,"PostgreSQL Case Store","Cases · investigations · verdicts · events","data")
+    o += nd(160,504,440,58,"PostgreSQL Case Store","Cases · investigations · verdicts · events","data")
     # Portfolio (right side in data zone)
-    o += nd(760,444,440,58,"Portfolio Scan Results","Indexed results · tier counters · export","portfolio")
+    o += nd(760,504,440,58,"Portfolio Scan Results","Indexed results · tier counters · export","portfolio")
 
     # Ops — 5 nodes
-    ow_,oh_,oy = 248,54,538
+    ow_,oh_,oy = 248,54,614
     ops = [
         (10,"Review Queue","P0–P3 priority · sort by risk","ops"),
         (272,"Case Dossier 2.0","Evidence · attribution · AI brief","ops"),
@@ -155,37 +160,37 @@ def d1():
     for ox_,ol,os_,osty in ops:
         o += nd(ox_,oy,ow_,oh_,ol,os_,osty)
     # Reliability Metrics below Verdict
-    o += nd(796,608,248,46,"Reliability Metrics","SLO monitoring · health verdict","audit")
+    o += nd(796,684,248,46,"Reliability Metrics","SLO monitoring · health verdict","audit")
 
     # ── arrows ────────────────────────────────────────────────────────────────
     # Experience → Service
-    o += ln(700,120,700,156)
-    # Service → each intel node
-    sx,sy = 700,214
+    o += ln(700,146,700,198)
+    # Service → each intel node (entry x nudged right of the zone heading text)
+    sx,sy = 700,256
     for ix,*_ in intel:
-        tx = ix+iw//2
-        o += cbez(sx,sy, sx,sy+14, tx,iy-14, tx,iy)
+        tx = max(ix+iw//2,235)
+        o += cbez(sx,sy, sx,sy+16, tx,iy-16, tx,iy)
     # Intel → Fusion
     for ix,*_ in intel:
         tx = ix+iw//2
         fx = min(max(tx,50),1340)
-        o += ln(tx,iy+ih,fx,344)
+        o += ln(tx,iy+ih,fx,390)
     # Fusion → PostgreSQL
-    o += cbez(380,406, 380,425, 380,434, 380,444)
+    o += cbez(380,452, 380,478, 380,494, 380,504)
     # Fusion → Portfolio (dashed async)
-    o += cbez(980,406, 980,425, 980,434, 980,444, dash=True)
+    o += cbez(980,452, 980,478, 980,494, 980,504, dash=True)
     # FastAPI → Portfolio Scan (dashed)  — show Portfolio as parallel path from API
-    o += cbez(970,185, 1200,185, 1200,214, 1200,244, dash=True)
-    # PostgreSQL → Ops (fan)
+    o += cbez(970,227, 1062,227, 1062,268, 1062,302, dash=True)
+    # PostgreSQL → Ops (fan; entry x nudged right of the zone heading text)
     pc = 380
     for ox_,*_ in ops:
-        tc = ox_+ow_//2
-        o += cbez(pc,502, pc,520, tc,528, tc,538)
+        tc = max(ox_+ow_//2,200)
+        o += cbez(pc,562, pc,588, tc,600, tc,oy)
     # Ops flow (horizontal)
     o += ln(10+ow_,oy+oh_//2, 272,oy+oh_//2)
     o += ln(272+ow_,oy+oh_//2, 534,oy+oh_//2)
     # Verdict → Reliability
-    o += ln(796+ow_//2,oy+oh_,796+ow_//2,608)
+    o += ln(796+ow_//2,oy+oh_,796+ow_//2,684)
 
     o += ftr()
     return o
@@ -194,32 +199,27 @@ def d1():
 # Diagram 2 — Transaction Intake and Scoring
 # ─────────────────────────────────────────────────────────────────────────────
 def d2():
-    W,H = 1400,618
+    W,H = 1400,686
     o = hdr(W,H,"Transaction Intake and Scoring",
             "Scoring pipeline: transaction submission, feature extraction, four-layer intelligence, score composition, decision tier, case record.")
 
-    # Vertical flow + fan + converge
-    # Row y positions:
-    r = [60,136,212,302,390,466,542]  # node top-y per row (heights vary)
-    nh = 58  # standard node height
-
     # Zones
-    o += f'  <rect x="10" y="52" width="1380" height="74" rx="4" fill="#EFF6FF"/>\n'
-    o += zl(20,65,"Intake","#1D4ED8")
-    o += f'  <rect x="10" y="132" width="1380" height="74" rx="4" fill="#FFF1F2"/>\n'
-    o += zl(20,145,"Feature Processing","#BE123C")
-    o += f'  <rect x="10" y="212" width="1380" height="172" rx="4" fill="#FFF7ED"/>\n'
-    o += zl(20,225,"Four-Layer Scoring","#B45309")
-    o += f'  <rect x="10" y="390" width="1380" height="74" rx="4" fill="#F0FDF4"/>\n'
-    o += zl(20,403,"Score Composition","#15803D")
-    o += f'  <rect x="10" y="470" width="1380" height="136" rx="4" fill="#EEF2FF"/>\n'
-    o += zl(20,483,"Decision & Persistence","#3730A3")
+    o += f'  <rect x="10" y="58" width="1380" height="100" rx="4" fill="#EFF6FF"/>\n'
+    o += zl(20,77,"Intake","#1D4ED8")
+    o += f'  <rect x="10" y="168" width="1380" height="100" rx="4" fill="#FFF1F2"/>\n'
+    o += zl(20,187,"Feature Processing","#BE123C")
+    o += f'  <rect x="10" y="278" width="1380" height="104" rx="4" fill="#FFF7ED"/>\n'
+    o += zl(20,297,"Four-Layer Scoring","#B45309")
+    o += f'  <rect x="10" y="392" width="1380" height="100" rx="4" fill="#F0FDF4"/>\n'
+    o += zl(20,411,"Score Composition","#15803D")
+    o += f'  <rect x="10" y="502" width="1380" height="168" rx="4" fill="#EEF2FF"/>\n'
+    o += zl(20,521,"Decision & Persistence","#3730A3")
 
     # Row 1: Transaction Submitted
-    o += nd(480,60,440,58,"Transaction Submitted","POST /predict · POST /risk-scan · Kafka event","input")
+    o += nd(480,88,440,58,"Transaction Submitted","POST /predict · POST /risk-scan · Kafka event","input")
     # Row 2: API Validation + Feature Extraction side by side
-    o += nd(120,136,500,58,"API Validation","Schema check · field normalisation","service")
-    o += nd(780,136,500,58,"Feature Extraction","9-feature vector · device · geo · velocity","service")
+    o += nd(120,198,500,58,"API Validation","Schema check · field normalisation","service")
+    o += nd(780,198,500,58,"Feature Extraction","9-feature vector · device · geo · velocity","service")
     # Row 3: Four intelligence nodes
     intel2 = [
         (10, "Model Risk","XGBoost inference","model"),
@@ -227,36 +227,37 @@ def d2():
         (714,"Behavioural Profile","Entity deviation","behav"),
         (1066,"Graph Intelligence","Mule topology","graph"),
     ]
-    iw2,ih2,iy2 = 310,62,222
+    iw2,ih2,iy2 = 310,62,308
     for ix,il,is_,isty in intel2:
         o += nd(ix,iy2,iw2,ih2,il,is_,isty)
     # Row 4: Score Composition
-    o += nd(10,400,1380,58,"Score Composition  ·  Risk Score 0.0 – 1.0  ·  Layer Boosts Applied","base = (model × 0.6) + (rule × 0.4)   +   behavioural boost   +   graph boost","fusion")
+    o += nd(10,422,1380,58,"Score Composition  ·  Risk Score 0.0 – 1.0  ·  Layer Boosts Applied","base = (model × 0.6) + (rule × 0.4)   +   behavioural boost   +   graph boost","fusion")
     # Row 5: Risk Tier + Reason Codes
-    o += nd(120,478,500,58,"Risk Tier Decision","APPROVE < 0.30   REVIEW 0.30–0.70   BLOCK ≥ 0.70","ops")
-    o += nd(780,478,500,58,"Reason Codes","Per-layer evidence codes for Case Dossier","audit")
+    o += nd(120,532,500,58,"Risk Tier Decision","APPROVE < 0.30   REVIEW 0.30–0.70   BLOCK ≥ 0.70","ops")
+    o += nd(780,532,500,58,"Reason Codes","Per-layer evidence codes for Case Dossier","audit")
     # Row 6: Case Record
-    o += nd(350,552,700,52,"Case Record (PostgreSQL)","risk_score · decision · features · reason codes persisted","data")
+    o += nd(350,606,700,52,"Case Record (PostgreSQL)","risk_score · decision · features · reason codes persisted","data")
 
     # ── arrows ────────────────────────────────────────────────────────────────
     # Intake → Validation + Features
-    o += cbez(700,118, 700,127, 370,127, 370,136)
-    o += cbez(700,118, 700,127, 1030,127, 1030,136)
-    # Validation + Features → intel nodes
+    o += cbez(700,146, 700,172, 370,172, 370,198)
+    o += cbez(700,146, 700,172, 1030,172, 1030,198)
+    # Validation + Features → intel nodes (entry x nudged right of the zone heading text)
+    for ix,*_ in intel2:
+        tx = max(ix+iw2//2,210)
+        o += cbez(370,256, 370,282, tx,294, tx,308)
+        o += cbez(1030,256, 1030,282, tx,294, tx,308)
+    # Intel → Score Composition (entry x nudged right of the zone heading text)
     for ix,*_ in intel2:
         tx = ix+iw2//2
-        o += cbez(370,194, 370,208, tx,212, tx,222)
-        o += cbez(1030,194, 1030,208, tx,212, tx,222)
-    # Intel → Score Composition
-    for ix,*_ in intel2:
-        tx = ix+iw2//2
-        o += ln(tx,iy2+ih2,tx,400)
+        ex = max(tx,210)
+        o += cbez(tx,370, tx,392, ex,408, ex,422)
     # Score → Risk Tier + Reason Codes
-    o += cbez(700,458, 700,468, 370,468, 370,478)
-    o += cbez(700,458, 700,468, 1030,468, 1030,478)
+    o += cbez(700,480, 700,508, 370,508, 370,532)
+    o += cbez(700,480, 700,508, 1030,508, 1030,532)
     # Risk Tier + Reasons → Case Record
-    o += cbez(370,536, 370,545, 700,545, 700,552)
-    o += cbez(1030,536, 1030,545, 700,545, 700,552)
+    o += cbez(370,590, 370,599, 700,599, 700,606)
+    o += cbez(1030,590, 1030,599, 700,599, 700,606)
 
     o += ftr()
     return o
@@ -265,26 +266,26 @@ def d2():
 # Diagram 3 — Analyst Case Dossier and Verdict
 # ─────────────────────────────────────────────────────────────────────────────
 def d3():
-    W,H = 1400,608
+    W,H = 1400,694
     o = hdr(W,H,"Analyst Case Intelligence Pipeline",
             "Intelligence-driven case review: queue, evidence groups, analyst review, verdict capture, workflow dispatch, audit trail.")
 
     # Zones
-    o += f'  <rect x="10" y="52" width="440" height="68" rx="4" fill="#F5F3FF"/>\n'
-    o += zl(20,65,"Queue","#6D28D9")
-    o += f'  <rect x="10" y="130" width="1380" height="74" rx="4" fill="#EFF6FF"/>\n'
-    o += zl(20,143,"Case Dossier 2.0","#1D4ED8")
-    o += f'  <rect x="10" y="214" width="1380" height="130" rx="4" fill="#FFF7ED"/>\n'
-    o += zl(20,227,"Evidence Groups","#B45309")
-    o += f'  <rect x="10" y="354" width="440" height="68" rx="4" fill="#FFFBEB"/>\n'
-    o += zl(20,367,"Analyst Review","#B45309")
-    o += f'  <rect x="10" y="432" width="1380" height="160" rx="4" fill="#F0FDF4"/>\n'
-    o += zl(20,445,"Decision & Audit","#15803D")
+    o += f'  <rect x="10" y="58" width="440" height="98" rx="4" fill="#F5F3FF"/>\n'
+    o += zl(20,77,"Queue","#6D28D9")
+    o += f'  <rect x="10" y="166" width="1380" height="108" rx="4" fill="#EFF6FF"/>\n'
+    o += zl(20,185,"Case Dossier 2.0","#1D4ED8")
+    o += f'  <rect x="10" y="284" width="1380" height="106" rx="4" fill="#FFF7ED"/>\n'
+    o += zl(20,303,"Evidence Groups","#B45309")
+    o += f'  <rect x="10" y="400" width="440" height="98" rx="4" fill="#FFFBEB"/>\n'
+    o += zl(20,419,"Analyst Review","#B45309")
+    o += f'  <rect x="10" y="508" width="1380" height="170" rx="4" fill="#F0FDF4"/>\n'
+    o += zl(20,527,"Decision & Audit","#15803D")
 
     # Row 1: Queue
-    o += nd(10,58,420,56,"Review Queue","Cases sorted by risk · P0–P3 priority tiers","ops")
+    o += nd(10,88,420,56,"Review Queue","Cases sorted by risk · P0–P3 priority tiers","ops")
     # Row 2: Case Dossier
-    o += nd(10,136,1380,66,"Case Dossier 2.0","Structured lifecycle view: evidence groups · timeline · model attribution · AI brief · verdict panel","service")
+    o += nd(10,196,1380,66,"Case Dossier 2.0","Structured lifecycle view: evidence groups · timeline · model attribution · AI brief · verdict panel","service")
     # Row 3: Evidence groups (6 nodes)
     ev_nodes = [
         (10,"Base Signals","ML score · rule flag · 9 features","model"),
@@ -294,41 +295,41 @@ def d3():
         (962,"TreeSHAP Attribution","Per-feature XGBoost contributions","audit"),
         (1200,"Investigation Brief","AI advisory · AGENT_VERSION","ai"),
     ]
-    ew,eh,ey = 192,64,224
+    ew,eh,ey = 192,64,314
     for ex_,el,es_,esty in ev_nodes:
         o += nd(ex_,ey,ew,eh,el,es_,esty)
     # Row 4: Analyst Review
-    o += nd(10,360,420,56,"Analyst Review","Evidence evaluated · decision formed","ops")
+    o += nd(10,430,420,56,"Analyst Review","Evidence evaluated · decision formed","ops")
     # Row 5: Verdict + Workflow + Audit
-    o += nd(10,444,400,56,"Verdict Capture","CONFIRMED_FRAUD · FALSE_POSITIVE · APPROVED","ops")
-    o += nd(490,444,400,56,"Workflow Dispatch","POST /workflow/notify-case/{id}","workflow")
-    o += nd(970,444,420,56,"Workflow Event","n8n callback · status persisted","audit")
+    o += nd(10,538,400,56,"Verdict Capture","CONFIRMED_FRAUD · FALSE_POSITIVE · APPROVED","ops")
+    o += nd(490,538,400,56,"Workflow Dispatch","POST /workflow/notify-case/{id}","workflow")
+    o += nd(970,538,420,56,"Workflow Event","n8n callback · status persisted","audit")
     # Row 6: Audit Trail
-    o += nd(10,516,840,56,"Automation Audit Trail","Workflow events · case-scoped · filterable · append-only","data")
-    o += nd(970,516,420,56,"Reliability Metrics","SLO health · dispatch success rate","audit")
+    o += nd(10,610,840,56,"Automation Audit Trail","Workflow events · case-scoped · filterable · append-only","data")
+    o += nd(970,610,420,56,"Reliability Metrics","SLO health · dispatch success rate","audit")
 
     # ── arrows ────────────────────────────────────────────────────────────────
     # Queue → Dossier
-    o += ln(220,114,220,136)
-    # Dossier → each evidence group
+    o += ln(220,144,220,196)
+    # Dossier → each evidence group (entry x nudged right of the zone heading text)
     for ex_,*_ in ev_nodes:
-        tx = ex_+ew//2
-        o += ln(tx,202,tx,224)
+        tx = max(ex_+ew//2,180)
+        o += ln(tx,262,tx,314)
     # Evidence → Analyst Review (all converge)
     for ex_,*_ in ev_nodes:
         tx = ex_+ew//2
-        o += cbez(tx,ey+eh, tx,ey+eh+14, 220,350, 220,360)
+        o += cbez(tx,ey+eh, tx,ey+eh+18, 220,420, 220,430)
     # Analyst Review → Verdict
-    o += ln(220,416,220,444)
+    o += ln(220,486,220,538)
     # Verdict → Workflow
-    o += ln(410,472,490,472)
+    o += ln(410,566,490,566)
     # Workflow → Event
-    o += ln(890,472,970,472)
+    o += ln(890,566,970,566)
     # Verdict → Audit
-    o += cbez(210,500, 210,510, 210,516, 210,516)
+    o += ln(210,594,210,610)
     # Event → Audit + Reliability
-    o += cbez(1180,500, 1180,510, 1180,516, 1180,516)
-    o += cbez(420,500, 420,510, 500,510, 500,516)
+    o += ln(1180,594,1180,610)
+    o += cbez(420,594, 420,602, 500,602, 500,610)
 
     o += ftr()
     return o
@@ -337,57 +338,57 @@ def d3():
 # Diagram 4 — Advisory Investigation Brief
 # ─────────────────────────────────────────────────────────────────────────────
 def d4():
-    W,H = 1400,560
+    W,H = 1400,616
     o = hdr(W,H,"Case Investigation Lifecycle",
             "Case investigation lifecycle: evidence assembly, local LLM inference, schema validation, failure-bounded persistence, analyst review, and verdict.")
 
     # Zones
-    o += f'  <rect x="10" y="52" width="1380" height="74" rx="4" fill="#FFF1F2"/>\n'
-    o += zl(20,65,"Evidence Assembly","#BE123C")
-    o += f'  <rect x="10" y="136" width="1380" height="74" rx="4" fill="#FEF3C7"/>\n'
-    o += zl(20,149,"LLM Inference","#92400E")
-    o += f'  <rect x="10" y="220" width="1380" height="146" rx="4" fill="#F0FDF4"/>\n'
-    o += zl(20,233,"Validation & Persistence","#15803D")
-    o += f'  <rect x="10" y="376" width="1380" height="168" rx="4" fill="#EFF6FF"/>\n'
-    o += zl(20,389,"Analyst Control","#1D4ED8")
+    o += f'  <rect x="10" y="58" width="1380" height="100" rx="4" fill="#FFF1F2"/>\n'
+    o += zl(20,77,"Evidence Assembly","#BE123C")
+    o += f'  <rect x="10" y="168" width="1380" height="100" rx="4" fill="#FEF3C7"/>\n'
+    o += zl(20,187,"LLM Inference","#92400E")
+    o += f'  <rect x="10" y="278" width="1380" height="186" rx="4" fill="#F0FDF4"/>\n'
+    o += zl(20,297,"Validation & Persistence","#15803D")
+    o += f'  <rect x="10" y="474" width="1380" height="126" rx="4" fill="#EFF6FF"/>\n'
+    o += zl(20,493,"Analyst Control","#1D4ED8")
 
     # Row 1: Evidence assembly (3 nodes)
-    o += nd(10,58,410,58,"Case Context","Transaction · features · decision · risk score","input")
-    o += nd(500,58,400,58,"Evidence Payload","Base · enriched · behavioural · graph signals grouped","model")
-    o += nd(980,58,410,58,"RAG Retrieval","Playbook and policy knowledge base queried","behav")
+    o += nd(10,88,410,58,"Case Context","Transaction · features · decision · risk score","input")
+    o += nd(500,88,400,58,"Evidence Payload","Base · enriched · behavioural · graph signals grouped","model")
+    o += nd(980,88,410,58,"RAG Retrieval","Playbook and policy knowledge base queried","behav")
     # Row 2: LLM inference
-    o += nd(200,144,460,58,"Local LLM Profile","Ollama inference (local runtime only)","ai")
-    o += nd(740,144,460,58,"Prompt Assembly","Evidence groups + playbook context structured","fusion")
+    o += nd(200,198,460,58,"Local LLM Profile","Ollama inference (local runtime only)","ai")
+    o += nd(740,198,460,58,"Prompt Assembly","Evidence groups + playbook context structured","fusion")
     # Row 3: Advisory Brief + Validation
-    o += nd(200,228,460,58,"Advisory Brief","Recommendation · confidence · rationale · risk factors","audit")
-    o += nd(740,228,460,58,"Schema Validation","Structured output contract enforced","fusion")
+    o += nd(200,308,460,58,"Advisory Brief","Recommendation · confidence · rationale · risk factors","audit")
+    o += nd(740,308,460,58,"Schema Validation","Structured output contract enforced","fusion")
     # Row 4: Branch — persisted vs failed
-    o += nd(80,318,440,62,"Persisted Brief (COMPLETE)","AGENT_VERSION tagged · durable record","data")
-    o += nd(600,318,440,62,"Bounded Failure Record (FAILED)","Analyst-readable failure · durable FAILED state","disabled")
+    o += nd(80,390,440,62,"Persisted Brief (COMPLETE)","AGENT_VERSION tagged · durable record","data")
+    o += nd(600,390,440,62,"Bounded Failure Record (FAILED)","Analyst-readable failure · durable FAILED state","disabled")
     # Row 5: Analyst review
-    o += nd(200,400,460,62,"Analyst Review","Brief is advisory only — analyst retains decision control","experience")
-    o += nd(740,400,460,62,"Human Verdict","CONFIRMED_FRAUD · FALSE_POSITIVE · APPROVED","ops")
+    o += nd(200,504,460,62,"Analyst Review","Brief is advisory only — analyst retains decision control","experience")
+    o += nd(740,504,460,62,"Human Verdict","CONFIRMED_FRAUD · FALSE_POSITIVE · APPROVED","ops")
     # NOTE box
-    o += f'  <text x="700" y="488" text-anchor="middle" font-family="{F}" font-size="12" fill="#6B7280" font-style="italic">AI assists investigation briefing. Analyst decision is authoritative. Every brief carries AGENT_VERSION for traceability.</text>\n'
+    o += f'  <text x="700" y="590" text-anchor="middle" font-family="{F}" font-size="12" fill="#6B7280" font-style="italic">AI assists investigation briefing. Analyst decision is authoritative. Every brief carries AGENT_VERSION for traceability.</text>\n'
 
     # ── arrows ────────────────────────────────────────────────────────────────
     # Evidence assembly → LLM + Prompt
-    o += cbez(215,116, 215,128, 430,128, 430,144)
-    o += cbez(700,116, 700,128, 970,128, 970,144)
-    o += cbez(1185,116, 1185,128, 970,128, 970,144)
+    o += cbez(215,146, 215,172, 430,172, 430,198)
+    o += cbez(700,146, 700,172, 970,172, 970,198)
+    o += cbez(1185,146, 1185,172, 970,172, 970,198)
     # LLM + Prompt → Brief
-    o += cbez(430,202, 430,215, 430,228, 430,228)
-    o += cbez(970,202, 970,215, 970,228, 970,228)
+    o += cbez(430,256, 430,282, 430,296, 430,308)
+    o += cbez(970,256, 970,282, 970,296, 970,308)
     # Brief → Validation
-    o += ln(660,257,740,257)
+    o += ln(660,337,740,337)
     # Validation → branches
-    o += cbez(970,286, 970,302, 300,302, 300,318)
-    o += cbez(970,286, 970,302, 820,302, 820,318)
+    o += cbez(970,366, 970,378, 300,378, 300,390)
+    o += cbez(970,366, 970,378, 820,378, 820,390)
     # Persisted + Failed → Analyst
-    o += cbez(300,380, 300,392, 430,392, 430,400)
-    o += cbez(820,380, 820,392, 430,392, 430,400)
+    o += cbez(300,452, 300,478, 430,478, 430,504)
+    o += cbez(820,452, 820,478, 430,478, 430,504)
     # Analyst → Verdict
-    o += ln(660,431,740,431)
+    o += ln(660,535,740,535)
 
     o += ftr()
     return o
@@ -396,61 +397,61 @@ def d4():
 # Diagram 5 — Portfolio Risk Scan
 # ─────────────────────────────────────────────────────────────────────────────
 def d5():
-    W,H = 1400,612
+    W,H = 1400,782
     o = hdr(W,H,"Portfolio Risk Scan Pipeline",
             "Async bulk scan: CSV upload, chunked scoring, tier counters, indexed results, pagination, streaming export, case promotion.")
 
     # Zones
-    o += f'  <rect x="10" y="52" width="1380" height="74" rx="4" fill="#EFF6FF"/>\n'
-    o += zl(20,65,"Upload & Validation","#1D4ED8")
-    o += f'  <rect x="10" y="136" width="1380" height="74" rx="4" fill="#FEF3C7"/>\n'
-    o += zl(20,149,"Async Processing","#92400E")
-    o += f'  <rect x="10" y="220" width="1380" height="74" rx="4" fill="#FFF1F2"/>\n'
-    o += zl(20,233,"Scoring","#BE123C")
-    o += f'  <rect x="10" y="304" width="1380" height="74" rx="4" fill="#F0FDF4"/>\n'
-    o += zl(20,317,"Persistence","#15803D")
-    o += f'  <rect x="10" y="388" width="1380" height="74" rx="4" fill="#ECFEFF"/>\n'
-    o += zl(20,401,"Results Access","#0E7490")
-    o += f'  <rect x="10" y="472" width="1380" height="124" rx="4" fill="#FFFBEB"/>\n'
-    o += zl(20,485,"Output Paths","#B45309")
+    o += f'  <rect x="10" y="58" width="1380" height="100" rx="4" fill="#EFF6FF"/>\n'
+    o += zl(20,77,"Upload & Validation","#1D4ED8")
+    o += f'  <rect x="10" y="168" width="1380" height="100" rx="4" fill="#FEF3C7"/>\n'
+    o += zl(20,187,"Async Processing","#92400E")
+    o += f'  <rect x="10" y="278" width="1380" height="100" rx="4" fill="#FFF1F2"/>\n'
+    o += zl(20,297,"Scoring","#BE123C")
+    o += f'  <rect x="10" y="388" width="1380" height="100" rx="4" fill="#F0FDF4"/>\n'
+    o += zl(20,407,"Persistence","#15803D")
+    o += f'  <rect x="10" y="498" width="1380" height="100" rx="4" fill="#ECFEFF"/>\n'
+    o += zl(20,517,"Results Access","#0E7490")
+    o += f'  <rect x="10" y="608" width="1380" height="98" rx="4" fill="#FFFBEB"/>\n'
+    o += zl(20,627,"Output Paths","#B45309")
 
     # Row 1: Upload + Validation
-    o += nd(120,58,500,58,"CSV Upload","POST /risk-scan · HTTP 202 + scan_id returned","input")
-    o += nd(780,58,500,58,"Schema Validation","Field types · required columns · row sanitisation","service")
+    o += nd(120,88,500,58,"CSV Upload","POST /risk-scan · HTTP 202 + scan_id returned","input")
+    o += nd(780,88,500,58,"Schema Validation","Field types · required columns · row sanitisation","service")
     # Row 2: Async
-    o += nd(120,144,500,58,"Async Scan Job","Background task · scan_id persisted · scan_id polling","ops")
-    o += nd(780,144,500,58,"Chunked Processing","2,000-row chunks · memory-bounded per chunk","portfolio")
+    o += nd(120,198,500,58,"Async Scan Job","Background task · scan_id persisted · scan_id polling","ops")
+    o += nd(780,198,500,58,"Chunked Processing","2,000-row chunks · memory-bounded per chunk","portfolio")
     # Row 3: Scoring
-    o += nd(10,228,680,58,"4-Layer Scoring","Model + rules + behavioural + graph per row","model")
-    o += nd(710,228,680,58,"Tier Assignment","P0 Critical · P1 High · P2 Medium · P3 Low","rule")
+    o += nd(10,308,680,58,"4-Layer Scoring","Model + rules + behavioural + graph per row","model")
+    o += nd(710,308,680,58,"Tier Assignment","P0 Critical · P1 High · P2 Medium · P3 Low","rule")
     # Row 4: Persistence
-    o += nd(10,312,680,58,"Running Summary Counters","P0–P3 counts · exposure totals updated per chunk","data")
-    o += nd(710,312,680,58,"Indexed Scan Results","Composite index (scan_id, risk_score, tier)","data")
+    o += nd(10,418,680,58,"Running Summary Counters","P0–P3 counts · exposure totals updated per chunk","data")
+    o += nd(710,418,680,58,"Indexed Scan Results","Composite index (scan_id, risk_score, tier)","data")
     # Row 5: Polling
-    o += nd(400,396,600,58,"Progress Polling","GET /risk-scan/{scan_id}/status · real-time incremental","portfolio")
+    o += nd(400,528,600,58,"Progress Polling","GET /risk-scan/{scan_id}/status · real-time incremental","portfolio")
     # Row 6: Outputs (3 nodes)
-    o += nd(10,480,400,56,"Paginated Results","GET /risk-scan/{id}/results · P0/P1/P3 filter","portfolio")
-    o += nd(490,480,400,56,"Streaming CSV Export","GET /risk-scan/{id}/export · server-side cursor","portfolio")
-    o += nd(970,480,420,56,"Promote to Case","Individual row → Case Dossier · Review Queue","ops")
+    o += nd(10,638,400,56,"Paginated Results","GET /risk-scan/{id}/results · P0/P1/P3 filter","portfolio")
+    o += nd(490,638,400,56,"Streaming CSV Export","GET /risk-scan/{id}/export · server-side cursor","portfolio")
+    o += nd(970,638,420,56,"Promote to Case","Individual row → Case Dossier · Review Queue","ops")
 
     # Hosted boundary note
-    o += f'  <rect x="10" y="548" width="1380" height="50" rx="4" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>\n'
-    o += f'  <text x="700" y="567" text-anchor="middle" font-family="{F}" font-size="12" fill="#64748B" font-weight="600">Hosted Profile B (Render) supports bounded inspection scans. 10M-row benchmark evidence is from controlled local environment benchmark runs.</text>\n'
-    o += f'  <text x="700" y="585" text-anchor="middle" font-family="{F}" font-size="11" fill="#9CA3AF">The hosted environment validates async architecture, progress polling, pagination, and export. Full benchmark replication requires the local Docker Compose stack.</text>\n'
+    o += f'  <rect x="10" y="716" width="1380" height="50" rx="4" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>\n'
+    o += f'  <text x="700" y="735" text-anchor="middle" font-family="{F}" font-size="12" fill="#64748B" font-weight="600">Hosted Profile B (Render) supports bounded inspection scans. 10M-row benchmark evidence is from controlled local environment benchmark runs.</text>\n'
+    o += f'  <text x="700" y="753" text-anchor="middle" font-family="{F}" font-size="11" fill="#9CA3AF">The hosted environment validates async architecture, progress polling, pagination, and export. Full benchmark replication requires the local Docker Compose stack.</text>\n'
 
     # ── arrows ────────────────────────────────────────────────────────────────
-    o += ln(370,116,370,144)   # Upload → Async
-    o += ln(1030,116,1030,144) # Validation → Chunked
-    o += cbez(370,202, 370,215, 350,228, 350,228)   # Async → Scoring
-    o += cbez(1030,202, 1030,215, 1050,228, 1050,228) # Chunked → Tier
-    o += ln(350,286,350,312)   # Scoring → Counters
-    o += ln(1050,286,1050,312) # Tier → Indexed
+    o += ln(370,146,370,198)   # Upload → Async
+    o += ln(1030,146,1030,198) # Validation → Chunked
+    o += cbez(370,256, 370,282, 350,294, 350,308)   # Async → Scoring
+    o += cbez(1030,256, 1030,282, 1050,294, 1050,308) # Chunked → Tier
+    o += ln(350,366,350,418)   # Scoring → Counters
+    o += ln(1050,366,1050,418) # Tier → Indexed
     # Indexed → Polling
-    o += cbez(1050,370, 1050,382, 700,388, 700,396)
+    o += cbez(1050,476, 1050,502, 700,502, 700,528)
     # Counters + Indexed → Outputs
-    o += cbez(350,370, 350,382, 210,472, 210,480)
-    o += cbez(1050,370, 1050,382, 690,472, 690,480)
-    o += cbez(1050,370, 1050,382, 1180,472, 1180,480)
+    o += cbez(350,476, 350,540, 210,584, 210,638)
+    o += pa("M1050,476 C1050,530 1050,580 1050,612 C1050,632 690,608 690,638")
+    o += cbez(1050,476, 1180,530, 1180,590, 1180,638)
 
     o += ftr()
     return o
@@ -509,7 +510,7 @@ def d6_workflow():
 # Diagram 7 — Deployment Profiles
 # ─────────────────────────────────────────────────────────────────────────────
 def d7():
-    W,H = 1400,680
+    W,H = 1400,682
     o = hdr(W,H,"Deployment Profiles",
             "Side-by-side comparison of Profile A (local full runtime) and Profile B (hosted inspection runtime).")
 
@@ -519,13 +520,13 @@ def d7():
     divX = 700  # divider x
 
     # Column headers
-    o += f'  <rect x="{CX_A}" y="52" width="{CW}" height="40" rx="4" fill="#1E293B"/>\n'
-    o += f'  <text x="{CX_A+CW//2}" y="78" text-anchor="middle" font-family="{F}" font-size="16" font-weight="700" fill="#F1F5F9">Profile A — Local Full Runtime</text>\n'
-    o += f'  <rect x="{CX_B}" y="52" width="{CW}" height="40" rx="4" fill="#0C4A6E"/>\n'
-    o += f'  <text x="{CX_B+CW//2}" y="78" text-anchor="middle" font-family="{F}" font-size="16" font-weight="700" fill="#BAE6FD">Profile B — Hosted Inspection Runtime</text>\n'
+    o += f'  <rect x="{CX_A}" y="62" width="{CW}" height="40" rx="4" fill="#1E293B"/>\n'
+    o += f'  <text x="{CX_A+CW//2}" y="88" text-anchor="middle" font-family="{F}" font-size="16" font-weight="700" fill="#F1F5F9">Profile A — Local Full Runtime</text>\n'
+    o += f'  <rect x="{CX_B}" y="62" width="{CW}" height="40" rx="4" fill="#0C4A6E"/>\n'
+    o += f'  <text x="{CX_B+CW//2}" y="88" text-anchor="middle" font-family="{F}" font-size="16" font-weight="700" fill="#BAE6FD">Profile B — Hosted Inspection Runtime</text>\n'
 
     # Divider
-    o += f'  <line x1="{divX}" y1="52" x2="{divX}" y2="{H-16}" stroke="#E2E8F0" stroke-width="2" stroke-dasharray="4,4"/>\n'
+    o += f'  <line x1="{divX}" y1="58" x2="{divX}" y2="{H-16}" stroke="#E2E8F0" stroke-width="2" stroke-dasharray="4,4"/>\n'
 
     # Status badges
     def sticker(x,y,label,col,fc):
@@ -560,7 +561,7 @@ def d7():
     ]
 
     NW,NH,gap = 590,48,8
-    start_y = 108
+    start_y = 118
     for i,(lbl,sub,sty,badge_t,bcol,btc) in enumerate(a_comps):
         ny = start_y + i*(NH+gap)
         o += nd(CX_A,ny,NW,NH,lbl,sub,sty)

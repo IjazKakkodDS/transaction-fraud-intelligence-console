@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 618">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 686">
   <title>Transaction Intake and Scoring</title>
   <desc>Scoring pipeline: transaction submission, feature extraction, four-layer intelligence, score composition, decision tier, case record.</desc>
   <defs>
@@ -8,69 +8,69 @@
       <polygon points="0,0 10,5 0,10" fill="#475569"/>
     </marker>
   </defs>
-  <rect width="1400" height="618" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
+  <rect width="1400" height="686" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
   <rect x="0" y="0" width="1400" height="46" rx="8" fill="#0F172A"/>
   <rect x="0" y="34" width="1400" height="12" fill="#0F172A"/>
   <text x="700" y="30" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="20" font-weight="700" fill="#F1F5F9">Transaction Intake and Scoring</text>
-  <rect x="10" y="52" width="1380" height="74" rx="4" fill="#EFF6FF"/>
-  <text x="20" y="65" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#1D4ED8" letter-spacing="1.4">INTAKE</text>
-  <rect x="10" y="132" width="1380" height="74" rx="4" fill="#FFF1F2"/>
-  <text x="20" y="145" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#BE123C" letter-spacing="1.4">FEATURE PROCESSING</text>
-  <rect x="10" y="212" width="1380" height="172" rx="4" fill="#FFF7ED"/>
-  <text x="20" y="225" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#B45309" letter-spacing="1.4">FOUR-LAYER SCORING</text>
-  <rect x="10" y="390" width="1380" height="74" rx="4" fill="#F0FDF4"/>
-  <text x="20" y="403" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#15803D" letter-spacing="1.4">SCORE COMPOSITION</text>
-  <rect x="10" y="470" width="1380" height="136" rx="4" fill="#EEF2FF"/>
-  <text x="20" y="483" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#3730A3" letter-spacing="1.4">DECISION &amp; PERSISTENCE</text>
-  <rect x="480" y="60" width="440" height="58" rx="6" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="1.5"/>
-  <text x="700" y="84" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#1E40AF">Transaction Submitted</text>
-  <text x="700" y="100" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#1E40AF" opacity="0.85">POST /predict · POST /risk-scan · Kafka event</text>
-  <rect x="120" y="136" width="500" height="58" rx="6" fill="#DDD6FE" stroke="#7C3AED" stroke-width="1.5"/>
-  <text x="370" y="160" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">API Validation</text>
-  <text x="370" y="176" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">Schema check · field normalisation</text>
-  <rect x="780" y="136" width="500" height="58" rx="6" fill="#DDD6FE" stroke="#7C3AED" stroke-width="1.5"/>
-  <text x="1030" y="160" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">Feature Extraction</text>
-  <text x="1030" y="176" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">9-feature vector · device · geo · velocity</text>
-  <rect x="10" y="222" width="310" height="62" rx="6" fill="#FECACA" stroke="#DC2626" stroke-width="1.5"/>
-  <text x="165" y="248" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#7F1D1D">Model Risk</text>
-  <text x="165" y="264" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#7F1D1D" opacity="0.85">XGBoost inference</text>
-  <rect x="362" y="222" width="310" height="62" rx="6" fill="#FED7AA" stroke="#EA580C" stroke-width="1.5"/>
-  <text x="517" y="248" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#7C2D12">Rule Controls</text>
-  <text x="517" y="264" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#7C2D12" opacity="0.85">Deterministic flags</text>
-  <rect x="714" y="222" width="310" height="62" rx="6" fill="#FEF9C3" stroke="#A16207" stroke-width="1.5"/>
-  <text x="869" y="248" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#713F12">Behavioural Profile</text>
-  <text x="869" y="264" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#713F12" opacity="0.85">Entity deviation</text>
-  <rect x="1066" y="222" width="310" height="62" rx="6" fill="#DCFCE7" stroke="#16A34A" stroke-width="1.5"/>
-  <text x="1221" y="248" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#14532D">Graph Intelligence</text>
-  <text x="1221" y="264" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#14532D" opacity="0.85">Mule topology</text>
-  <rect x="10" y="400" width="1380" height="58" rx="6" fill="#E2E8F0" stroke="#475569" stroke-width="1.5"/>
-  <text x="700" y="424" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#0F172A">Score Composition  ·  Risk Score 0.0 – 1.0  ·  Layer Boosts Applied</text>
-  <text x="700" y="440" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#0F172A" opacity="0.85">base = (model × 0.6) + (rule × 0.4)   +   behavioural boost   +   graph boost</text>
-  <rect x="120" y="478" width="500" height="58" rx="6" fill="#FDE68A" stroke="#D97706" stroke-width="1.5"/>
-  <text x="370" y="502" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#451A03">Risk Tier Decision</text>
-  <text x="370" y="518" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#451A03" opacity="0.85">APPROVE &lt; 0.30   REVIEW 0.30–0.70   BLOCK ≥ 0.70</text>
-  <rect x="780" y="478" width="500" height="58" rx="6" fill="#E9D5FF" stroke="#9333EA" stroke-width="1.5"/>
-  <text x="1030" y="502" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">Reason Codes</text>
-  <text x="1030" y="518" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">Per-layer evidence codes for Case Dossier</text>
-  <rect x="350" y="552" width="700" height="52" rx="6" fill="#BBF7D0" stroke="#059669" stroke-width="1.5"/>
-  <text x="700" y="573" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#064E3B">Case Record (PostgreSQL)</text>
-  <text x="700" y="589" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#064E3B" opacity="0.85">risk_score · decision · features · reason codes persisted</text>
-  <path d="M700,118 C700,127 370,127 370,136" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
-  <path d="M700,118 C700,127 1030,127 1030,136" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
-  <path d="M370,194 C370,208 165,212 165,222" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
-  <path d="M1030,194 C1030,208 165,212 165,222" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
-  <path d="M370,194 C370,208 517,212 517,222" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
-  <path d="M1030,194 C1030,208 517,212 517,222" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
-  <path d="M370,194 C370,208 869,212 869,222" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
-  <path d="M1030,194 C1030,208 869,212 869,222" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
-  <path d="M370,194 C370,208 1221,212 1221,222" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
-  <path d="M1030,194 C1030,208 1221,212 1221,222" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
-  <line x1="165" y1="284" x2="165" y2="400" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
-  <line x1="517" y1="284" x2="517" y2="400" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
-  <line x1="869" y1="284" x2="869" y2="400" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
-  <line x1="1221" y1="284" x2="1221" y2="400" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
-  <path d="M700,458 C700,468 370,468 370,478" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
-  <path d="M700,458 C700,468 1030,468 1030,478" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
-  <path d="M370,536 C370,545 700,545 700,552" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
-  <path d="M1030,536 C1030,545 700,545 700,552" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <rect x="10" y="58" width="1380" height="100" rx="4" fill="#EFF6FF"/>
+  <text x="20" y="77" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#1D4ED8" letter-spacing="1.4">INTAKE</text>
+  <rect x="10" y="168" width="1380" height="100" rx="4" fill="#FFF1F2"/>
+  <text x="20" y="187" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#BE123C" letter-spacing="1.4">FEATURE PROCESSING</text>
+  <rect x="10" y="278" width="1380" height="104" rx="4" fill="#FFF7ED"/>
+  <text x="20" y="297" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#B45309" letter-spacing="1.4">FOUR-LAYER SCORING</text>
+  <rect x="10" y="392" width="1380" height="100" rx="4" fill="#F0FDF4"/>
+  <text x="20" y="411" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#15803D" letter-spacing="1.4">SCORE COMPOSITION</text>
+  <rect x="10" y="502" width="1380" height="168" rx="4" fill="#EEF2FF"/>
+  <text x="20" y="521" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#3730A3" letter-spacing="1.4">DECISION &amp; PERSISTENCE</text>
+  <rect x="480" y="88" width="440" height="58" rx="6" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="1.5"/>
+  <text x="700" y="112" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#1E40AF">Transaction Submitted</text>
+  <text x="700" y="128" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#1E40AF" opacity="0.85">POST /predict · POST /risk-scan · Kafka event</text>
+  <rect x="120" y="198" width="500" height="58" rx="6" fill="#DDD6FE" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="370" y="222" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">API Validation</text>
+  <text x="370" y="238" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">Schema check · field normalisation</text>
+  <rect x="780" y="198" width="500" height="58" rx="6" fill="#DDD6FE" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="1030" y="222" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">Feature Extraction</text>
+  <text x="1030" y="238" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">9-feature vector · device · geo · velocity</text>
+  <rect x="10" y="308" width="310" height="62" rx="6" fill="#FECACA" stroke="#DC2626" stroke-width="1.5"/>
+  <text x="165" y="334" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#7F1D1D">Model Risk</text>
+  <text x="165" y="350" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#7F1D1D" opacity="0.85">XGBoost inference</text>
+  <rect x="362" y="308" width="310" height="62" rx="6" fill="#FED7AA" stroke="#EA580C" stroke-width="1.5"/>
+  <text x="517" y="334" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#7C2D12">Rule Controls</text>
+  <text x="517" y="350" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#7C2D12" opacity="0.85">Deterministic flags</text>
+  <rect x="714" y="308" width="310" height="62" rx="6" fill="#FEF9C3" stroke="#A16207" stroke-width="1.5"/>
+  <text x="869" y="334" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#713F12">Behavioural Profile</text>
+  <text x="869" y="350" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#713F12" opacity="0.85">Entity deviation</text>
+  <rect x="1066" y="308" width="310" height="62" rx="6" fill="#DCFCE7" stroke="#16A34A" stroke-width="1.5"/>
+  <text x="1221" y="334" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#14532D">Graph Intelligence</text>
+  <text x="1221" y="350" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#14532D" opacity="0.85">Mule topology</text>
+  <rect x="10" y="422" width="1380" height="58" rx="6" fill="#E2E8F0" stroke="#475569" stroke-width="1.5"/>
+  <text x="700" y="446" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#0F172A">Score Composition  ·  Risk Score 0.0 – 1.0  ·  Layer Boosts Applied</text>
+  <text x="700" y="462" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#0F172A" opacity="0.85">base = (model × 0.6) + (rule × 0.4)   +   behavioural boost   +   graph boost</text>
+  <rect x="120" y="532" width="500" height="58" rx="6" fill="#FDE68A" stroke="#D97706" stroke-width="1.5"/>
+  <text x="370" y="556" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#451A03">Risk Tier Decision</text>
+  <text x="370" y="572" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#451A03" opacity="0.85">APPROVE &lt; 0.30   REVIEW 0.30–0.70   BLOCK ≥ 0.70</text>
+  <rect x="780" y="532" width="500" height="58" rx="6" fill="#E9D5FF" stroke="#9333EA" stroke-width="1.5"/>
+  <text x="1030" y="556" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">Reason Codes</text>
+  <text x="1030" y="572" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">Per-layer evidence codes for Case Dossier</text>
+  <rect x="350" y="606" width="700" height="52" rx="6" fill="#BBF7D0" stroke="#059669" stroke-width="1.5"/>
+  <text x="700" y="627" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#064E3B">Case Record (PostgreSQL)</text>
+  <text x="700" y="643" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#064E3B" opacity="0.85">risk_score · decision · features · reason codes persisted</text>
+  <path d="M700,146 C700,172 370,172 370,198" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M700,146 C700,172 1030,172 1030,198" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M370,256 C370,282 210,294 210,308" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M1030,256 C1030,282 210,294 210,308" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M370,256 C370,282 517,294 517,308" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M1030,256 C1030,282 517,294 517,308" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M370,256 C370,282 869,294 869,308" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M1030,256 C1030,282 869,294 869,308" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M370,256 C370,282 1221,294 1221,308" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M1030,256 C1030,282 1221,294 1221,308" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M165,370 C165,392 210,408 210,422" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M517,370 C517,392 517,408 517,422" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M869,370 C869,392 869,408 869,422" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M1221,370 C1221,392 1221,408 1221,422" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M700,480 C700,508 370,508 370,532" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M700,480 C700,508 1030,508 1030,532" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M370,590 C370,599 700,599 700,606" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M1030,590 C1030,599 700,599 700,606" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
 </svg>
