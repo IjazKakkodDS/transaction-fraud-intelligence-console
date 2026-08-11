@@ -285,7 +285,9 @@ These flows show how the console converts fraud signals into operational decisio
 
 ### 5. Workflow Automation and Audit
 
-![Deployment Profiles: Profile A local full runtime with nine services via Docker Compose, Profile B hosted inspection runtime on Vercel, Render, and Neon](docs/architecture/06_deployment_profiles.svg)
+![Workflow Automation and Audit: analyst verdict triggers workflow dispatch, n8n callback automation, events table persistence, reliability metrics, and missing-callback visibility](docs/architecture/07_workflow_automation_audit.svg)
+
+*Analyst verdict triggers workflow dispatch through n8n. The callback event fans out to the workflow events table, reliability metrics, and missing-callback visibility, so automation actions are auditable, not assumed.*
 
 ---
 

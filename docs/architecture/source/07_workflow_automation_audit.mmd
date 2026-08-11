@@ -1,0 +1,29 @@
+%% Editable Mermaid source for docs/architecture/07_workflow_automation_audit.svg
+%% Semantic parity contract: nodes, labels, and edges below must match the
+%% d6_workflow() function in generate_svgs.py. Update both together.
+graph TD
+  subgraph ANALYST_DECISION["Analyst Decision"]
+    A["Analyst Verdict<br/>CONFIRMED_FRAUD verdict triggers escalation"]
+  end
+
+  subgraph WORKFLOW_AUTOMATION["Workflow Automation"]
+    B["Workflow Dispatch<br/>POST /workflow/notify-case/{id}"]
+    C["n8n Local Workflow<br/>Webhook trigger · escalation automation sequence"]
+  end
+
+  subgraph CALLBACK_RECEIPT["Callback Receipt"]
+    D["Callback Event<br/>POST /workflow/callback · status persisted"]
+  end
+
+  subgraph PERSISTENCE["Persistence and Observability"]
+    E["Workflow Events Table<br/>case_id · dispatched_at · callback_received · latency"]
+    F["Reliability Metrics<br/>SLO health · dispatch success rate · health verdict"]
+    G["Missing Callback Visible<br/>Stale detection · operator alert · audit trail"]
+  end
+
+  A --> B
+  B --> C
+  C --> D
+  D --> E
+  D --> F
+  D --> G

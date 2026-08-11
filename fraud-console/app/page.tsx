@@ -26,6 +26,12 @@ const COLORS = {
   quiet: "#64748B",
 };
 
+// Same NEXT_PUBLIC_API_BASE_URL resolution pattern used by lib/api/client.ts,
+// so this link tracks the configured backend in both local and hosted environments.
+const API_DOCS_URL = `${(
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000"
+).replace(/\/$/, "")}/docs`;
+
 const PIPELINE = [
   {
     step: "01",
@@ -801,7 +807,7 @@ function GuidedInvestigationPanel() {
             <ArrowRight className="h-3 w-3" />
           </Link>
           <a
-            href="http://localhost:8000/docs"
+            href={API_DOCS_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 font-sans text-[11px] font-semibold uppercase tracking-[0.1em] transition hover:opacity-70"

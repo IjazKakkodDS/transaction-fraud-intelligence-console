@@ -457,34 +457,34 @@ def d5():
     return o
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Diagram 6 — Workflow Automation and Audit
+# Diagram 7 — Workflow Automation and Audit
 # ─────────────────────────────────────────────────────────────────────────────
 def d6_workflow():
-    W,H = 1400,560
+    W,H = 1400,576
     o = hdr(W,H,"Workflow Automation and Audit",
             "Analyst verdict triggers workflow dispatch, n8n callback automation, events table persistence, reliability metrics, and missing-callback visibility.")
 
-    # Zones
-    o += f'  <rect x="10" y="52" width="1380" height="74" rx="4" fill="#FFFBEB"/>\n'
-    o += zl(20,65,"ANALYST DECISION","#B45309")
-    o += f'  <rect x="10" y="136" width="1380" height="148" rx="4" fill="#FDF2F8"/>\n'
-    o += zl(20,149,"WORKFLOW AUTOMATION","#9D174D")
-    o += f'  <rect x="10" y="294" width="1380" height="74" rx="4" fill="#F5F3FF"/>\n'
-    o += zl(20,307,"CALLBACK RECEIPT","#6D28D9")
-    o += f'  <rect x="10" y="378" width="1380" height="166" rx="4" fill="#F0FDF4"/>\n'
-    o += zl(20,391,"PERSISTENCE AND OBSERVABILITY","#15803D")
+    # Zones (reserved heading band: label baseline at zone top + 19)
+    o += f'  <rect x="10" y="58" width="1380" height="100" rx="4" fill="#FFFBEB"/>\n'
+    o += zl(20,77,"ANALYST DECISION","#B45309")
+    o += f'  <rect x="10" y="168" width="1380" height="174" rx="4" fill="#FDF2F8"/>\n'
+    o += zl(20,187,"WORKFLOW AUTOMATION","#9D174D")
+    o += f'  <rect x="10" y="352" width="1380" height="100" rx="4" fill="#F5F3FF"/>\n'
+    o += zl(20,371,"CALLBACK RECEIPT","#6D28D9")
+    o += f'  <rect x="10" y="462" width="1380" height="98" rx="4" fill="#F0FDF4"/>\n'
+    o += zl(20,481,"PERSISTENCE AND OBSERVABILITY","#15803D")
 
     cx,nw = 500,400
     mc = cx + nw//2  # 700
 
     # Vertical chain
-    o += nd(cx,58,nw,58,"Analyst Verdict","CONFIRMED_FRAUD verdict triggers escalation","ops")
-    o += nd(cx,142,nw,58,"Workflow Dispatch","POST /workflow/notify-case/{id}","workflow")
-    o += nd(cx,216,nw,58,"n8n Local Workflow","Webhook trigger · escalation automation sequence","workflow")
-    o += nd(cx,300,nw,58,"Callback Event","POST /workflow/callback · status persisted","service")
+    o += nd(cx,88,nw,58,"Analyst Verdict","CONFIRMED_FRAUD verdict triggers escalation","ops")
+    o += nd(cx,198,nw,58,"Workflow Dispatch","POST /workflow/notify-case/{id}","workflow")
+    o += nd(cx,272,nw,58,"n8n Local Workflow","Webhook trigger · escalation automation sequence","workflow")
+    o += nd(cx,382,nw,58,"Callback Event","POST /workflow/callback · status persisted","service")
 
     # Bottom three nodes
-    bw,bh,by = 380,56,398
+    bw,bh,by = 380,56,492
     bx_list = [50, 510, 970]
     bot = [
         ("Workflow Events Table","case_id · dispatched_at · callback_received · latency","data"),
@@ -495,13 +495,13 @@ def d6_workflow():
         o += nd(bx_list[i],by,bw,bh,lbl,sub,sty)
 
     # Arrows — vertical chain
-    o += ln(mc,116,mc,142)
-    o += ln(mc,200,mc,216)
-    o += ln(mc,274,mc,300)
+    o += ln(mc,146,mc,198)
+    o += ln(mc,256,mc,272)
+    o += ln(mc,330,mc,382)
     # Callback fans to bottom three
     for bxi in bx_list:
         tc = bxi + bw//2
-        o += cbez(mc,358, mc,370, tc,390, tc,398)
+        o += cbez(mc,440, mc,452, tc,484, tc,492)
 
     o += ftr()
     return o
@@ -591,6 +591,7 @@ def main():
         ("04_case_lifecycle.svg",        d4),
         ("05_risk_scan_pipeline.svg",   d5),
         ("06_deployment_profiles.svg",  d7),
+        ("07_workflow_automation_audit.svg", d6_workflow),
     ]
     for fname, fn in diagrams:
         path = OUT / fname

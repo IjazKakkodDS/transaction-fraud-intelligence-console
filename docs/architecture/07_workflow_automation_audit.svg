@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 576">
+  <title>Workflow Automation and Audit</title>
+  <desc>Analyst verdict triggers workflow dispatch, n8n callback automation, events table persistence, reliability metrics, and missing-callback visibility.</desc>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto">
+      <polygon points="0,0 10,5 0,10" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="1400" height="576" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5"/>
+  <rect x="0" y="0" width="1400" height="46" rx="8" fill="#0F172A"/>
+  <rect x="0" y="34" width="1400" height="12" fill="#0F172A"/>
+  <text x="700" y="30" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="20" font-weight="700" fill="#F1F5F9">Workflow Automation and Audit</text>
+  <rect x="10" y="58" width="1380" height="100" rx="4" fill="#FFFBEB"/>
+  <text x="20" y="77" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#B45309" letter-spacing="1.4">ANALYST DECISION</text>
+  <rect x="10" y="168" width="1380" height="174" rx="4" fill="#FDF2F8"/>
+  <text x="20" y="187" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#9D174D" letter-spacing="1.4">WORKFLOW AUTOMATION</text>
+  <rect x="10" y="352" width="1380" height="100" rx="4" fill="#F5F3FF"/>
+  <text x="20" y="371" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#6D28D9" letter-spacing="1.4">CALLBACK RECEIPT</text>
+  <rect x="10" y="462" width="1380" height="98" rx="4" fill="#F0FDF4"/>
+  <text x="20" y="481" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="10" font-weight="700" fill="#15803D" letter-spacing="1.4">PERSISTENCE AND OBSERVABILITY</text>
+  <rect x="500" y="88" width="400" height="58" rx="6" fill="#FDE68A" stroke="#D97706" stroke-width="1.5"/>
+  <text x="700" y="112" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#451A03">Analyst Verdict</text>
+  <text x="700" y="128" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#451A03" opacity="0.85">CONFIRMED_FRAUD verdict triggers escalation</text>
+  <rect x="500" y="198" width="400" height="58" rx="6" fill="#FBCFE8" stroke="#DB2777" stroke-width="1.5"/>
+  <text x="700" y="222" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#831843">Workflow Dispatch</text>
+  <text x="700" y="238" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#831843" opacity="0.85">POST /workflow/notify-case/{id}</text>
+  <rect x="500" y="272" width="400" height="58" rx="6" fill="#FBCFE8" stroke="#DB2777" stroke-width="1.5"/>
+  <text x="700" y="296" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#831843">n8n Local Workflow</text>
+  <text x="700" y="312" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#831843" opacity="0.85">Webhook trigger · escalation automation sequence</text>
+  <rect x="500" y="382" width="400" height="58" rx="6" fill="#DDD6FE" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="700" y="406" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">Callback Event</text>
+  <text x="700" y="422" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">POST /workflow/callback · status persisted</text>
+  <rect x="50" y="492" width="380" height="56" rx="6" fill="#BBF7D0" stroke="#059669" stroke-width="1.5"/>
+  <text x="240" y="515" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#064E3B">Workflow Events Table</text>
+  <text x="240" y="531" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#064E3B" opacity="0.85">case_id · dispatched_at · callback_received · latency</text>
+  <rect x="510" y="492" width="380" height="56" rx="6" fill="#E9D5FF" stroke="#9333EA" stroke-width="1.5"/>
+  <text x="700" y="515" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#3B0764">Reliability Metrics</text>
+  <text x="700" y="531" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#3B0764" opacity="0.85">SLO health · dispatch success rate · health verdict</text>
+  <rect x="970" y="492" width="380" height="56" rx="6" fill="#FDE68A" stroke="#D97706" stroke-width="1.5"/>
+  <text x="1160" y="515" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="600" fill="#451A03">Missing Callback Visible</text>
+  <text x="1160" y="531" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="11" fill="#451A03" opacity="0.85">Stale detection · operator alert · audit trail</text>
+  <line x1="700" y1="146" x2="700" y2="198" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="700" y1="256" x2="700" y2="272" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="700" y1="330" x2="700" y2="382" stroke="#475569" stroke-width="2" marker-end="url(#ah)"/>
+  <path d="M700,440 C700,452 240,484 240,492" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M700,440 C700,452 700,484 700,492" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+  <path d="M700,440 C700,452 1160,484 1160,492" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah)"/>
+</svg>
